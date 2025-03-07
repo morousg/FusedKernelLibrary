@@ -14,7 +14,7 @@
 
 
 #ifdef WIN32
-#include <intellisense/main.h>
+#include "tests/main.h"
 #endif
 
 #include <iostream>

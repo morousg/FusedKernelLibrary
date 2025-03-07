@@ -25,7 +25,7 @@
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 
 #ifdef WIN32
-#include <intellisense/main.h>
+#include "tests/main.h"
 #endif
 
 template <typename T>

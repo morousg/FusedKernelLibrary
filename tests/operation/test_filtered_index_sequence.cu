@@ -13,9 +13,7 @@
    limitations under the License. */
 
 
-#ifdef WIN32
-#include <intellisense/main.h>
-#endif
+#include "tests/main.h"
 
 #include <tests/fkTestsCommon.h>
 #include <fused_kernel/core/utils/type_lists.h>

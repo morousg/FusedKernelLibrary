@@ -12,10 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-#ifdef WIN32
-#include <intellisense/main.h>
-#endif
+#include "tests/main.h"
 
 #include <fused_kernel/algorithms/image_processing/crop.cuh>
 #include <fused_kernel/core/data/ptr_nd.cuh>
