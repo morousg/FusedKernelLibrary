@@ -1,10 +1,5 @@
-
-
-if (MSVC)
-        #intellisense hack for vs2022
-    set (LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/include/intellisense/main.cpp;${CMAKE_SOURCE_DIR}/include/intellisense/main.h")
-endif()   
-
+set (LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/tests/main.cpp;${CMAKE_SOURCE_DIR}/tests/main.h")
+ 
 function (discover_tests DIR)    
     file(
         GLOB_RECURSE
@@ -18,9 +13,9 @@ function (discover_tests DIR)
         get_filename_component(cuda_target ${cuda_source} NAME_WE)           
         add_executable(${cuda_target} ${cuda_source} )
       
-        if(MSVC)
+      
             target_sources(${cuda_target} PRIVATE ${LAUNCH_SOURCES})            
-        endif() 
+       
         
         if(${ENABLE_BENCHMARK})
             target_compile_definitions(${cuda_target} PRIVATE ENABLE_BENCHMARK)
@@ -49,8 +44,7 @@ function (discover_tests DIR)
     	string(FIND ${cuda_source} "npp" is_npp)    	
 		 
 		if (${is_npp} GREATER -1)		    
-			target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 								
-               # cuda libraries  implicit dependencies for cuda modules             
+			target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 								              
 		endif()
 		
     endforeach()
