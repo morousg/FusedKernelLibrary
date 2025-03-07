@@ -15,9 +15,7 @@ function (discover_tests DIR)
     )
      
     foreach(cuda_source ${CUDA_SOURCES})
-        get_filename_component(cuda_target ${cuda_source} NAME_WE)
-        
-        
+        get_filename_component(cuda_target ${cuda_source} NAME_WE)           
         add_executable(${cuda_target} ${cuda_source} ${LAUNCH_SOURCES})
         if(${ENABLE_BENCHMARK})
             target_compile_definitions(${cuda_target} PRIVATE ENABLE_BENCHMARK)
@@ -40,8 +38,18 @@ function (discover_tests DIR)
         target_include_directories(${cuda_target} PRIVATE "${CMAKE_SOURCE_DIR}")        
 
         # Hack to get intellisense working for CUDA includes
-        target_link_libraries(${cuda_target} PRIVATE ${PROJECT_NAME})        
+        if (MSVC)
+            target_link_libraries(${cuda_target} PRIVATE ${PROJECT_NAME})        
+        endif()
         set_target_cuda_arch_flags(${cuda_target})
         add_test(NAME  ${cuda_target} COMMAND ${cuda_target})
+         
+    	string(FIND ${cuda_source} "npp" is_npp)    	
+		 
+		if (${is_npp} GREATER -1)		    
+			target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 								
+               # cuda libraries  implicit dependencies for cuda modules             
+		endif()
+		
     endforeach()
 endfunction()
