@@ -1,4 +1,4 @@
-set (LIB_NAME cvGPUSpeedup)
+set (LIB_NAME ${PROJECT_NAME})
 add_library(${LIB_NAME} INTERFACE)
 # add alias so the project can be uses with add_subdirectory
 add_library(${LIB_NAME}::${LIB_NAME} ALIAS ${LIB_NAME})
