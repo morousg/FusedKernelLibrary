@@ -12,14 +12,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include "tests/main.h"
+#include <testing/main.h>
+#include <testing/fkTestsCommon.h>
+#include <testing/fkbenchmark.h>
+ 
 
-#include <tests/fkTestsCommon.h>
 #include <fused_kernel/fused_kernel.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/static_loop.cuh>
 
-#ifdef ENABLE_BENCHMARK
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 
 constexpr size_t NUM_EXPERIMENTS = 30;
@@ -70,11 +71,11 @@ inline int testLatencyHiding(cudaStream_t stream) {
     // Warmup
     VerticalFusion<float3, float3, 1, IOp>::execute(input, stream, output, df);
 
-    START_CVGS_BENCHMARK
+    START_FK_BENCHMARK
 
         VerticalFusion<float3, float3, VARIABLE_DIMENSION, IOp>::execute(input, stream, output, df);
 
-    STOP_CVGS_BENCHMARK
+    STOP_FK_BENCHMARK
 
         return 0;
 }
@@ -88,9 +89,8 @@ inline int testLatencyHidingHelper(cudaStream_t stream, const std::integer_seque
         return -1;
     }
 }
-#endif
+
 int launch() {
-#ifdef ENABLE_BENCHMARK
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
 
@@ -99,6 +99,6 @@ int launch() {
     CLOSE_BENCHMARK
 
     return result;
-#endif
+
     return 0;
 }

@@ -1,4 +1,4 @@
-set (LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/tests/main.cpp;${CMAKE_SOURCE_DIR}/tests/main.h")
+set (LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/include/testing/main.cpp;${CMAKE_SOURCE_DIR}/include/testing/main.h")
  
 function (discover_tests DIR)    
     file(
@@ -7,15 +7,15 @@ function (discover_tests DIR)
         CONFIGURE_DEPENDS
         "${DIR}/*.cpp"
         "${DIR}/*.cu"
+        "${DIR}/*.cuh"
+        "${DIR}/*.h"
+        "${DIR}/*.hpp"
     )
      
     foreach(cuda_source ${CUDA_SOURCES})
         get_filename_component(cuda_target ${cuda_source} NAME_WE)           
         add_executable(${cuda_target} ${cuda_source} )
-      
-      
-            target_sources(${cuda_target} PRIVATE ${LAUNCH_SOURCES})            
-       
+        target_sources(${cuda_target} PRIVATE ${LAUNCH_SOURCES})            
         
         if(${ENABLE_BENCHMARK})
             target_compile_definitions(${cuda_target} PRIVATE ENABLE_BENCHMARK)
@@ -36,16 +36,11 @@ function (discover_tests DIR)
 
         set_target_properties(${cuda_target} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
         target_include_directories(${cuda_target} PRIVATE "${CMAKE_SOURCE_DIR}")        
-        target_link_libraries(${cuda_target} PRIVATE ${PROJECT_NAME})        
+        target_link_libraries(${cuda_target} PRIVATE ${PROJECT_NAME})
         
         set_target_cuda_arch_flags(${cuda_target})
         add_test(NAME  ${cuda_target} COMMAND ${cuda_target})
-         
-    	string(FIND ${cuda_source} "npp" is_npp)    	
-		 
-		if (${is_npp} GREATER -1)		    
-			target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 								              
-		endif()
-		
+        target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig)
+        
     endforeach()
 endfunction()

@@ -14,7 +14,7 @@
    limitations under the License. */
 
  
-#include "tests/main.h"
+#include <testing/main.h>
 
 int main() {
     return launch();

@@ -13,7 +13,7 @@
    limitations under the License. */
 
 
-#include "tests/main.h"
+#include <testing/main.h>
 
 #include <type_traits>
 
