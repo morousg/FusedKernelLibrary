@@ -1,4 +1,18 @@
-#ifdef ENABLE_BENCHMARK
+/* Copyright 2025 Oscar Amoros Huguet
+   Copyright 2025 Albert Andaluz Gonzalez
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
+   
+
 std::unordered_map<std::string, std::stringstream> benchmarkResultsText;
 std::unordered_map<std::string, std::ofstream> currentFile;
 // Select the path where to write the benchmark files
@@ -73,9 +87,9 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
     currentFile[fileName] << std::endl;
   }
 }
-#endif 
  
-#ifdef ENABLE_BENCHMARK
+ 
+ 
 #define START_NPP_BENCHMARK                                                                                            \
   std::cout << "Executing " << __func__ << " fusing " << BATCH << " operations. " << (BATCH - FIRST_VALUE) / INCREMENT \
             << "/" << NUM_EXPERIMENTS << std::endl;                                                                    \
@@ -94,11 +108,9 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   std::array<float, ITERS> FKelapsedTime;                                                                              \
   for (int idx = 0; idx <ITERS; ++idx) {                                                                                    \
     gpuErrchk(cudaEventRecord(start, compute_stream));
-#else
-#define START_NPP_BENCHMARK
-#endif
+ 
 
-#ifdef ENABLE_BENCHMARK
+ 
 #define STOP_NPP_START_FK_BENCHMARK                                                                                    \
   gpuErrchk(cudaEventRecord(stop, compute_stream));                                                                            \
   gpuErrchk(cudaEventSynchronize(stop));                                                                               \
@@ -107,11 +119,9 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   resF.NPPelapsedTimeMin = resF.NPPelapsedTimeMin > NPPelapsedTime[idx] ? NPPelapsedTime[idx] : resF.NPPelapsedTimeMin;    \
   resF.NPPelapsedTimeAcum += NPPelapsedTime[idx];                                                                        \
   gpuErrchk(cudaEventRecord(start, compute_stream));
-#else
-#define STOP_NPP_START_FK_BENCHMARK
-#endif
+ 
 
-#ifdef ENABLE_BENCHMARK
+ 
 #define STOP_FK_BENCHMARK                                                                                              \
   gpuErrchk(cudaEventRecord(stop, compute_stream));                                                                            \
   gpuErrchk(cudaEventSynchronize(stop));                                                                               \
@@ -122,15 +132,10 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   }                                                                                                                  \
 processExecution<BATCH, ITERS, batchValues.size(), batchValues>(                               \
       resF, __func__, NPPelapsedTime, FKelapsedTime ,VARIABLE_DIMENSION);
-#else
-#define STOP_FK_BENCHMARK
-#endif
-
-#ifdef ENABLE_BENCHMARK
+ 
+ 
 #define CLOSE_BENCHMARK                                                                                                \
   for (auto &&[_, file] : currentFile) {                                                                               \
     file.close();                                                                                                      \
   }
-#else
-#define CLOSE_BENCHMARK
-#endif
+ 
