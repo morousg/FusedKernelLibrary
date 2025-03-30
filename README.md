@@ -10,7 +10,7 @@ The way the FusedKernel library (FKL) is implemented, allows not only to use the
 
 This was done in purpose to make it easier to join efforts with other libraries that already exist and are also OpenSource and want to take advantage of the FusedKernelLibrary methodology.
 
-Additionally, this flexibility helps companies with closed-source frameworks to apply their methodology and even make use of the library, combining it with their own code and data types.
+Additionally, this flexibility helps companies with closed-source frameworks to apply the FKL methodology and even make use of the library, combining it with their own code and data types.
 ### Horizontal Fusion
 
 This fusion technique is widely known and used. It is based on the idea of processing several data planes in parallel, with the same CUDA kernel. For that, we use the blockIdx.z, to distinguish between thread planes and data planes.
