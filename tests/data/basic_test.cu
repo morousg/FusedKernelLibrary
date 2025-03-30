@@ -12,6 +12,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <tests/utils/main.h>
+
 #include <iostream>
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
@@ -24,9 +26,8 @@
 #include <fused_kernel/core/utils/template_operations.h>
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 
-#ifdef WIN32
-#include <testing/main.h>
-#endif
+ 
+
 
 template <typename T>
 bool testPtr_2D() {

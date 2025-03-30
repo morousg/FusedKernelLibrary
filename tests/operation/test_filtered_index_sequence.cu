@@ -13,10 +13,10 @@
    limitations under the License. */
 
 
-#include <testing/main.h>
+#include <tests/utils/main.h>
 
-#include <testing/fkTestsCommon.h>
-#include <testing/fkbenchmark.h>
+#include <tests/utils/fkTestsCommon.h>
+#include <tests/utils/fkbenchmark.h>
 
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/execution_model/operation_tuple.cuh>
