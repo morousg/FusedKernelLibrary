@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <testing/main.h>
+#include <tests/utils/main.h>
 
 #include <npp.h>
 #include <nppi_geometry_transforms.h>
@@ -31,8 +31,8 @@
 #include <iostream>
 #include <vector>
  
-#include <testing/testsNppCommon.h>
-#include <testing/nppbenchmark.h>
+#include <tests/utils/testsNppCommon.h>
+#include <tests/utils/nppbenchmark.h>
 
 constexpr char VARIABLE_DIMENSION[]{"Batch size"};
 constexpr size_t NUM_EXPERIMENTS = 9;

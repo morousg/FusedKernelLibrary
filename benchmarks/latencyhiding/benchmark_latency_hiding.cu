@@ -12,9 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <testing/main.h>
-#include <testing/fkTestsCommon.h>
-#include <testing/fkbenchmark.h>
+#include <tests/utils/main.h>
+#include <tests/utils/fkTestsCommon.h>
+#include <tests/utils/fkbenchmark.h>
  
 
 #include <fused_kernel/fused_kernel.cuh>

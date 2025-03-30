@@ -12,10 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-#ifdef WIN32
-#include <testing/main.h>
-#endif
+#include <tests/utils/main.h>
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
