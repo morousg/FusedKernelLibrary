@@ -13,7 +13,7 @@
    limitations under the License. */
 
 
-#include <testing/main.h>
+#include <tests/utils/main.h>
 
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
@@ -254,8 +254,8 @@ int launch() {
 
     bool correct2{ true };
 
-    for (uint y = 0; y < 32; ++y) {
-        for (uint x = 0; x < 32; ++x) {
+    for (int y = 0; y < 32; ++y) {
+        for (int x = 0; x < 32; ++x) {
             const uint3 temp = *PtrAccessor<_2D>::cr_point({x, y}, h_output.ptr());
             correct2 &= (temp.x == 3 && temp.y == 1 && temp.z == 32);
         }
