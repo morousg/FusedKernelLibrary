@@ -51,6 +51,9 @@ constexpr inline void nppAssert(NppStatus code, const char *file, int line, bool
 
 #define NPP_CHECK(ans) { nppAssert((ans), __FILE__, __LINE__, true); }
 
+constexpr std::string_view FIRST_LABLE{ "NPP" };
+constexpr std::string_view SECOND_LABLE{ "FK" };
+
 NppStreamContext initNppStreamContext(const cudaStream_t &stream);
 NppStreamContext initNppStreamContext(const cudaStream_t &stream) {
   int device = 0;
@@ -195,7 +198,7 @@ bool test_npp_batchresize_x_split3D(size_t NUM_ELEMS_X, size_t NUM_ELEMS_Y, cuda
       auto sub = fk::Binary<fk::Sub<float3>>{fk::make_<float3>(subValue[0], subValue[1], subValue[2])};
       auto div = fk::Binary<fk::Div<float3>>{fk::make_<float3>(divValue[0], divValue[1], divValue[2])};
 
-      START_NPP_BENCHMARK
+      START_FIRST_BENCHMARK
 
       // NPP version
       // convert to 32f
@@ -255,7 +258,7 @@ bool test_npp_batchresize_x_split3D(size_t NUM_ELEMS_X, size_t NUM_ELEMS_Y, cuda
         print2D("Split Z", d_channelC[i], compute_stream);*/
       }
 
-      STOP_NPP_START_FK_BENCHMARK
+      STOP_FIRST_START_SECOND_BENCHMARK
       // do the same via fk
       const auto sizeArray = fk::make_set_std_array<BATCH>(fk::Size(UP_W, UP_H));
       const auto readInstantiableArray = fk::PerThreadRead<fk::_2D, uchar3>::build_batch(d_crop_fk);
@@ -263,7 +266,8 @@ bool test_npp_batchresize_x_split3D(size_t NUM_ELEMS_X, size_t NUM_ELEMS_Y, cuda
       const auto split = fk::Write<fk::TensorSplit<float3>>{d_tensor.ptr()};
 
       fk::executeOperations<false>(compute_stream, readOp, colorConvert, multiply, sub, div, split);
-      STOP_FK_BENCHMARK
+      STOP_SECOND_BENCHMARK
+
       // copy tensor
       gpuErrchk(cudaMemcpyAsync(h_tensor.ptr().data, d_tensor.ptr().data, h_tensor.sizeInBytes(),
                                 cudaMemcpyDeviceToHost, compute_stream));
