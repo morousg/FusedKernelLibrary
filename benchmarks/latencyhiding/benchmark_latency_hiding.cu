@@ -14,7 +14,7 @@
 
 #include <tests/utils/main.h>
 #include <tests/utils/fkTestsCommon.h>
-#include <tests/utils/fkbenchmark.h>
+#include <tests/utils/oneExecutionBenchmark.h>
  
 
 #include <fused_kernel/fused_kernel.cuh>

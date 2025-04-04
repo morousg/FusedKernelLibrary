@@ -16,7 +16,7 @@
 #include <tests/utils/main.h>
 
 #include <tests/utils/fkTestsCommon.h>
-#include <tests/utils/fkbenchmark.h>
+#include <tests/utils/oneExecutionBenchmark.h>
 
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/execution_model/operation_tuple.cuh>
