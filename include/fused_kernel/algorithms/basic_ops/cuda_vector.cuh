@@ -74,6 +74,31 @@ namespace fk {
         DEFAULT_UNARY_BUILD
     };
 
+    template <typename T>
+    struct VectorReorderRT {
+        using InputType = T;
+        using OutputType = T;
+        using ParamsType = int[cn<T>];
+        using InstanceType = BinaryType;
+        using OperationDataType = OperationData<VectorReorderRT<T>>;
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& order) {
+            static_assert(validCUDAVec<InputType>, "Non valid CUDA vetor type");
+            static_assert(cn<InputType> >= 2, "Minimum number of channels is 2");
+            if constexpr (cn<T> == 2) {
+                const fk::Array<VBase<T>, 2> temp{ input.x, input.y };
+                return { temp.at[order.params[0]], temp.at[order.params[1]] };
+            } else if constexpr (cn<T> == 3) {
+                const fk::Array<VBase<T>, 3> temp{ input.x, input.y, input.z };
+                return { temp.at[order.params[0]], temp.at[order.params[1]], temp.at[order.params[2]] };
+            } else {
+                const fk::Array<VBase<T>, 4> temp{ input.x, input.y, input.z, input.w };
+                return { temp.at[order.params[0]], temp.at[order.params[1]], temp.at[order.params[2]], temp.at[order.params[3]] };
+            }
+        }
+        using InstantiableType = Binary<VectorReorderRT<T>>;
+        DEFAULT_BUILD
+    };
+
     template <typename T, typename Operation>
     struct VectorReduce { 
         using InputType = T;
