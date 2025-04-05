@@ -14,6 +14,19 @@
 
 #include <tests/utils/main.h>
 
+#include <tests/utils/twoExecutionsBenchmark.h>
+
+constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of instructions per Operation" };
+
+constexpr size_t NUM_EXPERIMENTS = 30;
+constexpr size_t FIRST_VALUE = 1;
+constexpr size_t INCREMENT = 20;
+
+constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimanesionValues = arrayIndexSecuence<FIRST_VALUE, INCREMENT, NUM_EXPERIMENTS>;
+
 int launch() {
+
+
+
     return 0;
 }
