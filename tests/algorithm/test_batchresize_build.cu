@@ -30,7 +30,6 @@ int launch() {
 
     constexpr float defaultValue = 0;
     constexpr std::array<float, BATCH> defaultArray = make_set_std_array<BATCH>(defaultValue);
-    constexpr int usedPlanes = 15;
 
     constexpr auto readDFArray = PerThreadRead<_2D, float>::build_batch<BATCH>(inputs);
 
