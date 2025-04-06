@@ -109,27 +109,27 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   std::array<float, ITERS> firstElapsedTime;                                                                             \
   std::array<float, ITERS> secondElapsedTime;                                                                              \
   for (int idx = 0; idx <ITERS; ++idx) {                                                                                    \
-    gpuErrchk(cudaEventRecord(start, compute_stream));
+    gpuErrchk(cudaEventRecord(start, stream));
 
 #define STOP_FIRST_START_SECOND_BENCHMARK                                                                                    \
-  gpuErrchk(cudaEventRecord(stop, compute_stream));                                                                            \
+  gpuErrchk(cudaEventRecord(stop, stream));                                                                            \
   gpuErrchk(cudaEventSynchronize(stop));                                                                               \
   gpuErrchk(cudaEventElapsedTime(&firstElapsedTime[idx], start, stop));                                                    \
   resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMax;    \
   resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMin;    \
   resF.firstElapsedTimeAcum += firstElapsedTime[idx];                                                                        \
-  gpuErrchk(cudaEventRecord(start, compute_stream));
+  gpuErrchk(cudaEventRecord(start, stream));
 
 #define STOP_SECOND_BENCHMARK                                                                                              \
-  gpuErrchk(cudaEventRecord(stop, compute_stream));                                                                            \
+  gpuErrchk(cudaEventRecord(stop, stream));                                                                            \
   gpuErrchk(cudaEventSynchronize(stop));                                                                               \
   gpuErrchk(cudaEventElapsedTime(&secondElapsedTime[idx], start, stop));                                                     \
   resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;         \
   resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;         \
   resF.secondElapsedTimeAcum += secondElapsedTime[idx];                                                                          \
   }                                                                                                                  \
-processExecution<BATCH, ITERS, batchValues.size(), batchValues>(                               \
-      resF, __func__, std::string(FIRST_LABLE), std::string(SECOND_LABLE), firstElapsedTime, secondElapsedTime ,VARIABLE_DIMENSION);
+processExecution<BATCH, ITERS, variableDimensionValues.size(), variableDimensionValues>(                               \
+      resF, __func__, std::string(FIRST_LABEL), std::string(SECOND_LABEL), firstElapsedTime, secondElapsedTime ,VARIABLE_DIMENSION_NAME);
  
  
 #define CLOSE_BENCHMARK                                                                                                \

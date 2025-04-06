@@ -89,7 +89,7 @@ resF.fkElapsedTimeMax = resF.fkElapsedTimeMax < fkElapsedTime[i] ? fkElapsedTime
 resF.fkElapsedTimeMin = resF.fkElapsedTimeMin > fkElapsedTime[i] ? fkElapsedTime[i] : resF.fkElapsedTimeMin; \
 resF.fkElapsedTimeAcum += fkElapsedTime[i]; \
 } \
-processExecution<VARIABLE_DIMENSION, ITERS, variableDimanesionValues.size(), variableDimanesionValues>(resF, __func__, fkElapsedTime, VARIABLE_DIMENSION_NAME);
+processExecution<VARIABLE_DIMENSION, ITERS, variableDimensionValues.size(), variableDimensionValues>(resF, __func__, fkElapsedTime, VARIABLE_DIMENSION_NAME);
  
 #define CLOSE_BENCHMARK \
 for (auto&& [_, file] : currentFile) { \

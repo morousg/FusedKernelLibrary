@@ -27,7 +27,7 @@ constexpr size_t NUM_EXPERIMENTS = 30;
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 20;
 
-constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimanesionValues = arrayIndexSecuence<FIRST_VALUE, INCREMENT, NUM_EXPERIMENTS>;
+constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayIndexSecuence<FIRST_VALUE, INCREMENT, NUM_EXPERIMENTS>;
 
 constexpr int NUM_ELEMENTS = 3840 * 2160 * 8;
 
@@ -73,16 +73,16 @@ inline int testLatencyHiding(cudaStream_t stream) {
 
     START_FK_BENCHMARK
 
-        VerticalFusion<float3, float3, VARIABLE_DIMENSION, IOp>::execute(input, stream, output, df);
+    VerticalFusion<float3, float3, VARIABLE_DIMENSION, IOp>::execute(input, stream, output, df);
 
     STOP_FK_BENCHMARK
 
-        return 0;
+    return 0;
 }
 
 template <int... Idx>
 inline int testLatencyHidingHelper(cudaStream_t stream, const std::integer_sequence<int, Idx...>& seq) {
-    const bool result = ((testLatencyHiding<variableDimanesionValues[Idx]>(stream) == 0) && ...);
+    const bool result = ((testLatencyHiding<variableDimensionValues[Idx]>(stream) == 0) && ...);
     if (result) {
         return 0;
     } else {
@@ -94,7 +94,7 @@ int launch() {
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
 
-    const int result = testLatencyHidingHelper(stream, std::make_integer_sequence<int, variableDimanesionValues.size()>{});
+    const int result = testLatencyHidingHelper(stream, std::make_integer_sequence<int, variableDimensionValues.size()>{});
 
     CLOSE_BENCHMARK
 
