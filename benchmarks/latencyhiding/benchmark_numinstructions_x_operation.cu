@@ -138,7 +138,7 @@ int launch() {
     const fk::Ptr1D<float3> outputSecond(NUM_ELEMENTS);
     
     const bool result =
-        testNumInstPerOp_helper(const std::make_integer_sequence<int, NUM_EXPERIMENTS>{},
+        testNumInstPerOp_helper(std::make_integer_sequence<int, NUM_EXPERIMENTS>{},
             stream,
             inputFirst,
             inputSecond,
