@@ -16,7 +16,7 @@
 #include <tests/utils/main.h>
 
 #include <tests/utils/fkTestsCommon.h>
-#include <tests/utils/fkbenchmark.h>
+#include <tests/utils/oneExecutionBenchmark.h>
 
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/execution_model/operation_tuple.cuh>
@@ -45,6 +45,7 @@ int launch() {
                    fk::MidWrite<WriteDummy>, fk::Write<WriteDummy>>;
 
     constexpr bool correctDFRestrict = allInstantiableOperationsComplieWith<fk::NotUnaryRestriction>(DFList{});
+    static_assert(correctDFRestrict, "The list of operations does not comply with the restriction");
 
     using ListToCheck =
         fk::TypeList<fk::ReadType, fk::BinaryType, fk::UnaryType, fk::TernaryType,
