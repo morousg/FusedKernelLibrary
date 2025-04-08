@@ -34,10 +34,12 @@ int launch() {
     constexpr auto readDFArray = PerThreadRead<_2D, float>::build_batch<BATCH>(inputs);
 
     constexpr auto oneResizeread = ResizeRead<INTER_LINEAR>::build(readDFArray[0], resParams[0]);
+    static_assert(!isBatchOperation<std::decay_t<decltype(oneResizeread)>>, "oneResize is BatchResize, and should not be");
 
     constexpr auto resizeDFArray = ResizeRead<INTER_LINEAR>::build(readDFArray, resParams);
-    using ReadArrayTye = decltype(readDFArray);
+    static_assert(decltype(resizeDFArray)::Operation::BATCH == BATCH, "resizeDFArray does not have the correct BATCH size");
     const auto resizeDFArray2 = ResizeRead<INTER_LINEAR, PRESERVE_AR>::build(readDFArray, resParams, defaultArray);
+    static_assert(decltype(resizeDFArray2)::Operation::BATCH == BATCH, "resizeDFArray2 does not have the correct BATCH size");
 
     return 0;
 }
