@@ -44,7 +44,7 @@ template <size_t ITERATIONS> float computeVariance(const float &mean, const std:
 
 template <int BATCH, int ITERATIONS, int NUM_BATCH_VALUES, const std::array<size_t, NUM_BATCH_VALUES> &batchValues>
 inline void processExecution(const BenchmarkResultsNumbers &resF, const std::string &functionName,
-                             const std::string& firstLable, const std::string& secondLable,
+                             const std::string& firstLabel, const std::string& secondLabel,
                              const std::array<float, ITERS> &firstElapsedTime,
                              const std::array<float, ITERS> &secondElapsedTime, const std::string &variableDimension) {
   // Create 2D Table for changing types and changing batch
@@ -54,14 +54,14 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
       currentFile[fileName].open(path + fileName);
     }
     currentFile[fileName] << variableDimension;
-    currentFile[fileName] << ", " + firstLable + " MeanTime";
-    currentFile[fileName] << ", " + firstLable + " TimeVariance";
-    currentFile[fileName] << ", " + firstLable + " MaxTime";
-    currentFile[fileName] << ", " + firstLable + " MinTime";
-    currentFile[fileName] << ", " + secondLable + " MeanTime";
-    currentFile[fileName] << ", " + secondLable + " TimeVariance";
-    currentFile[fileName] << ", " + secondLable + " MaxTime";
-    currentFile[fileName] << ", " + secondLable + " MinTime";
+    currentFile[fileName] << ", " + firstLabel + " MeanTime";
+    currentFile[fileName] << ", " + firstLabel + " TimeVariance";
+    currentFile[fileName] << ", " + firstLabel + " MaxTime";
+    currentFile[fileName] << ", " + firstLabel + " MinTime";
+    currentFile[fileName] << ", " + secondLabel + " MeanTime";
+    currentFile[fileName] << ", " + secondLabel + " TimeVariance";
+    currentFile[fileName] << ", " + secondLabel + " MaxTime";
+    currentFile[fileName] << ", " + secondLabel + " MinTime";
     currentFile[fileName] << ", Mean Speedup";
     currentFile[fileName] << std::endl;
   }
