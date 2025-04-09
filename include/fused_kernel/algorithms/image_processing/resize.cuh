@@ -65,13 +65,13 @@ namespace fk {
     };
 
     template <enum InterpolationType IType, enum AspectRatio AR = AspectRatio::IGNORE_AR, typename BackFunction_ = void>
-    struct ResizeRead {
+    struct Resize {
         using BackFunction = BackFunction_;
         using InstanceType = ReadBackType;
         using OutputType = typename Interpolate<IType, BackFunction>::OutputType;
         using ParamsType = ResizeReadParams<IType, AR, std::conditional_t<AR == IGNORE_AR, void, OutputType>>;
         using ReadDataType = typename BackFunction::Operation::OutputType;
-        using OperationDataType = OperationData<ResizeRead<IType, AR, BackFunction>>;
+        using OperationDataType = OperationData<Resize<IType, AR, BackFunction>>;
         static constexpr bool THREAD_FUSION{ false };
     private:
         FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const OperationDataType& opData) {
@@ -81,8 +81,8 @@ namespace fk {
             const float src_x = thread.x * fx;
             const float src_y = thread.y * fy;
             const float2 rezisePoint = { src_x, src_y };
-            // We don't set Interpolate as the BackFuntion of ResizeRead, because we won't use any other function than Interpolate
-            // Therefore, we consider Interpolate to be part of the ResizeRead implementation, and not a template variable.
+            // We don't set Interpolate as the BackFuntion of Resize, because we won't use any other function than Interpolate
+            // Therefore, we consider Interpolate to be part of the Resize implementation, and not a template variable.
             // But, it would be relatively easy to change Interpolate with anything else if needed.
             return Interpolate<IType, BackFunction>::exec(rezisePoint, { opData.params.params, opData.back_function });
         }
@@ -144,7 +144,7 @@ namespace fk {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
 
-        using InstantiableType = ReadBack<ResizeRead<IType, AR, BackFunction_>>;
+        using InstantiableType = ReadBack<Resize<IType, AR, BackFunction_>>;
         DEFAULT_BUILD
 
         template <enum AspectRatio AR_ = AR>
@@ -239,16 +239,16 @@ namespace fk {
     };
 
     template <enum InterpolationType IType, enum AspectRatio AR, typename T>
-    struct ResizeRead<IType, AR, TypeList<void, T>> {
+    struct Resize<IType, AR, TypeList<void, T>> {
         using BackFunction = NullType;
         static constexpr bool THREAD_FUSION{ false };
         using InstanceType = ReadBackType;
         using OutputType = T;
         using ParamsType = IncompleteResizeReadParams<AR, T>;
         using ReadDataType = NullType;
-        using OperationDataType = OperationData<ResizeRead<IType, AR, TypeList<void, T>>>;
+        using OperationDataType = OperationData<Resize<IType, AR, TypeList<void, T>>>;
 
-        using InstantiableType = ReadBack<ResizeRead<IType, AR, TypeList<void, T>>>;
+        using InstantiableType = ReadBack<Resize<IType, AR, TypeList<void, T>>>;
 
         template <enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR, InstantiableType>
@@ -257,10 +257,10 @@ namespace fk {
         }
 
         template <typename ReadIOp, enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR, ReadBack<ResizeRead<IType, AR_, ReadIOp>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR, ReadBack<Resize<IType, AR_, ReadIOp>>>
         build(const ReadIOp& readIOp, const InstantiableType& iOp) {
-            using ReadIOpOutputType = typename ResizeRead<IType, AR_, ReadIOp>::OutputType;
-            return ResizeRead<IType, AR_, ReadIOp>::build(readIOp, iOp.params.dstSize, Cast<T, ReadIOpOutputType>::exec(iOp.params.defaultValue));
+            using ReadIOpOutputType = typename Resize<IType, AR_, ReadIOp>::OutputType;
+            return Resize<IType, AR_, ReadIOp>::build(readIOp, iOp.params.dstSize, Cast<T, ReadIOpOutputType>::exec(iOp.params.defaultValue));
         }
         
         DEFAULT_BUILD
@@ -268,16 +268,16 @@ namespace fk {
     };
 
     template <enum InterpolationType IType>
-    struct ResizeRead<IType, IGNORE_AR, TypeList<void, void>> {
+    struct Resize<IType, IGNORE_AR, TypeList<void, void>> {
         using BackFunction = NullType;
         static constexpr bool THREAD_FUSION{ false };
         using InstanceType = ReadBackType;
         using OutputType = NullType;
         using ParamsType = IncompleteResizeReadParams<IGNORE_AR, void>;
         using ReadDataType = NullType;
-        using OperationDataType = OperationData<ResizeRead<IType, IGNORE_AR, TypeList<void, void>>>;
+        using OperationDataType = OperationData<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
 
-        using InstantiableType = Instantiable<ResizeRead<IType, IGNORE_AR, TypeList<void, void>>>;
+        using InstantiableType = Instantiable<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
 
         FK_HOST_FUSE InstantiableType build(const Size& dstSize) {
             return { {{dstSize}, {}} };
@@ -285,7 +285,7 @@ namespace fk {
 
         template <typename ReadIOp>
         FK_HOST_FUSE auto build(const ReadIOp& readIOp, const InstantiableType& iOp) {
-            return ResizeRead<IType, IGNORE_AR, ReadIOp>::build(readIOp, iOp.params.dstSize);
+            return Resize<IType, IGNORE_AR, ReadIOp>::build(readIOp, iOp.params.dstSize);
         }
 
         DEFAULT_BUILD
@@ -293,36 +293,36 @@ namespace fk {
     };
 
     template <enum InterpolationType IType, enum AspectRatio AR>
-    struct ResizeRead<IType, AR, void> {
+    struct Resize<IType, AR, void> {
         template <typename BF, enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR && is_any_read_type<BF>::value, ReadBack<ResizeRead<IType, AR_, BF>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR && is_any_read_type<BF>::value, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backFunction, const Size& dstSize) {
-            return ResizeRead<IType, AR_, BF>::build(backFunction, dstSize);
+            return Resize<IType, AR_, BF>::build(backFunction, dstSize);
         }
 
         template <typename BF, enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR && is_any_read_type<BF>::value, ReadBack<ResizeRead<IType, AR_, BF>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR && is_any_read_type<BF>::value, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backFunction, const Size& dstSize,
-              const typename ResizeRead<IType, AR_, BF>::OutputType& backgroundValue) {
-            return ResizeRead<IType, AR_, BF>::build(backFunction, dstSize, backgroundValue);
+              const typename Resize<IType, AR_, BF>::OutputType& backgroundValue) {
+            return Resize<IType, AR_, BF>::build(backFunction, dstSize, backgroundValue);
         }
 
         template <enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR, ReadBack<ResizeRead<IType, AR_, TypeList<void, void>>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR, ReadBack<Resize<IType, AR_, TypeList<void, void>>>>
         build(const Size& dstSize) {
-            return ResizeRead<IType, AR_, TypeList<void, void>>::build(dstSize);
+            return Resize<IType, AR_, TypeList<void, void>>::build(dstSize);
         }
 
         template <typename T, enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR, ReadBack<ResizeRead<IType, AR_, TypeList<void, T>>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR, ReadBack<Resize<IType, AR_, TypeList<void, T>>>>
         build(const Size& dstSize,
               const T& backgroundValue) {
-            return ResizeRead<IType, AR_, TypeList<void, T>>::build(dstSize, backgroundValue);
+            return Resize<IType, AR_, TypeList<void, T>>::build(dstSize, backgroundValue);
         }
 
         template <typename T>
         FK_HOST_FUSE auto build(const RawPtr<_2D, T>& input, const Size& dSize, const double& fx, const double& fy) {
-            return ResizeRead<IType, AR, Instantiable<PerThreadRead<_2D, T>>>::build(input, dSize, fx, fy);
+            return Resize<IType, AR, Instantiable<PerThreadRead<_2D, T>>>::build(input, dSize, fx, fy);
         }
         DEFAULT_READ_BATCH_BUILD
     };

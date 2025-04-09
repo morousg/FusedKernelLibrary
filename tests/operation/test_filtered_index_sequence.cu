@@ -34,7 +34,7 @@ constexpr bool allInstantiableOperationsComplieWith(const fk::TypeList<ListTypes
 
 int launch() {
     using ReadDummy = fk::PerThreadRead<fk::_2D, int>;
-    using ReadBackDummy = fk::ResizeRead<fk::InterpolationType::INTER_LINEAR, fk::AspectRatio::IGNORE_AR, fk::Read<ReadDummy>>;
+    using ReadBackDummy = fk::Resize<fk::InterpolationType::INTER_LINEAR, fk::AspectRatio::IGNORE_AR, fk::Read<ReadDummy>>;
     using BinaryDummy = fk::Add<int>;
     using TernaryDummy = fk::Interpolate<fk::InterpolationType::INTER_LINEAR, fk::Read<ReadDummy>>;
     using WriteDummy = fk::PerThreadWrite<fk::_2D, int>;

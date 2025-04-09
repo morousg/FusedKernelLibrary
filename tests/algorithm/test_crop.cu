@@ -15,7 +15,6 @@
 #include <tests/utils/main.h>
 
 #include <fused_kernel/algorithms/image_processing/crop.cuh>
-#include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/image_processing/resize.cuh>
 
@@ -39,7 +38,7 @@ int launch() {
 
     constexpr auto batchCropResize = 
         readIOp.then(Crop<>::build(rects))
-               .then(ResizeRead<INTER_LINEAR>::build(Size(100, 100)));
+               .then(Resize<INTER_LINEAR>::build(Size(100, 100)));
 
     static_assert(batchCropResize.getActiveThreads().x == 100);
     static_assert(batchCropResize.getActiveThreads().y == 100);
