@@ -63,9 +63,10 @@ const auto myReceiver = TensorWrite<float3>::build(output);
 // At compile time, the types are used to define the kernel code
 // At runtime, the kernel is executed with the provided parameters
 executeOperations(stream, mySender, myReceiver);
-gpuErrchk(cudaStreamSynchronize(stream));
 
 // Use the Tensor for inference
+
+gpuErrchk(cudaStreamSynchronize(stream));
 ```
 Let's see a bit more in detail what is going on in the code.
 
