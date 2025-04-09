@@ -133,6 +133,9 @@ namespace fk {
         }
         using InstantiableType = Write<PerThreadWrite<D, T>>;
         DEFAULT_BUILD
+        FK_HOST_FUSE auto build(const Ptr2D<T>& output) {
+            return InstantiableType{ { output.ptr() } };
+        }
         DEFAULT_WRITE_BATCH_BUILD
     };
 
@@ -197,6 +200,9 @@ namespace fk {
         }
         using InstantiableType = Write<TensorWrite<T>>;
         DEFAULT_BUILD
+        FK_HOST_FUSE auto build(const Tensor<T>& output) {
+            return InstantiableType{ { output.ptr() } };
+        }
     };
 
     template <typename T>
