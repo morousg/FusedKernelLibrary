@@ -39,7 +39,7 @@ std::array<Rect, BATCH> crops{
     Rect(40, 40, 12, 11)
 };
 
-//initImageValues(inputImage);
+initImageValues(inputImage);
 const float3 backgroundColor{ 0.f, 0.f, 0.f };
 
 const float3 mulValue = make_set<float3>(1.4f);
