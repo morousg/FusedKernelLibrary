@@ -16,6 +16,7 @@
 #define FK_PTR_ND_CUH
 
 #include <fused_kernel/core/data/point.h>
+#include <fused_kernel/core/data/size.h>
 #include <fused_kernel/core/data/ptr_nd.h>
 
 namespace fk {
@@ -407,6 +408,8 @@ namespace fk {
     class Ptr2D : public Ptr<_2D, T> {
     public:
         inline constexpr Ptr2D<T>() {}
+        inline constexpr Ptr2D<T>(const Size& size, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+            Ptr<_2D, T>(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_) {}
         inline constexpr Ptr2D<T>(const uint& width_, const uint& height_, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
             Ptr<_2D, T>(PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
