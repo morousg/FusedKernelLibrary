@@ -46,7 +46,7 @@ constexpr bool test_fuseDFResultingTypes() {
     constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build(RawPtr<_2D, uchar>{nullptr, PtrDims<_2D>(128, 128)});
     constexpr auto readRGB = readYUV.then(ConvertYUVToRGB<PixelFormat::NV12, ColorRange::Full, ColorPrimitives::bt2020, false>::build());
 
-    constexpr auto resizeRead = ResizeRead<INTER_LINEAR>::build(readRGB, Size(64, 64)).then(Mul<float>::build(3.f)).then(Div<float>::build(4.3f));
+    constexpr auto resizeRead = Resize<INTER_LINEAR>::build(readRGB, Size(64, 64)).then(Mul<float>::build(3.f)).then(Div<float>::build(4.3f));
     static_assert(resizeRead.params.next.next.instance.params == 4.3f, "Unexpected value after resizeRead");
 
     //decltype(fused1)::

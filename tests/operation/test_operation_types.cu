@@ -24,7 +24,7 @@
 // Read
 using RPerThrFloat = fk::PerThreadRead<fk::_2D, float>;
 // ReadBack
-using RBResize = fk::ResizeRead<fk::InterpolationType::INTER_LINEAR, fk::AspectRatio::IGNORE_AR, fk::Instantiable<RPerThrFloat>>;
+using RBResize = fk::Resize<fk::InterpolationType::INTER_LINEAR, fk::AspectRatio::IGNORE_AR, fk::Instantiable<RPerThrFloat>>;
 // Unary
 using UIntFloat = fk::Cast<int, float>;
 using UFloatInt = fk::Cast<float, int>;

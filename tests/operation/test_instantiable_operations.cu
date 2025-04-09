@@ -30,7 +30,7 @@ using namespace fk;
 // Read
 using RPerThrFloat = PerThreadRead<_2D, float>;
 // ReadBack
-using RBResize = ResizeRead<InterpolationType::INTER_LINEAR, AspectRatio::IGNORE_AR, Instantiable<RPerThrFloat>>;
+using RBResize = Resize<InterpolationType::INTER_LINEAR, AspectRatio::IGNORE_AR, Instantiable<RPerThrFloat>>;
 // Unary
 using UIntFloat = Cast<int, float>;
 using UFloatInt = Cast<float, int>;
@@ -49,7 +49,7 @@ constexpr inline bool test_read_then_batch() {
     constexpr auto readIOp = RPerThrFloat::build(input);
 
     constexpr std::array<Size, 2> resizes{ Size(16, 16), Size(16, 16) };
-    constexpr auto batchResize = ResizeRead<INTER_LINEAR>::build(2, 3.f, resizes);
+    constexpr auto batchResize = Resize<INTER_LINEAR>::build(2, 3.f, resizes);
 
     // start then()
     constexpr auto backOpArray = make_set_std_array<2>(readIOp);
@@ -81,11 +81,11 @@ constexpr inline bool test_readback_then_batch() {
 
     constexpr RawPtr<_2D, float> input{ {nullptr}, { 64, 64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
-    constexpr auto oneResize = ResizeRead<INTER_LINEAR>::build(readIOp, Size(32, 32));
+    constexpr auto oneResize = Resize<INTER_LINEAR>::build(readIOp, Size(32, 32));
     using ResizeType = decltype(oneResize);
 
     constexpr std::array<Size, 2> resizes{ Size(16, 16), Size(16, 16) };
-    constexpr auto batchResize = ResizeRead<INTER_LINEAR>::build(2, 3.f, resizes);
+    constexpr auto batchResize = Resize<INTER_LINEAR>::build(2, 3.f, resizes);
 
     constexpr auto fusedBatch = oneResize.then(batchResize);
     static_assert(decltype(fusedBatch)::Operation::BATCH == 2, "Unexpected BATCH size for fusedBATCH");
@@ -100,7 +100,7 @@ constexpr inline bool test_batch_then_readback() {
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
 
-    constexpr auto oneResize = ResizeRead<INTER_LINEAR>::build(Size(32, 32));
+    constexpr auto oneResize = Resize<INTER_LINEAR>::build(Size(32, 32));
     using ResizeType = decltype(oneResize);
 
     constexpr auto fusedBatch = readBatchOp.then(oneResize);
@@ -126,7 +126,7 @@ constexpr inline bool test_read_then_readback() {
     constexpr RawPtr<_2D, float> input{ {nullptr}, { 64, 64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
 
-    constexpr auto fusedOp = readIOp.then(ResizeRead<INTER_LINEAR, PRESERVE_AR>::build(Size(16,32), 0.5f));
+    constexpr auto fusedOp = readIOp.then(Resize<INTER_LINEAR, PRESERVE_AR>::build(Size(16,32), 0.5f));
     static_assert(isReadBackType<decltype(fusedOp)>, "The IOp should be a ReadBack type");
 
     return true;
@@ -140,12 +140,12 @@ constexpr inline bool test_batched() {
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
 
-    constexpr auto oneResize = ResizeRead<INTER_LINEAR>::build(Size(32, 32));
+    constexpr auto oneResize = Resize<INTER_LINEAR>::build(Size(32, 32));
     using ResizeType = decltype(oneResize);
 
     constexpr std::array<Size, 2> resizes{ Size(32, 32), Size(32, 32) };
 
-    constexpr auto batchResize = ResizeRead<INTER_LINEAR>::build(2, 3.f, resizes);
+    constexpr auto batchResize = Resize<INTER_LINEAR>::build(2, 3.f, resizes);
 
     // start then()
     constexpr auto bkArray = decltype(readBatchOp)::Operation::toArray(readBatchOp);
@@ -212,7 +212,7 @@ int launch() {
     gpuErrchk(cudaStreamCreate(&stream));
 
     constexpr auto someReadOp =
-        PerThreadRead<_2D, uchar3>::build(input).then(Cast<uchar3, float3>::build()).then(ResizeRead<INTER_LINEAR>::build(dstSize));
+        PerThreadRead<_2D, uchar3>::build(input).then(Cast<uchar3, float3>::build()).then(Resize<INTER_LINEAR>::build(dstSize));
     static_assert(isReadBackType<decltype(someReadOp)>, "Unexpected Operation Type for someReadOp");
     static_assert(std::is_same_v<decltype(someReadOp.back_function.params), OperationTuple<PerThreadRead<_2D, uchar3>, Cast<uchar3, float3>>>, "Unexpected type for params");
 
@@ -239,7 +239,7 @@ int launch() {
     constexpr auto someReadOpAlt =
         ReadSet<uchar3>::build(value, threads)
                         .then(Cast<uchar3, float3>::build())
-                        .then(ResizeRead<INTER_LINEAR>::build(dstSize))
+                        .then(Resize<INTER_LINEAR>::build(dstSize))
                         .then(Add<float3>::build(addValue))
                         .then(Cast<float3, uint3>::build());
 
