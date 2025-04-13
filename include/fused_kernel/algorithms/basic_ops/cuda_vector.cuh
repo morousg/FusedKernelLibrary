@@ -78,7 +78,7 @@ namespace fk {
     struct VectorReorderRT {
         using InputType = T;
         using OutputType = T;
-        using ParamsType = int[cn<T>];
+        using ParamsType = VectorType_t<int, cn<T>>;
         using InstanceType = BinaryType;
         using OperationDataType = OperationData<VectorReorderRT<T>>;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& order) {
@@ -86,13 +86,13 @@ namespace fk {
             static_assert(cn<InputType> >= 2, "Minimum number of channels is 2");
             if constexpr (cn<T> == 2) {
                 const fk::Array<VBase<T>, 2> temp{ input.x, input.y };
-                return { temp.at[order.params[0]], temp.at[order.params[1]] };
+                return { temp.at[order.params.x], temp.at[order.params.y] };
             } else if constexpr (cn<T> == 3) {
                 const fk::Array<VBase<T>, 3> temp{ input.x, input.y, input.z };
-                return { temp.at[order.params[0]], temp.at[order.params[1]], temp.at[order.params[2]] };
+                return { temp.at[order.params.x], temp.at[order.params.y], temp.at[order.params.z] };
             } else {
                 const fk::Array<VBase<T>, 4> temp{ input.x, input.y, input.z, input.w };
-                return { temp.at[order.params[0]], temp.at[order.params[1]], temp.at[order.params[2]], temp.at[order.params[3]] };
+                return { temp.at[order.params.x], temp.at[order.params.y], temp.at[order.params.z], temp.at[order.params.w] };
             }
         }
         using InstantiableType = Binary<VectorReorderRT<T>>;

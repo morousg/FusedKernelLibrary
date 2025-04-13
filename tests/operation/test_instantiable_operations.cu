@@ -79,7 +79,7 @@ constexpr inline bool test_read_then_batch() {
 
 constexpr inline bool test_readback_then_batch() {
 
-    constexpr RawPtr<_2D, float> input{ {nullptr}, { 64, 64, 64 * sizeof(float) } };
+    constexpr RawPtr<_2D, float> input{ nullptr, { 64, 64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
     constexpr auto oneResize = Resize<INTER_LINEAR>::build(readIOp, Size(32, 32));
     using ResizeType = decltype(oneResize);
@@ -94,8 +94,8 @@ constexpr inline bool test_readback_then_batch() {
 }
 
 constexpr inline bool test_batch_then_readback() {
-    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{{nullptr}, {64,64, 64 * sizeof(float)}},
-                                                        RawPtr<_2D, float>{{nullptr}, {128,64, 64 * (sizeof(float))}} };
+    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
+                                                        RawPtr<_2D, float>{nullptr, {128,64, 64 * (sizeof(float))}} };
 
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
@@ -110,8 +110,8 @@ constexpr inline bool test_batch_then_readback() {
 }
 
 constexpr inline bool test_batch_then_compute() {
-    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{{nullptr}, {64,64, 64 * sizeof(float)}},
-                                                        RawPtr<_2D, float>{{nullptr}, {64,64, 64 * (sizeof(float))}} };
+    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
+                                                        RawPtr<_2D, float>{nullptr, {64,64, 64 * (sizeof(float))}} };
 
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
@@ -123,7 +123,7 @@ constexpr inline bool test_batch_then_compute() {
 }
 
 constexpr inline bool test_read_then_readback() {
-    constexpr RawPtr<_2D, float> input{ {nullptr}, { 64, 64, 64 * sizeof(float) } };
+    constexpr RawPtr<_2D, float> input{ nullptr, { 64, 64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
 
     constexpr auto fusedOp = readIOp.then(Resize<INTER_LINEAR, PRESERVE_AR>::build(Size(16,32), 0.5f));
@@ -134,8 +134,8 @@ constexpr inline bool test_read_then_readback() {
 
 constexpr inline bool test_batched() {
 
-    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{{nullptr}, {64,64, 64*sizeof(float)}},
-                                                        RawPtr<_2D, float>{{nullptr}, {64,64, 64*(sizeof(float))}}};
+    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{nullptr, {64,64, 64*sizeof(float)}},
+                                                        RawPtr<_2D, float>{nullptr, {64,64, 64*(sizeof(float))}}};
 
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
