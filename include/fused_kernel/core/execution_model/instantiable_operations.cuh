@@ -417,22 +417,24 @@ namespace fk { // namespace FusedKernel
 
 #include <fused_kernel/core/execution_model/default_builders_def.h>
 
-    template <int BATCH, enum PlanePolicy PP, typename OpParamsType, typename DefaultType>
+    template <size_t BATCH, enum PlanePolicy PP, typename OpParamsType, typename DefaultType>
     struct BatchReadParams;
 
-    template <int BATCH, typename Operation, typename DefaultType>
+    template <size_t BATCH, typename Operation, typename DefaultType>
     struct BatchReadParams<BATCH, CONDITIONAL_WITH_DEFAULT, Operation, DefaultType> {
         OperationData<Operation> opData[BATCH];
         int usedPlanes;
         DefaultType default_value;
+        ActiveThreads activeThreads;
     };
 
-    template <int BATCH, typename Operation, typename DefaultType>
+    template <size_t BATCH, typename Operation, typename DefaultType>
     struct BatchReadParams<BATCH, PROCESS_ALL, Operation, DefaultType> {
         OperationData<Operation> opData[BATCH];
+        ActiveThreads activeThreads;
     };
 
-    template <int BATCH_, enum PlanePolicy PP__ = PROCESS_ALL, typename Operation_ = void, typename OutputType_ = NullType>
+    template <size_t BATCH_, enum PlanePolicy PP__ = PROCESS_ALL, typename Operation_ = void, typename OutputType_ = NullType>
     struct BatchRead;
 
     /// @brief struct BatchRead
@@ -440,7 +442,7 @@ namespace fk { // namespace FusedKernel
     /// @tparam Operation: the read Operation to perform on the data
     /// @tparam PP: enum to select if all planes will be processed equally, or only some
     /// with the remainder not reading and returning a default value
-    template <int BATCH_, typename Operation_, typename OutputType_>
+    template <size_t BATCH_, typename Operation_, typename OutputType_>
     struct BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_> {
         using Operation = Operation_;
         static constexpr int BATCH = BATCH_;
@@ -480,17 +482,9 @@ namespace fk { // namespace FusedKernel
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return Operation::pitch(thread, opData.params.opData[thread.z]);
         }
-    private:
-        template <size_t... Idx>
-        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads_helper(const std::index_sequence<Idx...>&,
-                                                                  const OperationDataType& opData) {
-            return { cxp::max(num_elems_x(Point(0u, 0u, static_cast<uint>(Idx)), opData)...),
-                     cxp::max(num_elems_y(Point(0u, 0u, static_cast<uint>(Idx)), opData)...),
-                     static_cast<uint>(BATCH) };
-        }
     public:
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
-            return getActiveThreads_helper(std::make_index_sequence<BATCH>{}, opData);
+            return opData.params.activeThreads;
         }
         using InstantiableType = Read<BatchRead<BATCH, PROCESS_ALL, Operation>>;
         DEFAULT_BUILD
@@ -501,7 +495,11 @@ namespace fk { // namespace FusedKernel
         FK_HOST_FUSE InstantiableType
         build_helper(const std::array<Instantiable<Operation>, BATCH>& instantiableOperations,
                      const std::integer_sequence<int, Idx...>&) {
-            return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...}}} };
+            const uint max_width =
+                cxp::max(Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+            const uint max_height =
+                cxp::max(Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+            return {{{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...}, ActiveThreads{max_width, max_height, BATCH}}}};
         }
 
         // END DEVICE FUNCTION BASED BUILDERS
@@ -530,7 +528,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-    template <int BATCH_, typename Operation_, typename OutputType_>
+    template <size_t BATCH_, typename Operation_, typename OutputType_>
     struct BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_> {
         using Operation = Operation_;
         static constexpr int BATCH = BATCH_;
@@ -565,17 +563,9 @@ namespace fk { // namespace FusedKernel
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return Operation::pitch(thread, opData.params.opData[thread.z]);
         }
-    private:
-        template <size_t... Idx>
-        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads_helper(const std::index_sequence<Idx...>&,
-            const OperationDataType& opData) {
-            return { cxp::max(num_elems_x(Point(0u, 0u, static_cast<uint>(Idx)), opData)...),
-                     cxp::max(num_elems_y(Point(0u, 0u, static_cast<uint>(Idx)), opData)...),
-                     static_cast<uint>(BATCH) };
-        }
     public:
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
-            return getActiveThreads_helper(std::make_index_sequence<BATCH>{}, opData);
+            return opData.params.activeThreads;
         }
         using InstantiableType = Read<BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, Operation, OutputType_>>;
         DEFAULT_BUILD
@@ -585,7 +575,11 @@ namespace fk { // namespace FusedKernel
         FK_HOST_FUSE InstantiableType build_helper(const std::array<Instantiable<Operation>, BATCH>& instantiableOperations,
                                                    const int& usedPlanes, const OutputType& defaultValue,
                                                    const std::integer_sequence<int, Idx...>&) {
-            return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...}, usedPlanes, defaultValue}} };
+            const uint max_width =
+                cxp::max(Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+            const uint max_height =
+                cxp::max(Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+            return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...}, usedPlanes, defaultValue, ActiveThreads{max_width, max_height, BATCH}}} };
         }
 
         // END DEVICE FUNCTION BASED BUILDERS
@@ -621,7 +615,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-    template <int BATCH>
+    template <size_t BATCH>
     struct BatchRead<BATCH, PROCESS_ALL, void> {
         template <typename IOp>
         FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations) {
@@ -629,7 +623,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-    template <int BATCH>
+    template <size_t BATCH>
     struct BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, void> {
         template <typename IOp, typename DefaultValueType>
         FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations,
@@ -642,7 +636,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-    template <int BATCH, typename Operation = void>
+    template <size_t BATCH, typename Operation = void>
     struct BatchWrite {
         using InputType = typename Operation::InputType;
         using ParamsType = typename Operation::ParamsType[BATCH];
@@ -695,7 +689,7 @@ namespace fk { // namespace FusedKernel
         DEFAULT_WRITE_BATCH_BUILD
     };
 
-    template <int BATCH>
+    template <size_t BATCH>
     struct BatchWrite<BATCH, void> {
         using InstaceType = WriteType;
         template <typename IOp>

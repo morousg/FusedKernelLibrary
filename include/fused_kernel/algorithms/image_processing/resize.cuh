@@ -248,6 +248,18 @@ namespace fk {
         using ReadDataType = NullType;
         using OperationDataType = OperationData<Resize<IType, AR, TypeList<void, T>>>;
 
+        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
         using InstantiableType = ReadBack<Resize<IType, AR, TypeList<void, T>>>;
 
         template <enum AspectRatio AR_ = AR>
@@ -277,6 +289,18 @@ namespace fk {
         using ReadDataType = NullType;
         using OperationDataType = OperationData<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
 
+        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
         using InstantiableType = Instantiable<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
 
         FK_HOST_FUSE InstantiableType build(const Size& dstSize) {
@@ -294,6 +318,7 @@ namespace fk {
 
     template <enum InterpolationType IType, enum AspectRatio AR>
     struct Resize<IType, AR, void> {
+
         template <typename BF, enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR && is_any_read_type<BF>::value, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backFunction, const Size& dstSize) {

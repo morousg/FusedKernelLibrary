@@ -73,6 +73,18 @@ namespace fk {
         using OperationDataType = OperationData<Crop<void>>;
         static constexpr bool THREAD_FUSION{ false };
 
+        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
         using InstantiableType = Instantiable<Crop<void>>;
         DEFAULT_BUILD
 
