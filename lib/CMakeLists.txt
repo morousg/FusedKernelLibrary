@@ -15,3 +15,8 @@ install(
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+#always update exported version file when the version changes
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/FKLConfigVersion.cmake.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/export/FKLConfigVersion.cmake"
+    @ONLY)
