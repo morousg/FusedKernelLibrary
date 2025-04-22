@@ -22,7 +22,7 @@
 
 using namespace fk;
 
-int main() {
+int launch() {
 
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
