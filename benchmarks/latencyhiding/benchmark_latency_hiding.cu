@@ -23,7 +23,7 @@
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 
-constexpr size_t NUM_EXPERIMENTS = 30;
+constexpr size_t NUM_EXPERIMENTS = 60;
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 20;
 
