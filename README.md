@@ -4,7 +4,9 @@ The Fused Kernel Library is a C++17 + CUDA implementation of a methodology (publ
 
 It automatically implements Vertical and Horizontal fusion, and also implements two new Fusion techniques, Backwards Vertical Fusion (akin to OpenCV Filters, but with an standard generic API), and Divergent Horizontal Fusion.
 
-Let's see an example, where we crop 5 images from a source image, and then apply some changes to those images, before storing them in a Tensor:
+Let's see an example where we crop 5 images from a source image, and then apply some changes to those images, before storing them in a Tensor.
+
+You can view and run a similar code in this [FKL Playground](https://colab.research.google.com/drive/1WZd8FcWEKWAuxnJEOTfr0mrWVBtz8bzl?usp=sharing) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1WZd8FcWEKWAuxnJEOTfr0mrWVBtz8bzl?usp=sharing)
 
 ```C++
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
@@ -114,6 +116,8 @@ const auto myReceiver = TensorWrite<float3>::build(output);
 The variable myReceiver will contain the last operation of the kernel, that writes the results from the previous Operations to the GPU DRAM.
 
 The Operation TensorWrite will write the 60x60x5 pixels into a contiguous memory region, without padding on the x axis. DNNs generated with Pytorch usually expect the 3 pixel channels to be split into separated planes, but despite we include the split Operation, this is not the most efficient memory layout for the GPUs, and we wanted to show the creation of most efficient Tensor shape. 
+
+You can view and run a similar code in this [FKL Playground](https://colab.research.google.com/drive/1WZd8FcWEKWAuxnJEOTfr0mrWVBtz8bzl?usp=sharing) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1WZd8FcWEKWAuxnJEOTfr0mrWVBtz8bzl?usp=sharing)
 
 ## Fusion and inclusion
 
