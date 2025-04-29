@@ -23,7 +23,7 @@
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 
-constexpr size_t NUM_EXPERIMENTS = 60;
+constexpr size_t NUM_EXPERIMENTS = 30;
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 20;
 
@@ -56,24 +56,24 @@ struct VerticalFusion {
 template <int VARIABLE_DIMENSION>
 inline int testLatencyHiding(cudaStream_t stream) {
 
-    const fk::Ptr1D<float3> input(NUM_ELEMENTS);
-    const fk::Ptr1D<float3> output(NUM_ELEMENTS);
+    const fk::Ptr1D<float> input(NUM_ELEMENTS);
+    const fk::Ptr1D<float> output(NUM_ELEMENTS);
 
-    constexpr float3 init_val{ 1,2,3 };
+    constexpr float init_val{ 1 };
 
     dim3 block(256);
     dim3 grid(ceil(NUM_ELEMENTS / (float)block.x));
     init_values<<<grid, block, 0, stream>>>(init_val, input.ptr());
 
-    using IOp = fk::Binary<fk::Add<float3>>;
-    IOp df{ fk::make_set<float3>(2) };
+    using IOp = fk::Binary<fk::Mul<float>>;
+    IOp df{ fk::make_set<float>(2) };
 
     // Warmup
-    VerticalFusion<float3, float3, 1, IOp>::execute(input, stream, output, df);
+    VerticalFusion<float, float, 1, IOp>::execute(input, stream, output, df);
 
     START_FK_BENCHMARK
 
-    VerticalFusion<float3, float3, VARIABLE_DIMENSION, IOp>::execute(input, stream, output, df);
+    VerticalFusion<float, float, VARIABLE_DIMENSION, IOp>::execute(input, stream, output, df);
 
     STOP_FK_BENCHMARK
 
