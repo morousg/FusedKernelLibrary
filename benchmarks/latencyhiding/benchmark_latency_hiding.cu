@@ -69,7 +69,7 @@ inline int testLatencyHiding(cudaStream_t stream) {
     IOp df{ fk::make_set<float>(2) };
 
     // Warmup
-    VerticalFusion<float, float, 1, IOp>::execute(input, stream, output, df);
+    VerticalFusion<float, float, VARIABLE_DIMENSION, IOp>::execute(input, stream, output, df);
 
     START_FK_BENCHMARK
 
