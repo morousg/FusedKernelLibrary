@@ -22,7 +22,7 @@
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of instructions per Operation" };
 
-constexpr size_t NUM_EXPERIMENTS = 10; // Used 100 in the paper
+constexpr size_t NUM_EXPERIMENTS = 100; // Used 100 in the paper
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 5;
 
@@ -30,7 +30,7 @@ constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayInd
 
 constexpr int NUM_ELEMENTS = 3840 * 2160 * 8;
 
-constexpr int TOTAL_INSTRUCTIONS = 50; // Used 500 and 1000 in the paper
+constexpr int TOTAL_INSTRUCTIONS = 500; // Used 500 and 1000 in the paper
 constexpr std::string_view FIRST_LABEL{ "Separated Ops" };
 constexpr std::string_view SECOND_LABEL{ "All Ops" };
 
@@ -47,20 +47,6 @@ __global__ void init_values(const T val, fk::RawPtr<fk::_1D, T> pointer_to_init)
         *fk::PtrAccessor<fk::_1D>::point(fk::Point(x), pointer_to_init) = val;
     }
 }
-
-template <typename InputType, typename OutputType, size_t NumOps, typename IOp>
-struct VerticalFusion {
-    static inline void execute(const fk::Ptr1D<InputType>& input, const cudaStream_t& stream,
-        const fk::Ptr1D<OutputType>& output, const IOp& dFunc) {
-        const fk::ActiveThreads activeThreads{ output.ptr().dims.width };
-        fk::Read<fk::PerThreadRead<fk::_1D, InputType>> readDF{ {input.ptr()} };
-        using Loop = fk::Binary<fk::StaticLoop<fk::StaticLoop<typename IOp::Operation, INCREMENT>, NumOps / INCREMENT>>;
-        Loop loop;
-        loop.params = dFunc.params;
-
-        fk::executeOperations<false>(stream, readDF, loop, fk::Write<fk::PerThreadWrite<fk::_1D, OutputType>>{ {output.ptr()} });
-    }
-};
 
 template <int Idx>
 inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inputFirst,
@@ -88,6 +74,9 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inpu
     const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float3>::build(outputSecond.ptr());
 
     if constexpr (exactDivision) {
+        // Wramming up the GPU
+        fk::executeOperations(stream, readDF, manyInst, writeDF);
+        fk::executeOperations(stream, readDF, allInstr, writeDF);
         START_FIRST_BENCHMARK
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
@@ -100,6 +89,10 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inpu
     } else {
         constexpr int remaining = TOTAL_INSTRUCTIONS % variableDimensionValues[Idx];
         constexpr auto lastOp = fk::StaticLoop<typename decltype(singleOp)::Operation, remaining>::build(add_val);
+        // Wramming up the GPU
+        fk::executeOperations(stream, readDF, manyInst, writeDF);
+        fk::executeOperations(stream, readDF, lastOp, writeDF);
+        fk::executeOperations(stream, readDF, allInstr, writeDF);
         START_FIRST_BENCHMARK
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
@@ -112,8 +105,6 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inpu
             fk::executeOperations(stream, readDF, allInstr, writeDF);
         STOP_SECOND_BENCHMARK
     }
-
-    
 
     return true;
 }
