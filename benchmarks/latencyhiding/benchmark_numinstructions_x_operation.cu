@@ -34,10 +34,10 @@ constexpr int TOTAL_INSTRUCTIONS = 500; // Used 500 and 1000 in the paper
 constexpr std::string_view FIRST_LABEL{ "Separated Ops" };
 constexpr std::string_view SECOND_LABEL{ "All Ops" };
 
-constexpr float3 init_val_input{ 1.f, 2.f ,3.f };
-constexpr float3 init_val_output{ 0.f, 0.f ,0.f };
-constexpr float3 add_val{ 1.f, 1.f, 1.f };
-constexpr auto singleOp = fk::Add<float3>::build(add_val);
+constexpr float init_val_input{ 1.f };
+constexpr float init_val_output{ 0.f };
+constexpr float add_val{ 1.f };
+constexpr auto singleOp = fk::Add<float>::build(add_val);
 constexpr auto allInstr = fk::StaticLoop<typename decltype(singleOp)::Operation, TOTAL_INSTRUCTIONS>::build(add_val);
 
 template <typename T>
@@ -49,10 +49,10 @@ __global__ void init_values(const T val, fk::RawPtr<fk::_1D, T> pointer_to_init)
 }
 
 template <int Idx>
-inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inputFirst,
-                                                   const fk::Ptr1D<float3>& inputSecond,
-                                                   const fk::Ptr1D<float3>& outputFirst, 
-                                                   const fk::Ptr1D<float3>& outputSecond) {
+inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float>& inputFirst,
+                                                   const fk::Ptr1D<float>& inputSecond,
+                                                   const fk::Ptr1D<float>& outputFirst, 
+                                                   const fk::Ptr1D<float>& outputSecond) {
     // Hack to make the benchmark macros work
     constexpr auto BATCH = variableDimensionValues[Idx];
     // End of hack
@@ -68,10 +68,10 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inpu
     init_values<<<grid, block, 0, stream>>>(init_val_output, outputFirst.ptr());
     init_values<<<grid, block, 0, stream>>>(init_val_output, outputSecond.ptr());
 
-    const auto readDF = fk::PerThreadRead<fk::_1D, float3>::build(inputFirst);
-    const auto readDF2 = fk::PerThreadRead<fk::_1D, float3>::build(inputSecond);
-    const auto writeDF = fk::PerThreadWrite<fk::_1D, float3>::build(outputFirst.ptr());
-    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float3>::build(outputSecond.ptr());
+    const auto readDF = fk::PerThreadRead<fk::_1D, float>::build(inputFirst);
+    const auto readDF2 = fk::PerThreadRead<fk::_1D, float>::build(inputSecond);
+    const auto writeDF = fk::PerThreadWrite<fk::_1D, float>::build(outputFirst.ptr());
+    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float>::build(outputSecond.ptr());
 
     if constexpr (exactDivision) {
         // Wramming up the GPU
@@ -112,10 +112,10 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inpu
 template <int... Idx>
 bool testNumInstPerOp_helper(const std::integer_sequence<int, Idx...>&,
                              cudaStream_t& stream,
-                             const fk::Ptr1D<float3>& inputFirst,
-                             const fk::Ptr1D<float3>& inputSecond,
-                             const fk::Ptr1D<float3>& outputFirst,
-                             const fk::Ptr1D<float3>& outputSecond) {
+                             const fk::Ptr1D<float>& inputFirst,
+                             const fk::Ptr1D<float>& inputSecond,
+                             const fk::Ptr1D<float>& outputFirst,
+                             const fk::Ptr1D<float>& outputSecond) {
     return (testNumInstPerOp<Idx>(stream, inputFirst, inputSecond, outputFirst, outputSecond) && ...);
 }
 
@@ -123,10 +123,10 @@ int launch() {
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
 
-    const fk::Ptr1D<float3> inputFirst(NUM_ELEMENTS);
-    const fk::Ptr1D<float3> outputFirst(NUM_ELEMENTS);
-    const fk::Ptr1D<float3> inputSecond(NUM_ELEMENTS);
-    const fk::Ptr1D<float3> outputSecond(NUM_ELEMENTS);
+    const fk::Ptr1D<float> inputFirst(NUM_ELEMENTS);
+    const fk::Ptr1D<float> outputFirst(NUM_ELEMENTS);
+    const fk::Ptr1D<float> inputSecond(NUM_ELEMENTS);
+    const fk::Ptr1D<float> outputSecond(NUM_ELEMENTS);
     
     const bool result =
         testNumInstPerOp_helper(std::make_integer_sequence<int, NUM_EXPERIMENTS>{},
