@@ -75,34 +75,34 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float3>& inpu
 
     if constexpr (exactDivision) {
         // Wramming up the GPU
-        fk::executeOperations(stream, readDF, manyInst, writeDF);
-        fk::executeOperations(stream, readDF, allInstr, writeDF);
+        fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
+        fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
         START_FIRST_BENCHMARK
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
             for (int i = 0; i < TOTAL_INSTRUCTIONS / variableDimensionValues[Idx]; ++i) {
-                fk::executeOperations(stream, readDF, manyInst, writeDF);
+                fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
             }
         STOP_FIRST_START_SECOND_BENCHMARK
-            fk::executeOperations(stream, readDF, allInstr, writeDF);
+            fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
         STOP_SECOND_BENCHMARK
     } else {
         constexpr int remaining = TOTAL_INSTRUCTIONS % variableDimensionValues[Idx];
         constexpr auto lastOp = fk::StaticLoop<typename decltype(singleOp)::Operation, remaining>::build(add_val);
         // Wramming up the GPU
-        fk::executeOperations(stream, readDF, manyInst, writeDF);
-        fk::executeOperations(stream, readDF, lastOp, writeDF);
-        fk::executeOperations(stream, readDF, allInstr, writeDF);
+        fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
+        fk::executeOperations<false>(stream, readDF, lastOp, writeDF);
+        fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
         START_FIRST_BENCHMARK
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
             for (int i = 0; i < TOTAL_INSTRUCTIONS / variableDimensionValues[Idx]; ++i) {
-                fk::executeOperations(stream, readDF, manyInst, writeDF);
+                fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
             }
             // Executing the remaining instructions to ger to TOTAL_INSTRUCTIONS
-            fk::executeOperations(stream, readDF, lastOp, writeDF);
+            fk::executeOperations<false>(stream, readDF, lastOp, writeDF);
         STOP_FIRST_START_SECOND_BENCHMARK
-            fk::executeOperations(stream, readDF, allInstr, writeDF);
+            fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
         STOP_SECOND_BENCHMARK
     }
 
