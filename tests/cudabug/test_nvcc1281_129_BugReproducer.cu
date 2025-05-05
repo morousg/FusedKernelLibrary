@@ -16,8 +16,12 @@
 
 #include <array>
 
-// This code does not compile with CUDA SDK 12.8.1 (nvcc 12.8.93) on Linux
-// It compiles fine with nvcc 12.8.93 + MSVC 19.42.34438.0 (MSVC 2022) on Windows
+/* This code does not compile with gcc 13.3.0 with:
+*   - CUDA SDK 12.8.1 (nvcc 12.8.93)
+*   - CUDA SDK 12.9.0 (nvcc 12.9.41)
+*
+* It compiles fine with nvcc 12.8.93 or 12.9.41 + MSVC 19.42.34438.0 (MSVC 2022) on Windows
+*/
 
 void test1() {
     // Remove the constexpr std::size_t NUM, and use 5 directly, and it will compile
