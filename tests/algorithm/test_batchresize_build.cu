@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <tests/utils/main.h>
+#include <tests/main.h>
 
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/image_processing/resize.cuh>

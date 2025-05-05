@@ -12,9 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <tests/utils/main.h>
-#include <tests/utils/fkTestsCommon.h>
-#include <tests/utils/twoExecutionsBenchmark.h>
+#include <tests/main.h>
+#include <benchmarks/fkBenchmarksCommon.h>
+#include <benchmarks/twoExecutionsBenchmark.h>
 
 #include <fused_kernel/fused_kernel.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
@@ -22,7 +22,7 @@
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of instructions per Operation" };
 
-constexpr size_t NUM_EXPERIMENTS = 100; // Used 100 in the paper
+constexpr size_t NUM_EXPERIMENTS = 10; // Used 100 in the paper
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 5;
 
@@ -30,7 +30,7 @@ constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayInd
 
 constexpr int NUM_ELEMENTS = 3840 * 2160 * 8;
 
-constexpr int TOTAL_INSTRUCTIONS = 500; // Used 500 and 1000 in the paper
+constexpr int TOTAL_INSTRUCTIONS = 50; // Used 500 and 1000 in the paper
 constexpr std::string_view FIRST_LABEL{ "Separated Ops" };
 constexpr std::string_view SECOND_LABEL{ "All Ops" };
 

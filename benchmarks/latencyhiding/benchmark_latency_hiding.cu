@@ -12,18 +12,17 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <tests/utils/main.h>
-#include <tests/utils/fkTestsCommon.h>
-#include <tests/utils/oneExecutionBenchmark.h>
+#include <tests/main.h>
+#include <benchmarks/fkBenchmarksCommon.h>
+#include <benchmarks/oneExecutionBenchmark.h>
  
-
 #include <fused_kernel/fused_kernel.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/static_loop.cuh>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 
-constexpr size_t NUM_EXPERIMENTS = 30;
+constexpr size_t NUM_EXPERIMENTS = 5; // used 30 in the paper
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 20;
 

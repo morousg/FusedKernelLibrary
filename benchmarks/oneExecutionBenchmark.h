@@ -12,6 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <sstream>
+#include <fstream>
+#include <iostream>
+#include <unordered_map>
+
 std::unordered_map<std::string, std::stringstream> benchmarkResultsText;
 std::unordered_map<std::string, std::ofstream> currentFile;
 // Select the path where to write the benchmark files

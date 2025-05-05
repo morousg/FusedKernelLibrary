@@ -13,16 +13,8 @@
    limitations under the License. */
 
 
-#include <tests/utils/main.h>
+#include <tests/main.h>
 
-#include <tests/utils/fkTestsCommon.h>
-#include <tests/utils/oneExecutionBenchmark.h>
-
-#include <fused_kernel/core/utils/type_lists.h>
-#include <fused_kernel/core/execution_model/operation_tuple.cuh>
-#include <fused_kernel/core/execution_model/operation_types.cuh>
-#include <fused_kernel/core/utils/parameter_pack_utils.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/image_processing/resize.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>

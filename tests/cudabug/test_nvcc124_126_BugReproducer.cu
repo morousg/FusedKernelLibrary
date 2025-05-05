@@ -13,13 +13,13 @@
    limitations under the License. */
 
 
-#include <tests/utils/main.h>
+#include <tests/main.h>
 
 #include <type_traits>
 
 // Why does this code not compile?
 // There are 4 ways of making it compile
-// 1) Compile with nvcc 12.3 or older
+// 1) Compile with nvcc 12.3 or older, or 12.8 or newer
 
 template <bool results>
 constexpr bool variable = results;

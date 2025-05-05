@@ -21,7 +21,7 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "" FOR
 set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RelWithDebInfo;Release;")
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install")
 
-set (TEMPLATE_DEPTH "default" CACHE STRING  "template depth")
+set (TEMPLATE_DEPTH "1000" CACHE STRING  "template depth")
 
 
 cmake_policy(SET CMP0111 NEW) # ensure all targets provide shared libs location
