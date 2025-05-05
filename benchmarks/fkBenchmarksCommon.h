@@ -1,5 +1,4 @@
-﻿/* Copyright 2023 Oscar Amoros Huguet
-   Copyright 2023 Albert Andaluz Gonzalez
+/* Copyright 2024 Oscar Amoros Huguet
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,9 +12,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
- 
-#include <tests/utils/main.h>
+#include <array>
 
-int main() {
-    return launch();
+#include <fused_kernel/core/utils/vlimits.h>
+
+template <size_t START_VALUE, size_t INCREMENT, std::size_t... Is>
+constexpr std::array<size_t, sizeof...(Is)> generate_sequence(std::index_sequence<Is...>) {
+    return std::array<size_t, sizeof...(Is)>{(START_VALUE + (INCREMENT * Is))...};
 }
+
+template <size_t START_VALUE, size_t INCREMENT, size_t NUM_ELEMS>
+constexpr std::array<size_t, NUM_ELEMS> arrayIndexSecuence = generate_sequence<START_VALUE, INCREMENT>(std::make_index_sequence<NUM_ELEMS>{});

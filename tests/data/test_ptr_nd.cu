@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <tests/utils/main.h>
+#include <tests/main.h>
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
