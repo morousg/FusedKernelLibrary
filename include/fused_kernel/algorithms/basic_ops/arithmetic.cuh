@@ -15,88 +15,57 @@
 #ifndef FK_ARITHMETIC
 #define FK_ARITHMETIC
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/default_operations.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
     template <typename I1, typename I2 = I1, typename O = I1, typename IT = BinaryType>
     struct Add {};
 
     template <typename I, typename P, typename O>
-    struct Add<I, P, O, BinaryType> {
-        using OutputType = O;
-        using InputType = I;
-        using ParamsType = P;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<Add<I, P, O, BinaryType>>;
-        FK_HOST_DEVICE_FUSE OutputType
-        exec(const InputType& input, const OperationDataType& opData) {
-            return input + opData.params;
+    struct Add<I, P, O, BinaryType> final : public BinaryOperation<I, P, O, Add<I, P, O, BinaryType>> {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            return input + params;
         }
-        using InstantiableType = Binary<Add<I, P, O, BinaryType>>;
-        DEFAULT_BUILD
-        DEFAULT_BUILD_PARAMS
+        using Parent = BinaryOperation<I, P, O, Add<I, P, O, BinaryType>>;
+        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename I1, typename I2, typename O>
-    struct Add<I1, I2, O, UnaryType> {
-        using InputType = Tuple<I1, I2>;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+    struct Add<I1, I2, O, UnaryType> final : public UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>> {
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return get<0>(input) + get<1>(input);
         }
-        using InstantiableType = Unary<Add<I1, I2, O, UnaryType>>;
-        DEFAULT_UNARY_BUILD
+        using Parent = UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>>;
+        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename P = I, typename O = I>
-    struct Sub {
-        using OutputType = O;
-        using InputType = I;
-        using ParamsType = P;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<Sub<I, P, O>>;
-        FK_HOST_DEVICE_FUSE OutputType
-        exec(const InputType& input, const OperationDataType& opData) {
-            return input - opData.params;
+    struct Sub final : public BinaryOperation<I, P, O, Sub<I, P, O>> {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            return input - params;
         }
-        using InstantiableType = Binary<Sub<I, P, O>>;
-        DEFAULT_BUILD
+        using Parent = BinaryOperation<I, P, O, Sub<I, P, O>>;
+        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename P = I, typename O = I>
-    struct Mul {
-        using OutputType = O;
-        using InputType = I;
-        using ParamsType = P;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<Mul<I, P, O>>;
-        FK_HOST_DEVICE_FUSE OutputType
-        exec(const InputType& input, const OperationDataType& opData) {
-            return input * opData.params;
+    struct Mul final : public BinaryOperation<I, P, O, Mul<I, P, O>> {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            return input * params;
         }
-        using InstantiableType = Binary<Mul<I, P, O>>;
-        DEFAULT_BUILD
+        using Parent = BinaryOperation<I, P, O, Mul<I, P, O>>;
+        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename P = I, typename O = I>
-    struct Div {
-        using OutputType = O;
-        using InputType = I;
-        using ParamsType = P;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<Div<I, P, O>>;
-        FK_HOST_DEVICE_FUSE OutputType
-        exec(const InputType& input, const OperationDataType& opData) {
-            return input / opData.params;
+    struct Div final : public BinaryOperation<I, P, O, Div<I, P, O>> {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            return input / params;
         }
-        using InstantiableType = Binary<Div<I, P, O>>;
-        DEFAULT_BUILD
+        using Parent = BinaryOperation<I, P, O, Div<I, P, O>>;
+        BINARY_PARENT_FUNCTIONS
     };
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif

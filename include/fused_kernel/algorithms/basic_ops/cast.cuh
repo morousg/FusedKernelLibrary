@@ -15,24 +15,19 @@
 #ifndef FK_CAST
 #define FK_CAST
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/default_operations.cuh>
 #include <fused_kernel/core/execution_model/vector_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast_base.cuh>
 
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 namespace fk {
     template <typename I, typename O>
-    struct Cast {
-        using InputType = I;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+    struct Cast final : UnaryOperation<I, O, Cast<I, O>>{
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return UnaryV<CastBase<VBase<I>, VBase<O>>, I, O>::exec(input);
         }
-        using InstantiableType = Unary<Cast<I, O>>;
-        DEFAULT_UNARY_BUILD
+        using Parent = UnaryOperation<I, O, Cast<I, O>>;
+        UNARY_PARENT_FUNCTIONS
     };
 } // namespace fk
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif

@@ -15,6 +15,9 @@
 
    // In this file we have the basic defintion of the Operations
 
+#ifndef FK_DEFAULT_OPERATIONS
+#define FK_DEFAULT_OPERATIONS
+
 #include <fused_kernel/core/utils/utils.h>
 #include <fused_kernel/core/data/point.h>
 #include <fused_kernel/core/execution_model/instantiable_operations.cuh>
@@ -142,3 +145,5 @@ FK_HOST_DEVICE_FUSE typename Parent::InstantiableType build(const typename Paren
 
 
 } // namespace fk
+
+#endif

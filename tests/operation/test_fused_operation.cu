@@ -31,7 +31,7 @@ constexpr bool test_fuseDFResultingTypes() {
     constexpr Unary<Cast<float, int>> castOp{};
     constexpr Write<PerThreadWrite<_2D, float>> writeOp{};
 
-    using Test = decltype(PerThreadRead<_2D, float>::num_elems_y(std::declval<Point>(), std::declval<typename PerThreadRead<_2D, float>::ParamsType>()));
+    using Test = decltype(PerThreadRead<_2D, float>::num_elems_y(std::declval<Point>(), std::declval<typename PerThreadRead<_2D, float>::OperationDataType>()));
 
     static_assert(std::is_same_v<Test, uint>);
 
