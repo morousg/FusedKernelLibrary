@@ -57,7 +57,7 @@ int launch() {
     // Create a fused operation that reads the input image,
     // crops it, resizes it, and applies arithmetic operations
     const auto mySender = PerThreadRead<_2D, uchar3>::build(inputImage)
-        .then(Crop<void>::build(crops))
+        .then(Crop<>::build(crops))
         .then(Resize<INTER_LINEAR, PRESERVE_AR>::build(outputSize, backgroundColor))
         .then(Mul<float3>::build(mulValue))
         .then(Sub<float3>::build(subValue))

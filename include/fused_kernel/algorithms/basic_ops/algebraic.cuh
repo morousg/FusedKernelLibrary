@@ -17,7 +17,7 @@
 
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cuda_vector.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/default_operations.cuh>
 #include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
@@ -29,28 +29,20 @@ namespace fk {
     };
 
     template <typename OpInstanceType = BinaryType>
-    struct MxVFloat3 {
-        using OutputType = float3;
-        using InputType = float3;
-        using ParamsType = M3x3Float; 
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<MxVFloat3>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
-            const float3 xOut = input * opData.params.x;
-            const float3 yOut = input * opData.params.y;
-            const float3 zOut = input * opData.params.z;
+    struct MxVFloat3 final : public BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>> {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            const float3 xOut = input * params.x;
+            const float3 yOut = input * params.y;
+            const float3 zOut = input * params.z;
             using Reduce = VectorReduce<float3, Add<float>>;
             return { Reduce::exec(xOut), Reduce::exec(yOut), Reduce::exec(zOut) };
         }
-        using InstantiableType = Binary<MxVFloat3>;
-        DEFAULT_BUILD
+        using Parent = BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>>;
+        BINARY_PARENT_FUNCTIONS
     };
 
     template <>
-    struct MxVFloat3<UnaryType> {
-        using OutputType = float3;
-        using InputType = Tuple<float3, M3x3Float>;
-        using InstanceType = UnaryType;
+    struct MxVFloat3<UnaryType> final : public UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>> {
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             const float3 xOut = get<0>(input) * get<1>(input).x;
             const float3 yOut = get<0>(input) * get<1>(input).y;
@@ -58,8 +50,8 @@ namespace fk {
             using Reduce = VectorReduce<float3, Add<float>>;
             return { Reduce::exec(xOut), Reduce::exec(yOut), Reduce::exec(zOut) };
         }
-        using InstantiableType = Unary<MxVFloat3>;
-        DEFAULT_UNARY_BUILD
+        using Parent = UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>>;
+        UNARY_PARENT_FUNCTIONS
     };
 } //namespace fk
 

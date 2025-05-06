@@ -82,14 +82,14 @@ namespace fk {
 
     template <typename Operation>
     struct OperationData<Operation, std::enable_if_t<hasParamsNoArray<Operation> && hasNoBackFunction_v<Operation>, void>> {
-        FK_HOST_DEVICE_CNST OperationData() {};
-        FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_) : params(params_) {}
+        /*FK_HOST_DEVICE_CNST OperationData() {};
+        FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_) : params(params_) {}*/
         typename Operation::ParamsType params{};
     };
 
     template <typename Operation>
     struct OperationData<Operation, std::enable_if_t<hasParamsArray<Operation> && hasNoBackFunction_v<Operation>, void>> {
-        FK_HOST_DEVICE_CNST OperationData() {};
+        /*FK_HOST_DEVICE_CNST OperationData() {};
         __host__ __forceinline__ OperationData(const typename Operation::ParamsType& params_) {
             std::copy(std::begin(params_), std::end(params_), std::begin(params));
         }
@@ -98,7 +98,7 @@ namespace fk {
                 std::copy(std::begin(other.params), std::end(other.params), std::begin(params));
             }
             return *this;
-        }
+        }*/
         typename Operation::ParamsType params{};
     };
 
@@ -106,10 +106,10 @@ namespace fk {
     struct OperationData<Operation, std::enable_if_t<hasParamsAndBackFunction_v<Operation> &&
         !std::is_array_v<typename Operation::ParamsType> &&
         !std::is_array_v<typename Operation::BackFunction>, void>> {
-        FK_HOST_DEVICE_CNST OperationData() {};
+        /*FK_HOST_DEVICE_CNST OperationData() {};
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_,
                                           const typename Operation::BackFunction& back_function_) :
-                                          params(params_), back_function(back_function_) {}
+                                          params(params_), back_function(back_function_) {}*/
         typename Operation::ParamsType params{};
         typename Operation::BackFunction back_function{};
     };
@@ -118,7 +118,7 @@ namespace fk {
     struct OperationData<Operation, std::enable_if_t<hasParamsAndBackFunction_v<Operation> &&
         (std::is_array_v<typename Operation::ParamsType> ||
             std::is_array_v<typename Operation::BackFunction>), void>> {
-        __host__ __forceinline__ OperationData() {};
+        /*__host__ __forceinline__ OperationData() {};
         __host__ __forceinline__ OperationData(const typename Operation::ParamsType& params_,
             const typename Operation::BackFunction& back_function_) {
             if constexpr (std::is_array_v<typename Operation::ParamsType>) {
@@ -146,7 +146,7 @@ namespace fk {
                 }
             }
             return *this;
-        }
+        }*/
         typename Operation::ParamsType params{};
         typename Operation::BackFunction back_function{};
     };
