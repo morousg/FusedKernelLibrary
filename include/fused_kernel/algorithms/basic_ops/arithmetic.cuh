@@ -24,47 +24,47 @@ namespace fk {
 
     template <typename I, typename P, typename O>
     struct Add<I, P, O, BinaryType> final : public BinaryOperation<I, P, O, Add<I, P, O, BinaryType>> {
+        using Parent = BinaryOperation<I, P, O, Add<I, P, O, BinaryType>>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             return input + params;
         }
-        using Parent = BinaryOperation<I, P, O, Add<I, P, O, BinaryType>>;
-        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename I1, typename I2, typename O>
     struct Add<I1, I2, O, UnaryType> final : public UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>> {
+        using Parent = UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return get<0>(input) + get<1>(input);
         }
-        using Parent = UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>>;
-        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename P = I, typename O = I>
     struct Sub final : public BinaryOperation<I, P, O, Sub<I, P, O>> {
+        using Parent = BinaryOperation<I, P, O, Sub<I, P, O>>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             return input - params;
         }
-        using Parent = BinaryOperation<I, P, O, Sub<I, P, O>>;
-        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename P = I, typename O = I>
     struct Mul final : public BinaryOperation<I, P, O, Mul<I, P, O>> {
+        using Parent = BinaryOperation<I, P, O, Mul<I, P, O>>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             return input * params;
         }
-        using Parent = BinaryOperation<I, P, O, Mul<I, P, O>>;
-        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename P = I, typename O = I>
     struct Div final : public BinaryOperation<I, P, O, Div<I, P, O>> {
+        using Parent = BinaryOperation<I, P, O, Div<I, P, O>>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             return input / params;
         }
-        using Parent = BinaryOperation<I, P, O, Div<I, P, O>>;
-        BINARY_PARENT_FUNCTIONS
     };
 } // namespace fk
 

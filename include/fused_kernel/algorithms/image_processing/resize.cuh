@@ -301,7 +301,7 @@ namespace fk {
             return 1;
         }
 
-        using InstantiableType = Instantiable<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
+        using InstantiableType = ReadBackInstantiableOperation<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
 
         FK_HOST_FUSE InstantiableType build(const Size& dstSize) {
             return { {{dstSize}, {}} };
@@ -347,7 +347,7 @@ namespace fk {
 
         template <typename T>
         FK_HOST_FUSE auto build(const RawPtr<_2D, T>& input, const Size& dSize, const double& fx, const double& fy) {
-            return Resize<IType, AR, Instantiable<PerThreadRead<_2D, T>>>::build(input, dSize, fx, fy);
+            return Resize<IType, AR, ReadInstantiableOperation<PerThreadRead<_2D, T>>>::build(input, dSize, fx, fy);
         }
         DEFAULT_READ_BATCH_BUILD
     };

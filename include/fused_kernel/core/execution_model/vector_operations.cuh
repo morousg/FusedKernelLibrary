@@ -15,12 +15,18 @@
 #ifndef FK_VECTOR_OPERATIONS
 #define FK_VECTOR_OPERATIONS
 
-#include <fused_kernel/core/execution_model/default_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_types.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 
 namespace fk {
     template <typename Operation, typename I, typename O, typename Enabler = void>
-    struct UnaryV final : public UnaryOperation<I, O, UnaryV<Operation, I, O, void>> {
+    struct UnaryV;
+
+    template <typename Operation, typename I, typename O>
+    struct UnaryV<Operation, I, O, std::enable_if_t<!isTuple_v<I>, void>> {
+        using InputType = I;
+        using OutputType = O;
+        using InstanceType = UnaryType;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(cn<InputType> == cn<OutputType>,
                 "Unary struct requires same number of channels for input and output types.");
@@ -51,13 +57,13 @@ namespace fk {
                          Operation::exec(input.w) };
             }
         }
-        using Parent = UnaryOperation<I, O, UnaryV<Operation, I, O>>;
-        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename Operation, typename I, typename O>
-    struct UnaryV<Operation, I, O, std::enable_if_t<isTuple_v<I>, void>> final
-        : public UnaryOperation<I, O, UnaryV<Operation, I, O, void>> {
+    struct UnaryV<Operation, I, O, std::enable_if_t<isTuple_v<I>, void>> {
+        using InputType = I;
+        using OutputType = O;
+        using InstanceType = UnaryType;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             const auto input1 = get<0>(input);
             const auto input2 = get<1>(input);
@@ -110,8 +116,6 @@ namespace fk {
                 }
             }
         }
-        using Parent = UnaryOperation<I, O, UnaryV<Operation, I, O, void>>;
-        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename Operation, typename I, typename P = I, typename O = I>
@@ -122,6 +126,9 @@ namespace fk {
         using InstanceType = BinaryType;
         using OperationDataType = OperationData<BinaryV<Operation, I, P, O>>;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
+            return BinaryV<Operation, I, P, O>::exec(input, opData.params);
+        }
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             static_assert(cn<I> == cn<O>,
                 "Binary struct requires same number of channels for input and output types.");
             constexpr bool allCUDAOrNotCUDA =
@@ -131,41 +138,41 @@ namespace fk {
 
             if constexpr (cn<I> == 1) {
                 if constexpr (validCUDAVec<I> && validCUDAVec<P>) {
-                    return { Operation::exec(input.x, { opData.params.x }) };
+                    return { Operation::exec(input.x, params.x) };
                 } else if constexpr (validCUDAVec<I>) {
-                    return { Operation::exec(input.x, { opData.params }) };
+                    return { Operation::exec(input.x, params) };
                 } else {
-                    return Operation::exec(input, { opData.params });
+                    return Operation::exec(input, params);
                 }
             } else if constexpr (cn<I> == 2) {
                 if constexpr (validCUDAVec<P>) {
-                    return { Operation::exec(input.x, { opData.params.x }),
-                             Operation::exec(input.y, { opData.params.y }) };
+                    return { Operation::exec(input.x, params.x),
+                             Operation::exec(input.y, params.y) };
                 } else {
-                    return { Operation::exec(input.x, { opData.params }),
-                             Operation::exec(input.y, { opData.params }) };
+                    return { Operation::exec(input.x, params),
+                             Operation::exec(input.y, params) };
                 }
             } else if constexpr (cn<I> == 3) {
                 if constexpr (validCUDAVec<P>) {
-                    return { Operation::exec(input.x, { opData.params.x }),
-                             Operation::exec(input.y, { opData.params.y }),
-                             Operation::exec(input.z, { opData.params.z }) };
+                    return { Operation::exec(input.x, params.x),
+                             Operation::exec(input.y, params.y),
+                             Operation::exec(input.z, params.z) };
                 } else {
-                    return { Operation::exec(input.x, { opData.params }),
-                             Operation::exec(input.y, { opData.params }),
-                             Operation::exec(input.z, { opData.params }) };
+                    return { Operation::exec(input.x, params),
+                             Operation::exec(input.y, params),
+                             Operation::exec(input.z, params) };
                 }
             } else {
                 if constexpr (validCUDAVec<P>) {
-                    return { Operation::exec(input.x, { opData.params.x }),
-                             Operation::exec(input.y, { opData.params.y }),
-                             Operation::exec(input.z, { opData.params.z }),
-                             Operation::exec(input.w, { opData.params.w }) };
+                    return { Operation::exec(input.x, params.x),
+                             Operation::exec(input.y, params.y),
+                             Operation::exec(input.z, params.z),
+                             Operation::exec(input.w, params.w) };
                 } else {
-                    return { Operation::exec(input.x, { opData.params }),
-                             Operation::exec(input.y, { opData.params }),
-                             Operation::exec(input.z, { opData.params }),
-                             Operation::exec(input.w, { opData.params }) };
+                    return { Operation::exec(input.x, params),
+                             Operation::exec(input.y, params),
+                             Operation::exec(input.z, params),
+                             Operation::exec(input.w, params) };
                 }
             }
         }

@@ -53,7 +53,7 @@ namespace fk {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
 
-        using InstantiableType = Instantiable<Crop<BackFunction>>;
+        using InstantiableType = ReadBackInstantiableOperation<Crop<BackFunction>>;
         DEFAULT_BUILD
 
         FK_HOST_FUSE InstantiableType build(const BackFunction& backFunction, const Rect& rect) {
@@ -85,7 +85,7 @@ namespace fk {
             return 1;
         }
 
-        using InstantiableType = Instantiable<Crop<void>>;
+        using InstantiableType = ReadBackInstantiableOperation<Crop<void>>;
         DEFAULT_BUILD
 
         FK_HOST_FUSE auto build(const Rect& rectCrop) {

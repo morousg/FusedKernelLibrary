@@ -34,29 +34,15 @@ namespace fk { // namespace FusedKernel
             const uint& vz = 1) : x(vx), y(vy), z(vz) {}
     };
 
-#define IS \
-    template <typename IT> \
-    static constexpr bool is{ std::is_same_v<IT, InstanceType> };
-
-#define ASSERT(instance_type) \
-    static_assert(std::is_same_v<typename Operation::InstanceType, instance_type>, "Operation is not " #instance_type );
-
-#define DEVICE_FUNCTION_DETAILS(instance_type) \
-    using Operation = Operation_t; \
-    using InstanceType = instance_type;
-
 #define DEVICE_FUNCTION_DETAILS_IS(instance_type) \
     using Operation = Operation_t; \
     using InstanceType = instance_type; \
-    IS
-
-#define IS_ASSERT(instance_type) \
-    IS \
-    ASSERT(instance_type)
+    template <typename IT> \
+    static constexpr bool is{ std::is_same_v<IT, InstanceType> };
 
 #define DEVICE_FUNCTION_DETAILS_IS_ASSERT(instance_type) \
-    DEVICE_FUNCTION_DETAILS(instance_type) \
-    IS_ASSERT(instance_type)
+    DEVICE_FUNCTION_DETAILS_IS(instance_type) \
+    static_assert(std::is_same_v<typename Operation::InstanceType, instance_type>, "Operation is not " #instance_type );
 
     // Helper template to check for existence of static constexpr int BATCH 
     template <typename T, typename = void>
@@ -276,9 +262,7 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct BinaryInstantiableOperation final : public OperationData<Operation_t> {
-        using Operation = Operation_t;
-        using InstanceType = BinaryType;
-        IS_ASSERT(BinaryType)
+        DEVICE_FUNCTION_DETAILS_IS_ASSERT(BinaryType)
 
         template <typename... ContinuationsDF>
         FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
@@ -316,9 +300,7 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct UnaryInstantiableOperation {
-        using Operation = Operation_t;
-        using InstanceType = UnaryType;
-        IS_ASSERT(UnaryType)
+        DEVICE_FUNCTION_DETAILS_IS_ASSERT(UnaryType)
 
         template <typename... ContinuationsDF>
         FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {

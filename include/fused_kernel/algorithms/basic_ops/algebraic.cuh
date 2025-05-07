@@ -29,6 +29,22 @@ namespace fk {
 
     template <typename OpInstanceType = BinaryType>
     struct MxVFloat3 final : public BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>> {
+        using Parent = BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>>;
+        using InputType = typename Parent::InputType;
+        using OutputType = typename Parent::OutputType;
+        using ParamsType = typename Parent::ParamsType;
+        using OperationDataType = typename Parent::OperationDataType;
+        using InstantiableType = typename Parent::InstantiableType;
+
+        FK_HOST_DEVICE_FUSE  OutputType exec(const InputType& input, const OperationDataType& opData) {
+            return Parent::exec(input, opData);
+        }
+        FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) {
+            return Parent::build(opData);
+        }
+        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) {
+            return Parent::build(params);
+        }
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             const float3 xOut = input * params.x;
             const float3 yOut = input * params.y;
@@ -36,12 +52,12 @@ namespace fk {
             using Reduce = VectorReduce<float3, Add<float>>;
             return { Reduce::exec(xOut), Reduce::exec(yOut), Reduce::exec(zOut) };
         }
-        using Parent = BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>>;
-        BINARY_PARENT_FUNCTIONS
     };
 
     template <>
     struct MxVFloat3<UnaryType> final : public UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>> {
+        using Parent = UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             const float3 xOut = get<0>(input) * get<1>(input).x;
             const float3 yOut = get<0>(input) * get<1>(input).y;
@@ -49,8 +65,6 @@ namespace fk {
             using Reduce = VectorReduce<float3, Add<float>>;
             return { Reduce::exec(xOut), Reduce::exec(yOut), Reduce::exec(zOut) };
         }
-        using Parent = UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>>;
-        UNARY_PARENT_FUNCTIONS
     };
 } //namespace fk
 

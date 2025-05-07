@@ -21,6 +21,8 @@
 namespace fk {
     template <typename I, typename O>
     struct Discard final : public UnaryOperation<I, O, Discard<I, O>> {
+        using Parent = UnaryOperation<I, O, Discard<I, O>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(cn<I> > cn<O>, "Output type should at least have one channel less");
             static_assert(std::is_same_v<typename VectorTraits<I>::base,
@@ -38,23 +40,23 @@ namespace fk {
                 return { input.x, input.y, input.z };
             }
         }
-        using Parent = UnaryOperation<I, O, Discard<I, O>>;
-        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename T, int... Idx>
     struct VectorReorder final : public UnaryOperation<T, T, VectorReorder<T, Idx...>> {
+        using Parent = UnaryOperation<T, T, VectorReorder<T, Idx...>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: UnaryVectorReorder");
             static_assert(cn<T> >= 2, "Minimum number of channels is 2: UnaryVectorReorder");
             return {VectorAt<Idx>(input)...};
         }
-        using Parent = UnaryOperation<T, T, VectorReorder<T, Idx...>>;
-        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename T>
     struct VectorReorderRT final : public BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>> {
+        using Parent = BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type");
             static_assert(cn<T> >= 2, "Minimum number of channels is 2");
@@ -69,12 +71,12 @@ namespace fk {
                 return { temp.at[params.x], temp.at[params.y], temp.at[params.z], temp.at[params.w] };
             }
         }
-        using Parent = BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>>;
-        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename T, typename Operation>
-    struct VectorReduce final : public UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>> { 
+    struct VectorReduce final : public UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>> {
+        using Parent = UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             if constexpr (std::is_same_v<typename Operation::InstanceType, UnaryType>) {
                 if constexpr (cn<T> == 1) {
@@ -106,12 +108,12 @@ namespace fk {
                 }
             }
         }
-        using Parent = UnaryOperation<T, T, VectorReduce<T, Operation>>;
-        UNARY_PARENT_FUNCTIONS
     };
 
     template <typename I, typename O>
     struct AddLast final : public BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>> {
+        using Parent = BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             static_assert(cn<I> == cn<O> -1, "Output type should have one channel more");
             static_assert(std::is_same_v<typename VectorTraits<I>::base, typename VectorTraits<O>::base>,
@@ -128,18 +130,16 @@ namespace fk {
               return {input.x, input.y, input.z, params};
             }
         }
-        using Parent = BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>>;
-        BINARY_PARENT_FUNCTIONS
     };
 
     template <typename T>
-    struct VectorAnd final : UnaryOperation<T, T, VectorAnd<T>>{
+    struct VectorAnd final : UnaryOperation<T, VBase<T>, VectorAnd<T>>{
         static_assert(std::is_same_v<VBase<T>, bool>, "VectorAnd only works with boolean vectors");
+        using Parent = UnaryOperation<T, VBase<T>, VectorAnd<T>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return VectorReduce<T, Equal<bool, bool>>::exec(input);
         }
-        using Parent = UnaryOperation<T, T, VectorAnd<T>>;
-        UNARY_PARENT_FUNCTIONS
     };
 } // namespace fk
 

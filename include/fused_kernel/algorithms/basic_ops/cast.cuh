@@ -22,11 +22,11 @@
 namespace fk {
     template <typename I, typename O>
     struct Cast final : UnaryOperation<I, O, Cast<I, O>>{
+        using Parent = UnaryOperation<I, O, Cast<I, O>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return UnaryV<CastBase<VBase<I>, VBase<O>>, I, O>::exec(input);
         }
-        using Parent = UnaryOperation<I, O, Cast<I, O>>;
-        UNARY_PARENT_FUNCTIONS
     };
 } // namespace fk
 

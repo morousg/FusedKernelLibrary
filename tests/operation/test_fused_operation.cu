@@ -43,7 +43,7 @@ constexpr bool test_fuseDFResultingTypes() {
     constexpr auto readOp2 = PerThreadRead<_2D, uchar3>::build(RawPtr<_2D, uchar3>{nullptr, PtrDims<_2D>(128,128)});
     static_assert(std::is_same_v<std::decay_t<decltype(readOp2)>, Read<PerThreadRead<_2D, uchar3>>>, "Unexpected type after fuseDF");
 
-    constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build(RawPtr<_2D, uchar>{nullptr, PtrDims<_2D>(128, 128)});
+    constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build({ RawPtr<_2D, uchar>{nullptr, PtrDims<_2D>(128, 128)} });
     constexpr auto readRGB = readYUV.then(ConvertYUVToRGB<PixelFormat::NV12, ColorRange::Full, ColorPrimitives::bt2020, false>::build());
 
     constexpr auto resizeRead = Resize<INTER_LINEAR>::build(readRGB, Size(64, 64)).then(Mul<float>::build(3.f)).then(Div<float>::build(4.3f));
@@ -95,7 +95,7 @@ int launch() {
     constexpr auto df2 = fk::Add<int, int, int, fk::UnaryType>::build().then(fk::Add<int >::build(3));
     static_assert(df2.params.next.instance.params == 3, "");
 
-    constexpr auto result1 = decltype(df2)::Operation::exec(fk::Tuple<int, int>{4, 4}, df2.params);
+    constexpr auto result1 = decltype(df2)::Operation::exec(fk::Tuple<int, int>{4, 4}, df2);
 
     static_assert(result1 == 11, "Wrong result1");
 

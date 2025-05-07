@@ -36,8 +36,11 @@ namespace fk {
         }
     };
 
-#define UNARY_PARENT_FUNCTIONS \
-FK_HOST_DEVICE_FUSE typename Parent::InstantiableType build() { \
+#define DECLARE_UNARY_PARENT \
+using InputType = typename Parent::InputType; \
+using OutputType = typename Parent::OutputType; \
+using InstantiableType = typename Parent::InstantiableType; \
+FK_HOST_DEVICE_FUSE InstantiableType build() { \
     return Parent::build(); \
 }
 
@@ -71,15 +74,20 @@ FK_HOST_DEVICE_FUSE typename Parent::InstantiableType build() { \
         }
     };
 
-#define BINARY_PARENT_FUNCTIONS \
-FK_HOST_DEVICE_FUSE typename Parent::OutputType exec(const typename Parent::InputType& input, \
-                                       const typename Parent::OperationDataType& opData) { \
+#define DECLARE_BINARY_PARENT \
+using InputType = typename Parent::InputType; \
+using OutputType = typename Parent::OutputType; \
+using ParamsType = typename Parent::ParamsType; \
+using OperationDataType = typename Parent::OperationDataType; \
+using InstantiableType = typename Parent::InstantiableType; \
+FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, \
+                                       const OperationDataType& opData) { \
     return Parent::exec(input, opData); \
 } \
-FK_HOST_DEVICE_FUSE typename Parent::InstantiableType build(const typename Parent::OperationDataType& opData) { \
+FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) { \
     return Parent::build(opData); \
 } \
-FK_HOST_DEVICE_FUSE typename Parent::InstantiableType build(const typename Parent::ParamsType& params) { \
+FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
     return Parent::build(params); \
 }
 
