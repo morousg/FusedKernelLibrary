@@ -20,7 +20,6 @@
 #include <fused_kernel/core/execution_model/thread_fusion.cuh>
 #include <fused_kernel/core/execution_model/operation_types.cuh>
 #include <fused_kernel/core/execution_model/parent_operations.cuh>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 #include <fused_kernel/core/data/array.cuh>
 #include <vector>
 
@@ -198,24 +197,19 @@ namespace fk {
 
     template <typename T>
     struct TensorTSplit {
-        using ParamsType = RawPtr<T3D, typename VectorTraits<T>::base>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ false };
-        using InputType = T;
-        using WriteDataType = VBase<InputType>;
-        using OperationDataType = OperationData<TensorTSplit<T>>;
-
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const OperationDataType& opData) {
+        using Parent = WriteOperation<T, RawPtr<T3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorTSplit<T>>;
+        DECLARE_WRITE_PARENT
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
                           "Wrong type for split tensor write. It must be one of <type>2, <type>3 or <type>4.");
 
-            *PtrAccessor<T3D>::point(thread, opData.params, 0) = input.x;
-            *PtrAccessor<T3D>::point(thread, opData.params, 1) = input.y;
+            *PtrAccessor<T3D>::point(thread, params, 0) = input.x;
+            *PtrAccessor<T3D>::point(thread, params, 1) = input.y;
             if constexpr (cn<InputType> >= 3) {
-                *PtrAccessor<T3D>::point(thread, opData.params, 2) = input.z;
+                *PtrAccessor<T3D>::point(thread, params, 2) = input.z;
             }
             if constexpr (cn<InputType> == 4) {
-                *PtrAccessor<T3D>::point(thread, opData.params, 3) = input.w;
+                *PtrAccessor<T3D>::point(thread, params, 3) = input.w;
             }
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -224,15 +218,12 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.pitch;
         }
-        using InstantiableType = Write<TensorTSplit<T>>;
-        DEFAULT_BUILD
     };
 
     template <typename T>
     struct TensorPack {
         using Parent = ReadOperation<T, RawPtr<_3D, VBase<T>>, T, TF::ENABLED, TensorPack<T>>;
         DECLARE_READ_PARENT
-
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             static_assert(cn<OutputType> >= 2,
                           "Wrong type for split tensor read. It must be one of <type>2, <type>3 or <type>4.");
@@ -340,20 +331,15 @@ namespace fk {
 
     template <ND D, typename T>
     struct SplitWrite {
-        using ParamsType = SplitWriteParams<D, T>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ false };
-        using InputType = T;
-        using WriteDataType = VBase<T>;
-        using OperationDataType = OperationData<SplitWrite<D,T>>;
-
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const OperationDataType& opData) {
+        using Parent = WriteOperation<T, SplitWriteParams<D, T>, VBase<T>, TF::DISABLED, SplitWrite<D, T>>;
+        DECLARE_WRITE_PARENT
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
                           "Wrong type for split write. It must be one of <type>2, <type>3 or <type>4.");
-            *PtrAccessor<D>::point(thread, opData.params.x) = input.x;
-            *PtrAccessor<D>::point(thread, opData.params.y) = input.y;
-            if constexpr (cn<InputType> >= 3) *PtrAccessor<D>::point(thread, opData.params.z) = input.z;
-            if constexpr (cn<InputType> == 4) *PtrAccessor<D>::point(thread, opData.params.w) = input.w;
+            *PtrAccessor<D>::point(thread, params.x) = input.x;
+            *PtrAccessor<D>::point(thread, params.y) = input.y;
+            if constexpr (cn<InputType> >= 3) *PtrAccessor<D>::point(thread, params.z) = input.z;
+            if constexpr (cn<InputType> == 4) *PtrAccessor<D>::point(thread, params.w) = input.w;
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return opData.params.x.dims.width;
@@ -361,8 +347,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.x.dims.pitch;
         }
-        using InstantiableType = Write<SplitWrite<D, T>>;
-        DEFAULT_BUILD
+
         FK_HOST_FUSE auto build(const std::vector<Ptr2D<VBase<T>>>& output) {
             static_assert(cn<T> >= 2, "Split operations can only be used with types of 2, 3 or 4 channels.");
             if constexpr (cn<T> == 2) {
@@ -373,7 +358,6 @@ namespace fk {
                 return InstantiableType{ {{output.at(0).ptr(), output.at(1).ptr(), output.at(2).ptr(), output.at(3).ptr()}} };
             }
         }
-        DEFAULT_WRITE_BATCH_BUILD
     };
 
     /* The following code has the following copy right
@@ -455,20 +439,19 @@ namespace fk {
 
     template <CircularDirection direction, typename Operation, int BATCH>
     struct CircularBatchWrite {
-        using InputType = typename Operation::InputType;
-        using ParamsType = CircularMemoryParams<OperationData<Operation>[BATCH]>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ Operation::THREAD_FUSION };
-        using WriteDataType = typename Operation::WriteDataType;
-
-        using OperationDataType = OperationData<CircularBatchWrite<direction, Operation, BATCH>>;
+        using Parent = WriteOperation<typename Operation::InputType,
+                                      CircularMemoryParams<OperationData<Operation>[BATCH]>,
+                                      typename Operation::WriteDataType,
+                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
+                                      CircularBatchWrite<direction, Operation, BATCH>>;
+        DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const OperationDataType& opBatch) {
-            const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, opBatch.params.first);
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const ParamsType& params) {
+            const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, params.first);
             if constexpr (THREAD_FUSION) {
-                Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, input, opBatch.params.opData[newThreadIdx.z]);
+                Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, input, params.opData[newThreadIdx.z]);
             } else {
-                Operation::exec(newThreadIdx, input, opBatch.params.opData[newThreadIdx.z]);
+                Operation::exec(newThreadIdx, input, params.opData[newThreadIdx.z]);
             }
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opBatch) {
@@ -477,8 +460,6 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opBatch) {
             return Operation::pitch(thread, opBatch.params.opData[thread.z]);
         }
-        using InstantiableType = Write<CircularBatchWrite<direction, Operation, BATCH>>;
-        DEFAULT_BUILD
     };
 
     template <CircularDirection direction, typename Operation, int BATCH>
@@ -521,22 +502,21 @@ namespace fk {
 
     template <CircularDirection direction, typename Operation, int BATCH>
     struct CircularTensorWrite {
-        using InputType = typename Operation::InputType;
-        using ParamsType = CircularMemoryParams<OperationData<Operation>>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ Operation::THREAD_FUSION };
-        using WriteDataType = typename Operation::WriteDataType;
-
-        using OperationDataType = OperationData<CircularTensorWrite<direction, Operation, BATCH>>;
+        using Parent = WriteOperation<typename Operation::InputType,
+                                      CircularMemoryParams<OperationData<Operation>>,
+                                      typename Operation::WriteDataType,
+                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
+                                      CircularTensorWrite<direction, Operation, BATCH>>;
+        DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
                                       const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input,
-                                      const OperationDataType& opData) {
-            const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, opData.params.first);
+                                      const ParamsType& params) {
+            const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, params.first);
             if constexpr (THREAD_FUSION) {
-                Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, input, opData.params.opData);
+                Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, input, params.opData);
             } else {
-                Operation::exec(newThreadIdx, input, opData.params.opData);
+                Operation::exec(newThreadIdx, input, params.opData);
             }
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -545,12 +525,8 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return Operation::pitch(thread, opData.params.opData);
         }
-        using InstantiableType = Write<CircularTensorWrite<direction, Operation, BATCH>>;
-        DEFAULT_BUILD
     };
 
 } //namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif

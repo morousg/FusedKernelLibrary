@@ -84,7 +84,7 @@ namespace fk {
     struct OperationData<Operation, std::enable_if_t<hasParamsNoArray<Operation> && hasNoBackFunction_v<Operation>, void>> {
         /*FK_HOST_DEVICE_CNST OperationData() {};
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_) : params(params_) {}*/
-        typename Operation::ParamsType params{};
+        typename Operation::ParamsType params;
     };
 
     template <typename Operation>
@@ -99,7 +99,7 @@ namespace fk {
             }
             return *this;
         }*/
-        typename Operation::ParamsType params{};
+        typename Operation::ParamsType params;
     };
 
     template <typename Operation> 
@@ -110,8 +110,8 @@ namespace fk {
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_,
                                           const typename Operation::BackFunction& back_function_) :
                                           params(params_), back_function(back_function_) {}*/
-        typename Operation::ParamsType params{};
-        typename Operation::BackFunction back_function{};
+        typename Operation::ParamsType params;
+        typename Operation::BackFunction back_function;
     };
 
     template <typename Operation>
@@ -147,8 +147,8 @@ namespace fk {
             }
             return *this;
         }*/
-        typename Operation::ParamsType params{};
-        typename Operation::BackFunction back_function{};
+        typename Operation::ParamsType params;
+        typename Operation::BackFunction back_function;
     };
 
     template <typename Enabler, typename... Operations>
