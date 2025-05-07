@@ -19,8 +19,7 @@
 #include <fused_kernel/algorithms/basic_ops/algebraic.cuh>
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
+#include <fused_kernel/core/execution_model/parent_operations.cuh>
 
 namespace fk {
     template <typename I>
@@ -28,14 +27,11 @@ namespace fk {
 
     template <typename I, VBase<I> alpha>
     struct StaticAddAlpha {
-        using InputType = I;
-        using OutputType = VOneMore<I>;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, VOneMore<I>, StaticAddAlpha<I, alpha>>;
+        DECLARE_UNARY_PARENT
         FK_DEVICE_FUSE OutputType exec(const InputType& input) {
             return AddLast<InputType, OutputType>::exec(input, { alpha });
         }
-        using InstantiableType = Unary<StaticAddAlpha<I, alpha>>;
-        DEFAULT_UNARY_BUILD
     };
 
     enum GrayFormula { CCIR_601 };
@@ -45,10 +41,8 @@ namespace fk {
 
     template <typename I, typename O>
     struct RGB2Gray<I, O, CCIR_601> {
-    public:
-        using InputType = I;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, O, RGB2Gray<I, O, CCIR_601>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             // 0.299*R + 0.587*G + 0.114*B
             if constexpr (std::is_unsigned_v<OutputType>) {
@@ -71,8 +65,6 @@ namespace fk {
         FK_HOST_DEVICE_FUSE float compute_luminance(const InputType& input) {
             return (input.x * 0.299f) + (input.y * 0.587f) + (input.z * 0.114f);
         }
-        using InstantiableType = Unary<RGB2Gray<I, O, CCIR_601>>;
-        DEFAULT_UNARY_BUILD
     };
 
     enum ColorSpace { YUV420, YUV422, YUV444 };
@@ -128,29 +120,21 @@ namespace fk {
 
     template <typename I, ColorDepth CD>
     struct AddOpaqueAlpha {
-        using InputType = I;
-        using OutputType = VOneMore<I>;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, VOneMore<I>, AddOpaqueAlpha<I, CD>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             constexpr auto alpha = maxDepthValue<CD>;
             return AddLast<InputType, OutputType>::exec(input, { alpha });
         }
-        using InstantiableType = Unary<AddOpaqueAlpha<I, CD>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename T, ColorDepth CD>
     struct SaturateDepth {
-        using InputType = T;
-        using OutputType = T;
-        using InstanceType = UnaryType;
-        using Base = typename VectorTraits<T>::base;
-
+        using Parent = UnaryOperation<T, T, SaturateDepth<T, CD>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return Saturate<float>::exec(input, { { 0.f, static_cast<float>(maxDepthValue<CD>) } });
         }
-        using InstantiableType = Unary<SaturateDepth<T, CD>>;
-        DEFAULT_UNARY_BUILD
     };
 
     enum ColorConversionDir { YCbCr2RGB, RGB2YCbCr };
@@ -210,62 +194,49 @@ namespace fk {
 
     template <typename O, ColorDepth CD>
     struct DenormalizePixel {
-        using InputType = VectorType_t<float, cn<O>>;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<VectorType_t<float, cn<O>>, O, DenormalizePixel<O, CD>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return Cast<InputType, OutputType>::exec(input * static_cast<float>(maxDepthValue<CD>));
         }
-        using InstantiableType = Unary<DenormalizePixel<O, CD>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename I, ColorDepth CD>
     struct NormalizePixel {
-        using InputType = I;
-        using OutputType = VectorType_t<float, cn<I>>;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, VectorType_t<float, cn<I>>, NormalizePixel<I, CD>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return input / static_cast<float>(maxDepthValue<CD>);
         }
-        using InstantiableType = Unary<NormalizePixel<I, CD>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename I, typename O, ColorDepth CD>
     struct SaturateDenormalizePixel {
-        using InputType = I;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, O, SaturateDenormalizePixel<I, O, CD>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(std::is_same_v<VBase<I>, float>, "SaturateDenormalizePixel only works with float base types.");
             const InputType saturatedFloat = SaturateFloat<InputType>::exec(input);
             return DenormalizePixel<OutputType, CD>::exec(saturatedFloat);
         }
-        using InstantiableType = Unary<SaturateDenormalizePixel<I, O, CD>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename T, ColorDepth CD>
     struct NormalizeColorRangeDepth {
-        using InputType = T;
-        using OutputType = T;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<T, T, NormalizeColorRangeDepth<T, CD>>;
+        DECLARE_UNARY_PARENT
         using Base = typename VectorTraits<T>::base;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(std::is_floating_point_v<VBase<T>>, "NormalizeColorRangeDepth only works for floating point values");
             return input * floatShiftFactor<CD>;
         }
-        using InstantiableType = Unary<NormalizeColorRangeDepth<T, CD>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <PixelFormat PF, ColorRange CR, ColorPrimitives CP, bool ALPHA, typename ReturnType = YUVOutputPixelType<PF, ALPHA>>
     struct ConvertYUVToRGB {
         static constexpr ColorDepth CD = (ColorDepth)PixelFormatTraits<PF>::depth;
-        using InputType = ColorDepthPixelType<CD>;
-        using OutputType = ReturnType;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<ColorDepthPixelType<CD>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
+        DECLARE_UNARY_PARENT
 
         private:
         // Y     -> input.x
@@ -316,10 +287,9 @@ namespace fk {
                 return ShiftLeft<OutputType>::exec(computedPixel, { shiftFactor<CD> });
             }
         }
-        using InstantiableType = Unary<ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
-        DEFAULT_UNARY_BUILD
     };
 
+#include <fused_kernel/core/execution_model/default_builders_def.h>
     template <PixelFormat PF>
     struct ReadYUV {
         using OutputType = ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>;
@@ -395,6 +365,7 @@ namespace fk {
         DEFAULT_BUILD
         DEFAULT_READ_BATCH_BUILD
     };
+#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
     enum ColorConversionCodes {
         COLOR_BGR2BGRA = 0,
@@ -496,7 +467,5 @@ namespace fk {
     using ColorConversion = typename ColorConversionType<code, I, O, CD>::type;
 
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif

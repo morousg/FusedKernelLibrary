@@ -15,27 +15,13 @@
 #ifndef FK_STATIC_LOOP
 #define FK_STATIC_LOOP
 
-#include <fused_kernel/core/execution_model/default_operations.cuh>
+#include <fused_kernel/core/execution_model/parent_operations.cuh>
 
 namespace fk {
     template <typename Operation, int ITERATIONS>
-    struct StaticLoop final : public BinaryOperation<typename Operation::InputType, typename Operation::ParamsType, typename Operation::OutputType, StaticLoop<Operation, ITERATIONS>> {
+    struct StaticLoop {
         using Parent = BinaryOperation<typename Operation::InputType, typename Operation::ParamsType, typename Operation::OutputType, StaticLoop<Operation, ITERATIONS>>;
-        using InputType = typename Parent::InputType;
-        using OutputType = typename Parent::OutputType;
-        using ParamsType = typename Parent::ParamsType;
-        using OperationDataType = typename Parent::OperationDataType;
-        using InstantiableType = typename Parent::InstantiableType;
-
-        FK_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
-            return Parent::exec(input, opData);
-        }
-        FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) {
-            return Parent::build(opData);
-        }
-        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) {
-            return Parent::build(params);
-        }
+        DECLARE_BINARY_PARENT
 
         private:
         template <int ITERATION>

@@ -17,7 +17,7 @@
 
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cuda_vector.cuh>
-#include <fused_kernel/core/execution_model/default_operations.cuh>
+#include <fused_kernel/core/execution_model/parent_operations.cuh>
 
 namespace fk {
 
@@ -28,23 +28,13 @@ namespace fk {
     };
 
     template <typename OpInstanceType = BinaryType>
-    struct MxVFloat3 final : public BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>> {
-        using Parent = BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>>;
-        using InputType = typename Parent::InputType;
-        using OutputType = typename Parent::OutputType;
-        using ParamsType = typename Parent::ParamsType;
-        using OperationDataType = typename Parent::OperationDataType;
-        using InstantiableType = typename Parent::InstantiableType;
+    struct MxVFloat3;
 
-        FK_HOST_DEVICE_FUSE  OutputType exec(const InputType& input, const OperationDataType& opData) {
-            return Parent::exec(input, opData);
-        }
-        FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) {
-            return Parent::build(opData);
-        }
-        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) {
-            return Parent::build(params);
-        }
+    template <>
+    struct MxVFloat3<BinaryType> {
+        using Parent = BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>>;
+        DECLARE_BINARY_PARENT
+
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             const float3 xOut = input * params.x;
             const float3 yOut = input * params.y;
@@ -55,7 +45,7 @@ namespace fk {
     };
 
     template <>
-    struct MxVFloat3<UnaryType> final : public UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>> {
+    struct MxVFloat3<UnaryType> {
         using Parent = UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {

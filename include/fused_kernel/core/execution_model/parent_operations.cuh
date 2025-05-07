@@ -39,6 +39,7 @@ namespace fk {
 #define DECLARE_UNARY_PARENT \
 using InputType = typename Parent::InputType; \
 using OutputType = typename Parent::OutputType; \
+using InstanceType = typename Parent::InstanceType; \
 using InstantiableType = typename Parent::InstantiableType; \
 FK_HOST_DEVICE_FUSE InstantiableType build() { \
     return Parent::build(); \
@@ -78,6 +79,7 @@ FK_HOST_DEVICE_FUSE InstantiableType build() { \
 using InputType = typename Parent::InputType; \
 using OutputType = typename Parent::OutputType; \
 using ParamsType = typename Parent::ParamsType; \
+using InstanceType = typename Parent::InstanceType; \
 using OperationDataType = typename Parent::OperationDataType; \
 using InstantiableType = typename Parent::InstantiableType; \
 FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, \

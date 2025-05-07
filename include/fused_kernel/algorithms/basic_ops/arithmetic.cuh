@@ -15,7 +15,7 @@
 #ifndef FK_ARITHMETIC
 #define FK_ARITHMETIC
 
-#include <fused_kernel/core/execution_model/default_operations.cuh>
+#include <fused_kernel/core/execution_model/parent_operations.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 
 namespace fk {
@@ -23,7 +23,7 @@ namespace fk {
     struct Add {};
 
     template <typename I, typename P, typename O>
-    struct Add<I, P, O, BinaryType> final : public BinaryOperation<I, P, O, Add<I, P, O, BinaryType>> {
+    struct Add<I, P, O, BinaryType> {
         using Parent = BinaryOperation<I, P, O, Add<I, P, O, BinaryType>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -32,7 +32,7 @@ namespace fk {
     };
 
     template <typename I1, typename I2, typename O>
-    struct Add<I1, I2, O, UnaryType> final : public UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>> {
+    struct Add<I1, I2, O, UnaryType> {
         using Parent = UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -41,7 +41,7 @@ namespace fk {
     };
 
     template <typename I, typename P = I, typename O = I>
-    struct Sub final : public BinaryOperation<I, P, O, Sub<I, P, O>> {
+    struct Sub {
         using Parent = BinaryOperation<I, P, O, Sub<I, P, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -50,7 +50,7 @@ namespace fk {
     };
 
     template <typename I, typename P = I, typename O = I>
-    struct Mul final : public BinaryOperation<I, P, O, Mul<I, P, O>> {
+    struct Mul {
         using Parent = BinaryOperation<I, P, O, Mul<I, P, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -59,7 +59,7 @@ namespace fk {
     };
 
     template <typename I, typename P = I, typename O = I>
-    struct Div final : public BinaryOperation<I, P, O, Div<I, P, O>> {
+    struct Div {
         using Parent = BinaryOperation<I, P, O, Div<I, P, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {

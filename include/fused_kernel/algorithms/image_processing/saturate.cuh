@@ -559,64 +559,44 @@ namespace fk {
 
     #undef SATURATE_CAST_BASE
 
-#include <fused_kernel/core/execution_model/default_builders_def.h>
-
     template <typename I, typename O>
     struct SaturateCast {
-        using InputType = I;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, O, SaturateCast<I, O>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return UnaryV<SaturateCastBase<VBase<I>, VBase<O>>, I, O>::exec(input);
         }
-        using InstantiableType = Unary<SaturateCast<I, O>>;
-        DEFAULT_UNARY_BUILD
     };
 
     struct SaturateFloatBase {
-        using InputType = float;
-        using OutputType = float;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<float, float, SaturateFloatBase>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return Max<float, float, float, UnaryType>::exec({ 0.f, Min<float,float,float,UnaryType>::exec({ input, 1.f }) });
         }
-        using InstantiableType = Unary<SaturateFloatBase>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename T>
     struct Saturate {
-        using InputType = T;
-        using OutputType = T;
-        using ParamsType = VectorType_t<VBase<T>, 2>;
+        using Parent = BinaryOperation<T, VectorType_t<VBase<T>, 2>, T, Saturate<T>>;
+        DECLARE_BINARY_PARENT
         using Base = typename VectorTraits<T>::base;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<Saturate<T>>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             static_assert(!validCUDAVec<T>, "Saturate only works with non cuda vector types");
-            return Max<Base>::exec(Min<Base>::exec(input, { opData.params.y }), { opData.params.x });
+            return Max<Base>::exec(Min<Base>::exec(input, { params.y }), { params.x });
         }
-        using InstantiableType = Binary<Saturate<T>>;
-        DEFAULT_BUILD
     };
 
     template <typename T>
     struct SaturateFloat {
-        using InputType = T;
-        using OutputType = T;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<T, T, SaturateFloat<T>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(std::is_same_v<VBase<T>, float>, "Satureate float only works with float base types.");
             return UnaryV<SaturateFloatBase, T, T>::exec(input);
         }
-        using InstantiableType = Unary<SaturateFloat<T>>;
-        DEFAULT_UNARY_BUILD
     };
 
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
-
 } // namespace fk
-
-#undef DEFAULT_UNARY_BUILD
 
 #endif

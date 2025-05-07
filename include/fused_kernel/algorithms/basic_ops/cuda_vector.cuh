@@ -15,12 +15,12 @@
 #ifndef FK_CUDA_VECTOR
 #define FK_CUDA_VECTOR
 
-#include <fused_kernel/core/execution_model/default_operations.cuh>
+#include <fused_kernel/core/execution_model/parent_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/logical.cuh>
 
 namespace fk {
     template <typename I, typename O>
-    struct Discard final : public UnaryOperation<I, O, Discard<I, O>> {
+    struct Discard {
         using Parent = UnaryOperation<I, O, Discard<I, O>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -43,7 +43,7 @@ namespace fk {
     };
 
     template <typename T, int... Idx>
-    struct VectorReorder final : public UnaryOperation<T, T, VectorReorder<T, Idx...>> {
+    struct VectorReorder {
         using Parent = UnaryOperation<T, T, VectorReorder<T, Idx...>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -54,7 +54,7 @@ namespace fk {
     };
 
     template <typename T>
-    struct VectorReorderRT final : public BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>> {
+    struct VectorReorderRT {
         using Parent = BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -74,7 +74,7 @@ namespace fk {
     };
 
     template <typename T, typename Operation>
-    struct VectorReduce final : public UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>> {
+    struct VectorReduce {
         using Parent = UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -111,7 +111,7 @@ namespace fk {
     };
 
     template <typename I, typename O>
-    struct AddLast final : public BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>> {
+    struct AddLast {
         using Parent = BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -133,7 +133,7 @@ namespace fk {
     };
 
     template <typename T>
-    struct VectorAnd final : UnaryOperation<T, VBase<T>, VectorAnd<T>>{
+    struct VectorAnd {
         static_assert(std::is_same_v<VBase<T>, bool>, "VectorAnd only works with boolean vectors");
         using Parent = UnaryOperation<T, VBase<T>, VectorAnd<T>>;
         DECLARE_UNARY_PARENT

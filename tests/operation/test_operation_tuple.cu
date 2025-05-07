@@ -24,7 +24,6 @@
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 
 bool test_OTInitialization() {
-
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
 
@@ -35,7 +34,7 @@ bool test_OTInitialization() {
     using Op = fk::PerThreadRead<fk::_2D, uchar>;
     const fk::Read<Op> read{ {input} };
 
-    const fk::OperationTuple<Op> testing{ {read.params} };
+    [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };
 
     const auto test2 = fk::devicefunctions_to_operationtuple(read);
     const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseDF(read);

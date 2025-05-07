@@ -48,7 +48,7 @@ namespace fk {
     struct BorderReader<BT, void, void> {
         template <typename T, enum BorderType BT_ = BT>
         FK_HOST_FUSE
-        std::enable_if_t<BT_ == BorderType::CONSTANT,
+        std::enable_if_t<BT_ == BorderType::CONSTANT && !isAnyReadType<T>,
                          decltype(BorderReader<BT, TypeList<void, T>>::build(std::declval<OperationData<BorderReader<BorderType::CONSTANT, TypeList<void, T>>>>()))>
         build(const T& defaultValue) {
             const BorderReaderParameters<BorderType::CONSTANT, T> params{ defaultValue };
@@ -65,7 +65,7 @@ namespace fk {
 
         template <typename BF, enum BorderType BT_ = BT>
         FK_HOST_FUSE 
-        std::enable_if_t<BT_ != BorderType::CONSTANT,
+        std::enable_if_t<BT_ != BorderType::CONSTANT && isAnyReadType<BF>,
                          decltype(BorderReader<BT, BF>::build(std::declval<BF>()))>
         build(const BF& backFunction) {
             return BorderReader<BT_, BF>::build(backFunction);
@@ -73,7 +73,7 @@ namespace fk {
 
         template <typename BF, enum BorderType BT_ = BT>
         FK_HOST_FUSE 
-        std::enable_if_t<BT_ == BorderType::CONSTANT,
+        std::enable_if_t<BT_ == BorderType::CONSTANT && isAnyReadType<BF>,
                          decltype(BorderReader<BT, BF>::build(std::declval<BF>(), std::declval<typename BF::Operation::ReadDataType>()))>
         build(const BF& backFunction,
               const typename BF::Operation::ReadDataType& defaultValue) {
