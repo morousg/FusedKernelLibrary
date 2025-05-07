@@ -89,19 +89,9 @@ FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
     return InstantiableType{ opData }; \
 }
 
-#define DEFAULT_BUILD_PARAMS \
-FK_HOST_FUSE auto build(const ParamsType& params) { \
-    return InstantiableType{ {params} }; \
-}
-
 #define DEFAULT_BUILD_PARAMS_BACKIOP \
 FK_HOST_FUSE auto build(const ParamsType& params, const BackFunction& backIOp) { \
     return InstantiableType{ {params, backIOp} }; \
-}
-
-#define DEFAULT_UNARY_BUILD \
-FK_HOST_DEVICE_FUSE auto build() { \
-    return InstantiableType{}; \
 }
 
 #endif

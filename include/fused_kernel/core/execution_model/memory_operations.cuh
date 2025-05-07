@@ -103,18 +103,13 @@ namespace fk {
 
     template <enum ND D, typename T>
     struct PerThreadWrite {
-        using ParamsType = RawPtr<D, T>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ true };
-        using InputType = T;
-        using WriteDataType = T;
-        using OperationDataType = OperationData<PerThreadWrite<D, T>>;
-
+        using Parent = WriteOperation<T, RawPtr<D, T>, T, TF::ENABLED, PerThreadWrite<D, T>>;
+        DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
                                       const ThreadFusionType<T, ELEMS_PER_THREAD>& input,
-                                      const OperationDataType& opData) {
-            *PtrAccessor<D>::template point<T, ThreadFusionType<T, ELEMS_PER_THREAD>>(thread, opData.params) = input;
+                                      const ParamsType& params) {
+            *PtrAccessor<D>::template point<T, ThreadFusionType<T, ELEMS_PER_THREAD>>(thread, params) = input;
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.width;
@@ -122,12 +117,6 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.pitch;
         }
-        using InstantiableType = Write<PerThreadWrite<D, T>>;
-        DEFAULT_BUILD
-        FK_HOST_FUSE auto build(const Ptr2D<T>& output) {
-            return InstantiableType{ { output.ptr() } };
-        }
-        DEFAULT_WRITE_BATCH_BUILD
     };
 
     template <typename T>
@@ -162,16 +151,11 @@ namespace fk {
 
     template <typename T>
     struct TensorWrite {
-        using ParamsType = RawPtr<_3D, T>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ true };
-        using InputType = T;
-        using WriteDataType = T;
-        using OperationDataType = OperationData<TensorWrite<T>>;
-
+        using Parent = WriteOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorWrite<T>>;
+        DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<T, ELEMS_PER_THREAD>& input, const OperationDataType& opData) {
-            *PtrAccessor<_3D>::template point<T, ThreadFusionType<T, ELEMS_PER_THREAD>>(thread, opData.params) = input;
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<T, ELEMS_PER_THREAD>& input, const ParamsType& params) {
+            *PtrAccessor<_3D>::template point<T, ThreadFusionType<T, ELEMS_PER_THREAD>>(thread, params) = input;
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -181,29 +165,19 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.pitch;
         }
-        using InstantiableType = Write<TensorWrite<T>>;
-        DEFAULT_BUILD
-        FK_HOST_FUSE auto build(const Tensor<T>& output) {
-            return InstantiableType{ { output.ptr() } };
-        }
     };
 
     template <typename T>
     struct TensorSplit {
-        using WriteDataType = VBase<T>;
-        using ParamsType = RawPtr<_3D, WriteDataType>;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ false };
-        using InputType = T;
-        using OperationDataType = OperationData<TensorSplit<T>>;
-
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const T& input, const OperationDataType& opData) {
+        using Parent = WriteOperation<T, RawPtr<_3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorSplit<T>>;
+        DECLARE_WRITE_PARENT
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const T& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
                           "Wrong type for split tensor write. It must be one of <type>2, <type>3 or <type>4.");
 
-            const int planePixels = opData.params.dims.width * opData.params.dims.height;
+            const int planePixels = params.dims.width * params.dims.height;
 
-            WriteDataType* const work_plane = PtrAccessor<_3D>::point(thread, opData.params);
+            WriteDataType* const work_plane = PtrAccessor<_3D>::point(thread, params);
 
             *work_plane = input.x;
             *(work_plane + planePixels) = input.y;
@@ -220,8 +194,6 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.pitch;
         }
-        using InstantiableType = Write<TensorSplit<T>>;
-        DEFAULT_BUILD
     };
 
     template <typename T>

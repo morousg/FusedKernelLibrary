@@ -811,7 +811,9 @@ namespace fk { // namespace FusedKernel
             return fused_operation_impl::tuple_operate<FirstOp, RemOps...>(input);
         }
         using InstantiableType = Unary<FusedOperation_<void, FirstOp, RemOps...>>;
-        DEFAULT_UNARY_BUILD
+        FK_HOST_DEVICE_FUSE auto build() {
+            return InstantiableType{};
+        }
     };
 
     template <typename Operation>
@@ -825,7 +827,9 @@ namespace fk { // namespace FusedKernel
             return Operation::exec(input);
         }
         using InstantiableType = Unary<Operation>;
-        DEFAULT_UNARY_BUILD
+        FK_HOST_DEVICE_FUSE auto build() {
+                return InstantiableType{};
+        }
     };
 
     template <typename... Operations>
