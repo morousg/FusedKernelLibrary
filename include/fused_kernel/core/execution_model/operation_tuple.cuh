@@ -313,7 +313,7 @@ namespace fk {
 
     template <typename... IOps>
     FK_HOST_DEVICE_CNST auto make_operation_tuple(const IOps&... iOps) {
-        const auto fusedOp = fuseDF(iOps...);
+        const auto fusedOp = fuseIOps(iOps...);
         return fusedOp.params;
     }
 

@@ -78,8 +78,8 @@ namespace fk { // namespace FusedKernel
         FK_HOST_FUSE auto make_fusedArray(const std::index_sequence<Idx...>&,
                                           const std::array<ThisIOp, BATCH>& thisArray,
                                           const std::array<ForwardIOp, BATCH>& fwdArray) {
-            using ResultingType = decltype(fuseDF(std::declval<ThisIOp>(), std::declval<ForwardIOp>()));
-            return std::array<ResultingType, BATCH>{fuseDF(thisArray[Idx], fwdArray[Idx])...};
+            using ResultingType = decltype(fuseIOps(std::declval<ThisIOp>(), std::declval<ForwardIOp>()));
+            return std::array<ResultingType, BATCH>{fuseIOps(thisArray[Idx], fwdArray[Idx])...};
         }
         template <size_t BATCH, typename BackwardIOp, typename ForwardIOp, typename DefaultValueType>
         FK_HOST_FUSE auto then_helper(const std::array<BackwardIOp, BATCH>& backOpArray,
@@ -98,8 +98,9 @@ namespace fk { // namespace FusedKernel
             return ContinuationIOpNewType::Operation::build(fusedArray);
         }
         template <size_t BATCH, typename ThisIOp, typename ForwardIOp>
-        FK_HOST_CNST auto then_helper(const std::array<ThisIOp, BATCH>& thisArray,
-                                      const ForwardIOp& forwardIOp) const {
+        FK_HOST_FUSE auto then_helper(const ReadInstantiableOperation<Operation_t>& thisIOp,
+                                      const std::array<ThisIOp, BATCH>& thisArray,
+                                      const ForwardIOp& forwardIOp) {
             const auto forwardOpArray = make_set_std_array<BATCH>(forwardIOp);
             const auto fusedArray = make_fusedArray<BATCH>(std::make_index_sequence<BATCH>{}, thisArray, forwardOpArray);
             using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
@@ -107,10 +108,10 @@ namespace fk { // namespace FusedKernel
                 return ContinuationIOpNewType::Operation::build(fusedArray);
             } else {
                 using NewOutputType = typename ContinuationIOpNewType::Operation::OutputType;
-                using OldOutputType = std::decay_t<decltype(this->params.default_value)>;
-                const auto default_value = this->params.default_value;
+                using OldOutputType = std::decay_t<decltype(thisIOp.params.default_value)>;
+                const auto default_value = thisIOp.params.default_value;
                 const auto val = UnaryV<CastBase<VBase<OldOutputType>, VBase<NewOutputType>>, OldOutputType, NewOutputType>::exec(default_value);
-                return ContinuationIOpNewType::Operation::build(this->params.usedPlanes, val, fusedArray);
+                return ContinuationIOpNewType::Operation::build(thisIOp.params.usedPlanes, val, fusedArray);
             }
         }
     public:
@@ -173,7 +174,7 @@ namespace fk { // namespace FusedKernel
                     }
                 } else {
                     const auto thisArray = Operation::toArray(*this);
-                    return then_helper<BATCH>(thisArray, cIOp);
+                    return then_helper<BATCH>(*this ,thisArray, cIOp);
                 }
             } else if constexpr (!isBatchOperation<Operation>&& !isBatchOperation<typename ContinuationIOp::Operation>) {
                 static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
@@ -181,7 +182,7 @@ namespace fk { // namespace FusedKernel
                 if constexpr (isReadBackType<ContinuationIOp>) {
                     return ContinuationIOp::Operation::build(*this, cIOp);
                 } else {
-                    return fuseDF(*this, cIOp);
+                    return fuseIOps(*this, cIOp);
                 }
             }
         }
@@ -235,7 +236,7 @@ namespace fk { // namespace FusedKernel
                 if constexpr (isReadBackType<ContinuationIOp>) {
                     return ContinuationIOp::Operation::build(*this, cIOp);
                 } else {
-                    return fuseDF(*this, cIOp);
+                    return fuseIOps(*this, cIOp);
                 }
             }
         }
@@ -265,8 +266,13 @@ namespace fk { // namespace FusedKernel
         DEVICE_FUNCTION_DETAILS_IS_ASSERT(BinaryType)
 
         template <typename... ContinuationsDF>
+        FK_HOST_DEVICE_FUSE auto then(const BinaryInstantiableOperation<Operation_t>& thisIOp, const ContinuationsDF&... cDFs) {
+            return fuseIOps(thisIOp, cDFs...);
+        }
+
+        template <typename... ContinuationsDF>
         FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseDF(*this, cDFs...);
+            return BinaryInstantiableOperation<Operation_t>::then(*this, cDFs...);
         }
     };
 
@@ -286,7 +292,7 @@ namespace fk { // namespace FusedKernel
 
         template <typename... ContinuationsDF>
         FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseDF(*this, cDFs...);
+            return fuseIOps(*this, cDFs...);
         }
     };
 
@@ -304,7 +310,7 @@ namespace fk { // namespace FusedKernel
 
         template <typename... ContinuationsDF>
         FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseDF(*this, cDFs...);
+            return fuseIOps(*this, cDFs...);
         }
     };
 
@@ -323,7 +329,7 @@ namespace fk { // namespace FusedKernel
 
         template <typename... ContinuationsDF>
         FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseDF(*this, cDFs...);
+            return fuseIOps(*this, cDFs...);
         }
     };
 
@@ -992,14 +998,14 @@ namespace fk { // namespace FusedKernel
         return OperationTupleToInstantiableOperation<OperationTuple>::value(opTuple);
     }
 
-    /** @brief fuseDF: function that creates either a Read or a Binary IOp, composed of a
+    /** @brief fuseIOps: function that creates either a Read or a Binary IOp, composed of a
     * FusedOperation, where the operations are the ones found in the InstantiableOperations in the
     * instantiableOperations parameter pack.
     * This is a convenience function to simplify the implementation of ReadBack and Ternary InstantiableOperations
     * and Operations.
     */
     template <typename... InstantiableOperations>
-    FK_HOST_CNST auto fuseDF(const InstantiableOperations&... instantiableOperations) {
+    FK_HOST_CNST auto fuseIOps(const InstantiableOperations&... instantiableOperations) {
         return operationTuple_to_InstantiableOperation(devicefunctions_to_operationtuple(instantiableOperations...));
     }
 } // namespace fk

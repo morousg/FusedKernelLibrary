@@ -37,7 +37,7 @@ bool test_OTInitialization() {
     [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };
 
     const auto test2 = fk::devicefunctions_to_operationtuple(read);
-    const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseDF(read);
+    const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseIOps(read);
 
     using Op2 = fk::SaturateCast<uchar, uint>;
     constexpr fk::Unary<Op2> cast = {};
@@ -56,7 +56,7 @@ bool test_OTInitialization() {
 
     const auto test7 = fk::devicefunctions_to_operationtuple(read, cast);
 
-    const auto test8 = fk::fuseDF(read, cast);
+    const auto test8 = fk::fuseIOps(read, cast);
 
     const auto test9 = fk::Instantiable<fk::FusedOperation<typename decltype(read)::Operation,
                                                                    typename decltype(cast)::Operation>>
