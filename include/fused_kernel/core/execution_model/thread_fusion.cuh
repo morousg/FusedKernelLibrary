@@ -20,6 +20,11 @@
 
 namespace fk {
 
+    enum class TF : bool {
+        ENABLED = true,
+        DISABLED = false
+    };
+
     /* Possible combinations:
     Size, Channels, Types
     1,    1         char, uchar                     8,  8  char4, uchar4        x4

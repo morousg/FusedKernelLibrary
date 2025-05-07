@@ -289,26 +289,25 @@ namespace fk {
         }
     };
 
-#include <fused_kernel/core/execution_model/default_builders_def.h>
     template <PixelFormat PF>
     struct ReadYUV {
-        using OutputType = ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>;
         using PixelBaseType = ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>;
-        using ParamsType = RawPtr<_2D, PixelBaseType>;
-        using InstanceType = ReadType;
-        using ReadDataType = PixelBaseType;
-        static constexpr bool THREAD_FUSION{ false };
-        using OperationDataType = OperationData<ReadYUV<PF>>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const OperationDataType& opData) {
+        using Parent = ReadOperation<PixelBaseType,
+                                     RawPtr<_2D, PixelBaseType>,
+                                     ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>,
+                                     TF::DISABLED,
+                                     ReadYUV<PF>>;
+        DECLARE_READ_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             if constexpr (PF == NV12 || PF == P010 || PF == P016 || PF == P210 || PF == P216) {
                 // Planar luma
-                const PixelBaseType Y = *PtrAccessor<_2D>::cr_point(thread, opData.params);
+                const PixelBaseType Y = *PtrAccessor<_2D>::cr_point(thread, params);
 
                 // Packed chroma
-                const PtrDims<_2D> dims = opData.params.dims;
+                const PtrDims<_2D> dims = params.dims;
                 using VectorType2 = VectorType_t<PixelBaseType, 2>;
                 const RawPtr<_2D, VectorType2> chromaPlane{
-                    reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(opData.params.data) + dims.pitch * dims.height),
+                    reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
                     { dims.width >> 1, dims.height >> 1, dims.pitch }
                 };
                 const ColorSpace CS = static_cast<ColorSpace>(PixelFormatTraits<PF>::space);
@@ -318,20 +317,20 @@ namespace fk {
                 return { Y, UV.x, UV.y };
             } else if constexpr (PF == NV21) {
                 // Planar luma
-                const uchar Y = *PtrAccessor<_2D>::cr_point(thread, opData.params);
+                const uchar Y = *PtrAccessor<_2D>::cr_point(thread, params);
 
                 // Packed chroma
-                const PtrDims<_2D> dims = opData.params.dims;
+                const PtrDims<_2D> dims = params.dims;
                 const RawPtr<_2D, uchar2> chromaPlane{
-                    reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(opData.params.data) + dims.pitch * dims.height),
+                    reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
                                               { dims.width >> 1, dims.height >> 1, dims.pitch }
                 };
                 const uchar2 VU = *PtrAccessor<_2D>::cr_point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane);
 
                 return { Y, VU.y, VU.x };
             } else if constexpr (PF == Y216 || PF == Y210) {
-                const PtrDims<_2D> dims = opData.params.dims;
-                const RawPtr<_2D, ushort4> image{ reinterpret_cast<ushort4*>(opData.params.data), {dims.width >> 1, dims.height, dims.pitch} };
+                const PtrDims<_2D> dims = params.dims;
+                const RawPtr<_2D, ushort4> image{ reinterpret_cast<ushort4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
                 const ushort4 pixel = *PtrAccessor<_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
                 const bool isEvenThread = IsEven<uint>::exec(thread.x);
 
@@ -339,8 +338,8 @@ namespace fk {
             } else if constexpr (PF == Y416) {
                 // AVYU
                 // We use ushort as the type, to be compatible with the rest of the cases
-                const RawPtr<_2D, ushort4> readImage{ opData.params.data, opData.params.dims };
-                const ushort4 pixel = *PtrAccessor<_2D>::cr_point(thread, opData.params);
+                const RawPtr<_2D, ushort4> readImage{ params.data, params.dims };
+                const ushort4 pixel = *PtrAccessor<_2D>::cr_point(thread, params);
                 return { pixel.z, pixel.w, pixel.y, pixel.x };
             }
         }
@@ -360,12 +359,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
-
-        using InstantiableType = Read<ReadYUV<PF>>;
-        DEFAULT_BUILD
-        DEFAULT_READ_BATCH_BUILD
     };
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
     enum ColorConversionCodes {
         COLOR_BGR2BGRA = 0,

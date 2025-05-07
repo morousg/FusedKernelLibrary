@@ -93,30 +93,58 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
     return Parent::build(params); \
 }
 
-    template <typename ROperationImpl>
+    template <typename RT, typename P, typename O, enum class TF TFE, typename ROperationImpl>
     struct ReadOperation {
-        using IT = typename ROperationImpl::InputType;
-        using OT = typename ROperationImpl::OutputType;
-        using PT = typename ROperationImpl::ParamsType;
-        using ODT = typename ROperationImpl::OperationDataType;
-        using IType = typename ROperationImpl::InstantiableType;
+        using ParamsType = P;
+        using ReadDataType = RT;
+        using InstanceType = ReadType;
+        static constexpr bool THREAD_FUSION{ static_cast<bool>(TFE) };
+        using OutputType = O;
+        using OperationDataType = OperationData<ROperationImpl>;
+        using InstantiableType = Read<ROperationImpl>;
 
-        FK_DEVICE_FUSE OT exec(const Point& thread, const ODT& opData) {
-            return ROperationImpl::exec(thread, opData.params);
+        template <uint ELEMS_PER_THREAD=1>
+        FK_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD> exec(const Point& thread, const OperationDataType& opData) {
+            if constexpr (THREAD_FUSION) {
+                return ROperationImpl::exec<ELEMS_PER_THREAD>(thread, opData.params);
+            } else {
+                return ROperationImpl::exec(thread, opData.params);
+            }
         }
 
-        FK_HOST_DEVICE_FUSE auto build(const ODT& opData) {
-            return IType{ opData };
+        FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) {
+            return InstantiableType{ opData };
         }
 
-        FK_HOST_DEVICE_FUSE auto build(const PT& params) {
-            return IType{ {params} };
+        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) {
+            return InstantiableType{ {params} };
         };
 
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) {
+
+            static_assert(allArraysSameSize_v<BATCH_N, ArrayTypes...>,
+                "Not all arrays have the same size as BATCH");
+            return build_helper_generic(std::make_index_sequence<BATCH_N>(), firstInstance, arrays...);
+        }
+
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
+            const ArrayTypes&... arrays) {
+            const auto arrayOfIOps = build_batch(firstInstance, arrays...);
+            return BatchRead<BATCH_N>::build(arrayOfIOps);
+        }
+
+        template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
+            const std::array<FirstType, BATCH_N>& firstInstance,
+            const ArrayTypes&... arrays) {
+            const auto arrayOfIOps = build_batch(firstInstance, arrays...);
+            return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+        }
     private:
         template <size_t Idx, typename Array>
         FK_HOST_FUSE auto get_element_at_index(const Array& paramArray) -> decltype(paramArray[Idx]) {
-
             return paramArray[Idx];
         }
         template <size_t Idx, typename... Arrays>
@@ -130,29 +158,41 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
             using OutputArrayType = decltype(call_build_at_index<0>(std::declval<Arrays>()...));
             return std::array<OutputArrayType, sizeof...(Idx)>{ call_build_at_index<Idx>(arrays...)... };
         }
-    public:
-        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
-        FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) {
-
-            static_assert(allArraysSameSize_v<BATCH_N, ArrayTypes...>,
-                "Not all arrays have the same size as BATCH");
-            return build_helper_generic(std::make_index_sequence<BATCH_N>(), firstInstance, arrays...);
-        }
-        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
-        FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
-                                const ArrayTypes&... arrays) {
-            const auto arrayOfIOps = build_batch(firstInstance, arrays...);
-            return BatchRead<BATCH_N>::build(arrayOfIOps);
-        }
-        template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
-        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-                                const std::array<FirstType, BATCH_N>& firstInstance,
-                                const ArrayTypes&... arrays) {
-            const auto arrayOfIOps = build_batch(firstInstance, arrays...);
-            return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
-        }
     };
 
+#define DECLARE_READ_PARENT \
+using ParamsType = typename Parent::ParamsType; \
+using ReadDataType = typename Parent::ReadDataType; \
+using InstanceType = typename Parent::InstanceType; \
+using OutputType = typename Parent::OutputType; \
+using OperationDataType = typename Parent::OperationDataType; \
+using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION; \
+template <uint ELEMS_PER_THREAD=1> \
+FK_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD> exec(const Point& thread, const OperationDataType& opData) { \
+    return Parent::template exec<ELEMS_PER_THREAD>(thread, opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
+    return Parent::build(opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
+    return Parent::build(params); \
+} \
+template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, \
+    const ArrayTypes&... arrays) { \
+    return Parent::build_batch(firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) { \
+    return Parent::build(firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
+    const std::array<FirstType, BATCH_N>& firstInstance, \
+    const ArrayTypes&... arrays) { \
+    return Parent::build(usedPlanes, defaultValue, firstInstance, arrays...); \
+}
 
 } // namespace fk
 
