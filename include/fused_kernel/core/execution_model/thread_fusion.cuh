@@ -60,8 +60,11 @@ namespace fk {
     template <uint channelNumber>
     constexpr bool isValidChannelNumber = Find<uint, channelNumber>::one_of(validChannelsSequence);
 
-    template <typename SourceType, uint ELEMS_PER_THREAD>
-    using ThreadFusionType = VectorType_t<VBase<SourceType>, cn<SourceType>* ELEMS_PER_THREAD>;
+    template <typename SourceType, uint ELEMS_PER_THREAD, typename OutputType = SourceType>
+    using ThreadFusionType =
+        std::conditional_t<std::is_same_v<SourceType, OutputType>,
+                           VectorType_t<VBase<SourceType>, (cn<SourceType>)* ELEMS_PER_THREAD>,
+                           OutputType>;
 
     template <typename ReadType, typename WriteType, bool ENABLED_>
     struct ThreadFusionInfo {
