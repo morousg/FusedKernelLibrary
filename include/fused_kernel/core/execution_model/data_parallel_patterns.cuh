@@ -97,6 +97,7 @@ namespace fk { // namespace FusedKernel
         template <typename TFI, typename ReadIOp>
         FK_DEVICE_FUSE auto read(const Point& thread, const ReadIOp& readDF) {
             if constexpr (TFI::ENABLED) {
+                static_assert(isAnyReadType<ReadIOp>, "ReadIOp is not ReadType or ReadBackType");
                 return ReadIOp::Operation::exec<TFI::elems_per_thread>(thread, readDF);
             } else {
                 return ReadIOp::Operation::exec(thread, readDF);

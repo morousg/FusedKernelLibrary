@@ -320,13 +320,13 @@ namespace fk {
     struct Resize<IType, AR, void> {
 
         template <typename BF, enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR && is_any_read_type<BF>::value, ReadBack<Resize<IType, AR_, BF>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR && isAnyReadType<BF>, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backFunction, const Size& dstSize) {
             return Resize<IType, AR_, BF>::build(backFunction, dstSize);
         }
 
         template <typename BF, enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR && is_any_read_type<BF>::value, ReadBack<Resize<IType, AR_, BF>>>
+        FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR && isAnyReadType<BF>, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backFunction, const Size& dstSize,
               const typename Resize<IType, AR_, BF>::OutputType& backgroundValue) {
             return Resize<IType, AR_, BF>::build(backFunction, dstSize, backgroundValue);
