@@ -410,6 +410,7 @@ namespace fk { // namespace FusedKernel
     template <typename Operation>
     using Instantiable = typename InstantiableOperationType<Operation>::type;
 
+    // Parent Read and Write Operations
     template <typename RT, typename P, typename O, enum class TF TFE, typename ROperationImpl>
     struct ReadOperation {
         using Child = ROperationImpl;
@@ -464,6 +465,53 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     return Parent::build(params); \
 }
 
+    template <typename I, typename P, typename WT, enum class TF TFE, typename WOperationImpl>
+    struct WriteOperation {
+        using Child = WOperationImpl;
+        using ParamsType = P;
+        using InputType = I;
+        using WriteDataType = WT;
+        using InstanceType = WriteType;
+        static constexpr bool THREAD_FUSION{ static_cast<bool>(TFE) };
+        using OperationDataType = OperationData<WOperationImpl>;
+        using InstantiableType = Write<WOperationImpl>;
+        template <uint ELEMS_PER_THREAD = 1>
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const OperationDataType& opData) {
+            if constexpr (THREAD_FUSION) {
+                WOperationImpl::exec<ELEMS_PER_THREAD>(thread, input, opData.params);
+            } else {
+                WOperationImpl::exec(thread, input, opData.params);
+            }
+        }
+        FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) {
+            return InstantiableType{ opData };
+        }
+        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) {
+            return InstantiableType{ {params} };
+        };
+    };
+
+#define DECLARE_WRITE_PARENT_BASIC \
+using ParamsType = typename Parent::ParamsType; \
+using InputType = typename Parent::InputType; \
+using WriteDataType = typename Parent::WriteDataType; \
+using InstanceType = typename Parent::InstanceType; \
+using OperationDataType = typename Parent::OperationDataType; \
+using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION; \
+template <uint ELEMS_PER_THREAD=1> \
+FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const OperationDataType& opData) { \
+    Parent::template exec<ELEMS_PER_THREAD>(thread, input, opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
+    return Parent::build(opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
+    return Parent::build(params); \
+}
+    // END Parent Read and Write Operations
+
+    // Batch operations
     struct BatchOperation {
         template <typename InstantiableType>
         FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
@@ -525,7 +573,26 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         ActiveThreads activeThreads;
     };
 
-    template <size_t BATCH_, enum PlanePolicy PP__ = PROCESS_ALL, typename Operation_ = void, typename OutputType_ = NullType>
+    template <size_t BATCH, typename Operation>
+    struct BatchReadBase {
+        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationData<Operation>& opData) {
+            return Operation::num_elems_x(thread, opData.params.opData[thread.z]);
+        }
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationData<Operation>& opData) {
+            return Operation::num_elems_y(thread, opData.params.opData[thread.z]);
+        }
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationData<Operation>& opData) {
+            return BATCH;
+        }
+        FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationData<Operation>& opData) {
+            return Operation::pitch(thread, opData.params.opData[thread.z]);
+        }
+        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationData<Operation>& opData) {
+            return opData.params.activeThreads;
+        }
+    };
+
+    template <size_t BATCH, enum PlanePolicy PP = PROCESS_ALL, typename Operation = void, typename OutputType = NullType>
     struct BatchRead;
 
     /// @brief struct BatchRead
@@ -534,15 +601,16 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     /// @tparam PP: enum to select if all planes will be processed equally, or only some
     /// with the remainder not reading and returning a default value
     template <size_t BATCH_, typename Operation_, typename OutputType_>
-    struct BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_> {
+    struct BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_> final :
+        public BatchReadBase<BATCH_, BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_>> {
         using Operation = Operation_;
-        static constexpr int BATCH = BATCH_;
+        static constexpr size_t BATCH = BATCH_;
         static constexpr PlanePolicy PP = PROCESS_ALL;
         using Parent = ReadOperation<typename Operation::ReadDataType,
                                      BatchReadParams<BATCH, PP, Operation, typename Operation::OutputType>,
                                      typename Operation::OutputType,
                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
-                                     BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_>>;
+                                     BatchRead<BATCH, PROCESS_ALL, Operation_, OutputType_>>;
         DECLARE_READ_PARENT_BASIC
 
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
@@ -550,22 +618,6 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE const auto exec(const Point& thread, const ParamsType& params) {
             return exec_helper<ELEMS_PER_THREAD>(thread, params.opData);
-        }
-
-        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
-            return Operation::num_elems_x(thread, opData.params.opData[thread.z]);
-        }
-        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
-            return Operation::num_elems_y(thread, opData.params.opData[thread.z]);
-        }
-        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
-            return BATCH;
-        }
-        FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
-            return Operation::pitch(thread, opData.params.opData[thread.z]);
-        }
-        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
-            return opData.params.activeThreads;
         }
         // Build BatchRead from an array of InstantiableOperations
         template <typename IOp>
@@ -609,7 +661,8 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     using NullTypeToAlternative = std::conditional_t<std::is_same_v<Nullable, NullType>, Alternative, Nullable>;
 
     template <size_t BATCH_, typename Operation_, typename OutputType_>
-    struct BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_> {
+    struct BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_> final :
+        public BatchReadBase<BATCH_, BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>> {
         using Operation = Operation_;
         static constexpr int BATCH = BATCH_;
         static constexpr PlanePolicy PP = CONDITIONAL_WITH_DEFAULT;
@@ -627,21 +680,6 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
             } else {
                 return Operation::exec(thread, params.opData[thread.z]);
             }
-        }
-        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
-            return Operation::num_elems_x(thread, opData.params.opData[thread.z]);
-        }
-        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
-            return Operation::num_elems_y(thread, opData.params.opData[thread.z]);
-        }
-        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
-            return BATCH;
-        }
-        FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
-            return Operation::pitch(thread, opData.params.opData[thread.z]);
-        }
-        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
-            return opData.params.activeThreads;
         }
 
         template <typename IOp, typename DefaultValueType>
@@ -696,50 +734,6 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         }
     };
 
-    template <typename I, typename P, typename WT, enum class TF TFE, typename WOperationImpl>
-    struct WriteOperation {
-        using Child = WOperationImpl;
-        using ParamsType = P;
-        using InputType = I;
-        using WriteDataType = WT;
-        using InstanceType = WriteType;
-        static constexpr bool THREAD_FUSION{ static_cast<bool>(TFE) };
-        using OperationDataType = OperationData<WOperationImpl>;
-        using InstantiableType = Write<WOperationImpl>;
-        template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const OperationDataType& opData) {
-            if constexpr (THREAD_FUSION) {
-                WOperationImpl::exec<ELEMS_PER_THREAD>(thread, input, opData.params);
-            } else {
-                WOperationImpl::exec(thread, input, opData.params);
-            }
-        }
-        FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) {
-            return InstantiableType{ opData };
-        }
-        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) {
-            return InstantiableType{ {params} };
-        };
-    };
-
-#define DECLARE_WRITE_PARENT_BASIC \
-using ParamsType = typename Parent::ParamsType; \
-using InputType = typename Parent::InputType; \
-using WriteDataType = typename Parent::WriteDataType; \
-using InstanceType = typename Parent::InstanceType; \
-using OperationDataType = typename Parent::OperationDataType; \
-using InstantiableType = typename Parent::InstantiableType; \
-static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION; \
-template <uint ELEMS_PER_THREAD=1> \
-FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const OperationDataType& opData) { \
-    Parent::template exec<ELEMS_PER_THREAD>(thread, input, opData); \
-} \
-FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
-    return Parent::build(opData); \
-} \
-FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
-    return Parent::build(params); \
-}
     template <size_t BATCH, typename Operation = void>
     struct BatchWrite {
         using Parent = WriteOperation<typename Operation::InputType,
@@ -795,7 +789,9 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
             return BatchWrite<BATCH, typename IOp::Operation>::build(iOps);
         }
     };
+    // END Batch operations
 
+    // FusedOperation
     namespace fused_operation_impl {
         // FusedOperation implementation struct
         template <typename Operation>
@@ -1043,9 +1039,10 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
 
     template <typename... Operations>
     using FusedOperation = FusedOperation_<void, Operations...>;
-
 #include <fused_kernel/core/execution_model/default_builders_undef.h>
+    // END FusedOperation
 
+    // fuseIOps implementation
     template <typename T>
     struct is_fused_operation : std::false_type {};
 
@@ -1124,6 +1121,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     FK_HOST_CNST auto fuseIOps(const InstantiableOperations&... instantiableOperations) {
         return operationTuple_to_InstantiableOperation(devicefunctions_to_operationtuple(instantiableOperations...));
     }
+    // END fuseIOps implementation
 } // namespace fk
 
 #endif
