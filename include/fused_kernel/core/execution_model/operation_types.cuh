@@ -153,6 +153,15 @@ namespace fk {
 
     template <typename... OperationORInstantiableOperation>
     constexpr bool noneAnyWriteType = and_v<(!isAnyWriteType<OperationORInstantiableOperation>)...>;
+
+    template <typename T, typename=void>
+    struct IsCompleteOperation : std::false_type {};
+
+    template <typename T>
+    struct IsCompleteOperation<T, std::void_t<decltype(&T::exec)>> : std::true_type {};
+
+    template <typename T>
+    constexpr bool isCompleteOperation = IsCompleteOperation<T>::value;
 } // namespace fk
 
 #endif

@@ -23,110 +23,6 @@
 #include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 
 namespace fk {
-    template <typename I, typename O, typename UOperationImpl>
-    struct UnaryOperation {
-        using InputType = I;
-        using OutputType = O;
-        using InstanceType = UnaryType;
-        using InstantiableType = UnaryInstantiableOperation<UOperationImpl>;
-        // build() is fine, it only refers to UOperationImpl::InstantiableType
-        // within the function body/return type, which is instantiated later.
-        FK_HOST_DEVICE_FUSE auto build() {
-            return typename UOperationImpl::InstantiableType{};
-        }
-    };
-
-#define DECLARE_UNARY_PARENT \
-using InputType = typename Parent::InputType; \
-using OutputType = typename Parent::OutputType; \
-using InstanceType = typename Parent::InstanceType; \
-using InstantiableType = typename Parent::InstantiableType; \
-FK_HOST_DEVICE_FUSE InstantiableType build() { \
-    return Parent::build(); \
-}
-
-    template <typename I, typename P, typename O, typename BOperationImpl>
-    struct BinaryOperation {
-        // --- REMOVE using ALIASES that depend on BOperationImpl ---
-        // These caused the incomplete type error during base class instantiation.
-        // We will refer to BOperationImpl::TypeNeeded directly in methods.
-        using InputType = I;
-        using OutputType = O; // Needed for the static exec signature
-        using ParamsType = P; // Needed by OperationData and build(params)
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<BOperationImpl>; // Needed by exec/build(opData)
-        using InstantiableType = BinaryInstantiableOperation<BOperationImpl>;
-        // --- exec Method ---
-        // Accesses types only in signature/body -> OK
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
-            // Calls the static exec of the derived class (CRTP)
-            return BOperationImpl::exec(input, opData.params);
-            // Return type deduced via 'auto'
-        }
-        // --- build Methods ---
-        // Accesses types only in signature/body -> OK
-        FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) {
-            // Return type deduced via 'auto'
-            return InstantiableType{ opData };
-        }
-        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) {
-            // Return type deduced via 'auto'
-            return InstantiableType{ {params} };
-        }
-    };
-
-#define DECLARE_BINARY_PARENT \
-using InputType = typename Parent::InputType; \
-using OutputType = typename Parent::OutputType; \
-using ParamsType = typename Parent::ParamsType; \
-using InstanceType = typename Parent::InstanceType; \
-using OperationDataType = typename Parent::OperationDataType; \
-using InstantiableType = typename Parent::InstantiableType; \
-FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, \
-                                       const OperationDataType& opData) { \
-    return Parent::exec(input, opData); \
-} \
-FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) { \
-    return Parent::build(opData); \
-} \
-FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
-    return Parent::build(params); \
-}
-
-// ReadOperation declared in instantiable_operations.cuh
-#define DECLARE_READ_PARENT_BATCH \
-template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
-FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, \
-                              const ArrayTypes&... arrays) { \
-    return BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...); \
-} \
-template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
-FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) { \
-    return BatchRead<BATCH_N, PROCESS_ALL, typename Parent::Child>::build(firstInstance, arrays...); \
-} \
-template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes> \
-FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
-    const std::array<FirstType, BATCH_N>& firstInstance, \
-    const ArrayTypes&... arrays) { \
-    return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance, arrays...); \
-} \
-template <size_t BATCH_N, typename DefaultValueType, typename FirstType> \
-FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
-    const std::array<FirstType, BATCH_N>& firstInstance) { \
-    if constexpr (isAnyReadType<FirstType>) { \
-        return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(firstInstance, usedPlanes, defaultValue); \
-    } else if constexpr (!isAnyReadType<FirstType>) { \
-        return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance); \
-    } else { \
-        static_assert(!std::is_same_v<FirstType, FirstType>, "BatchRead: FirstType is not a valid read type"); \
-    } \
-}
-
-#define DECLARE_READ_PARENT \
-DECLARE_READ_PARENT_BASIC \
-DECLARE_READ_PARENT_BATCH
-
-
 // WriteOperation declared in instantiable_operations.cuh
 #define DECLARE_WRITE_PARENT_BASIC \
 using ParamsType = typename Parent::ParamsType; \
@@ -148,20 +44,120 @@ FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
 FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     return Parent::build(params); \
 }
-#define DECLARE_WRITE_PARENT_BATCH \
+
+    template <typename RT, typename P, typename B, typename O, typename RBOperationImpl>
+    struct ReadBackOperation {
+        using Child = RBOperationImpl;
+        using ReadDataType = RT;
+        using OutputType = O;
+        using ParamsType = P;
+        using BackFunction = B;
+        using InstanceType = ReadBackType;
+        using OperationDataType = OperationData<RBOperationImpl>;
+        using InstantiableType = ReadBackInstantiableOperation<RBOperationImpl>;
+        static constexpr bool THREAD_FUSION = false;
+
+        template <typename BF = BackFunction>
+        FK_DEVICE_FUSE std::enable_if_t<!std::is_same_v<BF, NullType>, OutputType>
+        exec(const Point& thread, const OperationDataType& opData) {
+            return RBOperationImpl::exec(thread, opData.params, opData.back_function);
+        }
+        FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) {
+            return InstantiableType{ opData };
+        }
+        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params, const BackFunction& backFunc) {
+            return InstantiableType{ { params, backFunc } };
+        };
+    };
+
+#define DECLARE_READBACK_PARENT_ALIAS \
+using ReadDataType = typename Parent::ReadDataType; \
+using OutputType = typename Parent::OutputType; \
+using ParamsType = typename Parent::ParamsType; \
+using BackFunction = typename Parent::BackFunction; \
+using InstanceType = typename Parent::InstanceType; \
+using OperationDataType = typename Parent::OperationDataType; \
+using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION;
+
+// DECLARE_READBACK_PARENT
+#define DECLARE_READBACK_PARENT \
+DECLARE_READBACK_PARENT_ALIAS \
+FK_DEVICE_FUSE OutputType exec(const Point& thread, const OperationDataType& opData) { \
+    return Parent::exec(thread, opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
+    return Parent::build(opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const ParamsType& params, const BackFunction& back_function) { \
+    return Parent::build(params, back_function); \
+} \
+DECLARE_READ_PARENT_BATCH
+
+    template <typename Parent>
+    struct ReadBackIncompleteOperationBatchBuilders {
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
+                                const ArrayTypes&... arrays) {
+            const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...);
+            return BatchRead<BATCH_N>::build(arrayOfIOps);
+        }
+        template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
+                                const std::array<FirstType, BATCH_N>& firstInstance,
+                                const ArrayTypes&... arrays) {
+            const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...);
+            return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+        }
+        template <size_t BATCH_N, typename DefaultValueType, typename FirstType>
+        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
+                                const std::array<FirstType, BATCH_N>& firstInstance) {
+            if constexpr (isAnyReadType<FirstType>) {
+                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(firstInstance, usedPlanes, defaultValue);
+            } else if constexpr (!isAnyReadType<FirstType>) {
+                const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance);
+                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+            } else {
+                static_assert(false, "BatchRead: FirstType is not a valid read type");
+            }
+        }
+    };
+    template <typename Parent>
+    using RBIncompleteOpBB = ReadBackIncompleteOperationBatchBuilders<Parent>;
+
+#define DECLARE_READBACK_PARENT_BATCH_INCOMPLETE \
 template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
 FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, \
-    const ArrayTypes&... arrays) { \
+                              const ArrayTypes&... arrays) { \
     return BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...); \
 } \
 template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
 FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, \
-    const ArrayTypes&... arrays) { \
-    return BatchWrite<BATCH_N, typename Parent::Child>::build(firstInstance, arrays...); \
+                        const ArrayTypes&... arrays) { \
+    return RBIncompleteOpBB<Parent>::build(firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
+                        const std::array<FirstType, BATCH_N>& firstInstance, \
+                        const ArrayTypes&... arrays) { \
+    return RBIncompleteOpBB<Parent>::build(usedPlanes, defaultValue, firstInstance, arrays...); \
+}\
+template <size_t BATCH_N, typename DefaultValueType, typename FirstType> \
+FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
+                        const std::array<FirstType, BATCH_N>& firstInstance) { \
+    return RBIncompleteOpBB<Parent>::build(usedPlanes, defaultValue, firstInstance); \
 }
-#define DECLARE_WRITE_PARENT \
-DECLARE_WRITE_PARENT_BASIC \
-DECLARE_WRITE_PARENT_BATCH
+
+    // DECLARE_READBACK_PARENT_INCOMPLETE
+#define DECLARE_READBACK_PARENT_INCOMPLETE \
+DECLARE_READBACK_PARENT_ALIAS \
+FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { \
+    return Parent::build(opData); \
+} \
+FK_HOST_DEVICE_FUSE auto build(const ParamsType& params, const BackFunction& back_function) { \
+    return Parent::build(params, back_function); \
+} \
+DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
 
 } // namespace fk
 

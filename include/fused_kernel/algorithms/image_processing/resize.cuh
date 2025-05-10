@@ -22,27 +22,21 @@
 #include <fused_kernel/core/data/array.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.cuh>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
     struct ComputeResizePoint {
-        using ParamsType = float2;
-        using InputType = Point;
-        using InstanceType = BinaryType;
-        using OutputType = float2;
-        using OperationDataType = OperationData<ComputeResizePoint>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const OperationDataType& opData) {
+        using Parent = BinaryOperation<Point, float2, float2, ComputeResizePoint>;
+        DECLARE_BINARY_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const ParamsType& params) {
             // This is what makes the interpolation a resize operation
-            const float fx = opData.params.x;
-            const float fy = opData.params.y;
+            const float fx = params.x;
+            const float fy = params.y;
 
             const float src_x = thread.x * fx;
             const float src_y = thread.y * fy;
 
             return { src_x, src_y };
         }
-        using InstantiableType = Binary<ComputeResizePoint>;
-        DEFAULT_BUILD
     };
 
     enum AspectRatio { PRESERVE_AR = 0, IGNORE_AR = 1, PRESERVE_AR_RN_EVEN = 2, PRESERVE_AR_LEFT = 3 };
@@ -66,64 +60,24 @@ namespace fk {
 
     template <enum InterpolationType IType, enum AspectRatio AR = AspectRatio::IGNORE_AR, typename BackFunction_ = void>
     struct Resize {
-        using BackFunction = BackFunction_;
-        using InstanceType = ReadBackType;
-        using OutputType = typename Interpolate<IType, BackFunction>::OutputType;
-        using ParamsType = ResizeReadParams<IType, AR, std::conditional_t<AR == IGNORE_AR, void, OutputType>>;
-        using ReadDataType = typename BackFunction::Operation::OutputType;
-        using OperationDataType = OperationData<Resize<IType, AR, BackFunction>>;
-        static constexpr bool THREAD_FUSION{ false };
-    private:
-        FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const OperationDataType& opData) {
-            const float fx = opData.params.src_conv_factors.x;
-            const float fy = opData.params.src_conv_factors.y;
+        using InterpolateOutputType = typename Interpolate<IType, BackFunction_>::OutputType;
+        using Parent = ReadBackOperation<InterpolateOutputType,
+                                         ResizeReadParams<IType, AR, std::conditional_t<AR == IGNORE_AR, void, InterpolateOutputType>>,
+                                         BackFunction_,
+                                         typename Interpolate<IType, BackFunction_>::OutputType,
+                                         Resize<IType, AR, BackFunction_>>;
+        DECLARE_READBACK_PARENT
 
-            const float src_x = thread.x * fx;
-            const float src_y = thread.y * fy;
-            const float2 rezisePoint = { src_x, src_y };
-            // We don't set Interpolate as the BackFuntion of Resize, because we won't use any other function than Interpolate
-            // Therefore, we consider Interpolate to be part of the Resize implementation, and not a template variable.
-            // But, it would be relatively easy to change Interpolate with anything else if needed.
-            return Interpolate<IType, BackFunction>::exec(rezisePoint, { opData.params.params, opData.back_function });
-        }
-
-        FK_HOST_FUSE Size compute_target_size(const Size& srcSize, const Size& dstSize) {
-            const float scaleFactor = dstSize.height / (float)srcSize.height;
-            const int targetHeight = dstSize.height;
-            const int targetWidth = static_cast<int>(cxp::round(scaleFactor * srcSize.width));
-            if constexpr (AR == PRESERVE_AR_RN_EVEN) {
-                // We round to the next even integer smaller or equal to targetWidth
-                const int targetWidthTemp = targetWidth - (targetWidth % 2);
-                if (targetWidthTemp > dstSize.width) {
-                    const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
-                    const int targetWidthTemp2 = dstSize.width;
-                    const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
-                    return Size(targetWidthTemp2, targetHeightTemp - (targetHeightTemp % 2));
-                } else {
-                    return Size(targetWidthTemp, targetHeight);
-                }
-            } else {
-                if (targetWidth > dstSize.width) {
-                    const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
-                    const int targetWidthTemp = dstSize.width;
-                    const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
-                    return Size(targetWidthTemp, targetHeightTemp);
-                } else {
-                    return Size(targetWidth, targetHeight);
-                }
-            }
-        }
-    public:
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const OperationDataType& opData) {
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
             if constexpr (AR == IGNORE_AR) {
-                return exec_resize(thread, opData);
+                return exec_resize(thread, params, back_function);
             } else { // Assuming PRESERVE_AR or PRESERVE_AR_RN_EVEN
-                if (thread.x >= opData.params.x1 && thread.x <= opData.params.x2 &&
-                    thread.y >= opData.params.y1 && thread.y <= opData.params.y2) {
-                    const Point roiThread(thread.x - opData.params.x1, thread.y - opData.params.y1, thread.z);
-                    return exec_resize(roiThread, opData);
+                if (thread.x >= params.x1 && thread.x <= params.x2 &&
+                    thread.y >= params.y1 && thread.y <= params.y2) {
+                    const Point roiThread(thread.x - params.x1, thread.y - params.y1, thread.z);
+                    return exec_resize(roiThread, params, back_function);
                 } else {
-                    return opData.params.defaultValue;
+                    return params.defaultValue;
                 }
             }
         }
@@ -143,9 +97,6 @@ namespace fk {
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
-
-        using InstantiableType = ReadBack<Resize<IType, AR, BackFunction_>>;
-        DEFAULT_BUILD
 
         template <enum AspectRatio AR_ = AR>
         FK_HOST_FUSE
@@ -224,7 +175,46 @@ namespace fk {
             }
         }
 
-        DEFAULT_READ_BATCH_BUILD
+        private:
+            FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+                const float fx = params.src_conv_factors.x;
+                const float fy = params.src_conv_factors.y;
+
+                const float src_x = thread.x * fx;
+                const float src_y = thread.y * fy;
+                const float2 rezisePoint = { src_x, src_y };
+                // We don't set Interpolate as the BackFuntion of Resize, because we won't use any other function than Interpolate
+                // Therefore, we consider Interpolate to be part of the Resize implementation, and not a template variable.
+                // But, it would be relatively easy to change Interpolate with anything else if needed.
+                return Interpolate<IType, BackFunction>::exec(rezisePoint, { params.params, back_function });
+            }
+
+            FK_HOST_FUSE Size compute_target_size(const Size& srcSize, const Size& dstSize) {
+                const float scaleFactor = dstSize.height / (float)srcSize.height;
+                const int targetHeight = dstSize.height;
+                const int targetWidth = static_cast<int>(cxp::round(scaleFactor * srcSize.width));
+                if constexpr (AR == PRESERVE_AR_RN_EVEN) {
+                    // We round to the next even integer smaller or equal to targetWidth
+                    const int targetWidthTemp = targetWidth - (targetWidth % 2);
+                    if (targetWidthTemp > dstSize.width) {
+                        const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
+                        const int targetWidthTemp2 = dstSize.width;
+                        const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
+                        return Size(targetWidthTemp2, targetHeightTemp - (targetHeightTemp % 2));
+                    } else {
+                        return Size(targetWidthTemp, targetHeight);
+                    }
+                } else {
+                    if (targetWidth > dstSize.width) {
+                        const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
+                        const int targetWidthTemp = dstSize.width;
+                        const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
+                        return Size(targetWidthTemp, targetHeightTemp);
+                    } else {
+                        return Size(targetWidth, targetHeight);
+                    }
+                }
+            }
     };
 
     template <enum AspectRatio AR, typename T = void>
@@ -240,13 +230,12 @@ namespace fk {
 
     template <enum InterpolationType IType, enum AspectRatio AR, typename T>
     struct Resize<IType, AR, TypeList<void, T>> {
-        using BackFunction = NullType;
-        static constexpr bool THREAD_FUSION{ false };
-        using InstanceType = ReadBackType;
-        using OutputType = T;
-        using ParamsType = IncompleteResizeReadParams<AR, T>;
-        using ReadDataType = NullType;
-        using OperationDataType = OperationData<Resize<IType, AR, TypeList<void, T>>>;
+        using Parent = ReadBackOperation<NullType,
+                                         IncompleteResizeReadParams<AR, T>,
+                                         NullType,
+                                         T,
+                                         Resize<IType, AR, TypeList<void, T>>>;
+        DECLARE_READBACK_PARENT_INCOMPLETE
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return 1;
@@ -259,8 +248,6 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
             return 1;
         }
-
-        using InstantiableType = ReadBack<Resize<IType, AR, TypeList<void, T>>>;
 
         template <enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ != IGNORE_AR, InstantiableType>
@@ -274,20 +261,16 @@ namespace fk {
             using ReadIOpOutputType = typename Resize<IType, AR_, ReadIOp>::OutputType;
             return Resize<IType, AR_, ReadIOp>::build(readIOp, iOp.params.dstSize, Cast<T, ReadIOpOutputType>::exec(iOp.params.defaultValue));
         }
-        
-        DEFAULT_BUILD
-        DEFAULT_READ_BATCH_BUILD
     };
 
     template <enum InterpolationType IType>
     struct Resize<IType, IGNORE_AR, TypeList<void, void>> {
-        using BackFunction = NullType;
-        static constexpr bool THREAD_FUSION{ false };
-        using InstanceType = ReadBackType;
-        using OutputType = NullType;
-        using ParamsType = IncompleteResizeReadParams<IGNORE_AR, void>;
-        using ReadDataType = NullType;
-        using OperationDataType = OperationData<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
+        using Parent = ReadBackOperation<NullType,
+                                         IncompleteResizeReadParams<IGNORE_AR, void>,
+                                         NullType,
+                                         NullType,
+                                         Resize<IType, IGNORE_AR, TypeList<void, void>>>;
+        DECLARE_READBACK_PARENT_INCOMPLETE
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return 1;
@@ -301,8 +284,6 @@ namespace fk {
             return 1;
         }
 
-        using InstantiableType = ReadBackInstantiableOperation<Resize<IType, IGNORE_AR, TypeList<void, void>>>;
-
         FK_HOST_FUSE InstantiableType build(const Size& dstSize) {
             return { {{dstSize}, {}} };
         }
@@ -311,14 +292,13 @@ namespace fk {
         FK_HOST_FUSE auto build(const ReadIOp& readIOp, const InstantiableType& iOp) {
             return Resize<IType, IGNORE_AR, ReadIOp>::build(readIOp, iOp.params.dstSize);
         }
-
-        DEFAULT_BUILD
-        DEFAULT_READ_BATCH_BUILD
     };
 
     template <enum InterpolationType IType, enum AspectRatio AR>
     struct Resize<IType, AR, void> {
-
+        using Parent = ReadBackOperation<NullType, NullType, NullType, NullType,
+                                         Resize<IType, AR, void>>;
+        DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
         template <typename BF, enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ == IGNORE_AR && isAnyReadType<BF>, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backFunction, const Size& dstSize) {
@@ -349,10 +329,7 @@ namespace fk {
         FK_HOST_FUSE auto build(const RawPtr<_2D, T>& input, const Size& dSize, const double& fx, const double& fy) {
             return Resize<IType, AR, ReadInstantiableOperation<PerThreadRead<_2D, T>>>::build(input, dSize, fx, fy);
         }
-        DEFAULT_READ_BATCH_BUILD
     };
 }; // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif

@@ -422,7 +422,7 @@ namespace fk { // namespace FusedKernel
         using OperationDataType = OperationData<ROperationImpl>;
         using InstantiableType = Read<ROperationImpl>;
 
-        template <uint ELEMS_PER_THREAD=1>
+        template <uint ELEMS_PER_THREAD=1, typename CH = Child>
         FK_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType>
         exec(const Point& thread, const OperationDataType& opData) {
             if constexpr (std::bool_constant<THREAD_FUSION>::value) {
@@ -674,7 +674,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         DECLARE_READ_PARENT_BASIC
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
         template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE const auto exec(const Point& thread, const ParamsType& params) {
+        FK_HOST_DEVICE_FUSE auto exec(const Point& thread, const ParamsType& params) {
             if (params.usedPlanes <= thread.z) {
                 return params.default_value;
             } else {
@@ -789,7 +789,143 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
             return BatchWrite<BATCH, typename IOp::Operation>::build(iOps);
         }
     };
+
+    template <typename Parent>
+    struct ReadOperationBatchBuilders {
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) {
+            return BatchRead<BATCH_N, PROCESS_ALL, typename Parent::Child>::build(firstInstance, arrays...);
+        }
+        template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
+                                const std::array<FirstType, BATCH_N>& firstInstance,
+                                const ArrayTypes&... arrays) {
+            return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance, arrays...);
+        }
+        template <size_t BATCH_N, typename DefaultValueType, typename FirstType>
+        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
+                                const std::array<FirstType, BATCH_N>& firstInstance) {
+            if constexpr (isAnyReadType<FirstType>) {
+                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(firstInstance, usedPlanes, defaultValue);
+            } else if constexpr (!isAnyReadType<FirstType>) {
+                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance);
+            } else {
+                static_assert(false, "BatchRead: FirstType is not a valid read type");
+            }
+        }
+    };
+
+#define DECLARE_READ_PARENT_BATCH \
+template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, \
+                              const ArrayTypes&... arrays) { \
+    return BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) { \
+    return ReadOperationBatchBuilders<Parent>::build(firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
+                        const std::array<FirstType, BATCH_N>& firstInstance, \
+                        const ArrayTypes&... arrays) { \
+    return ReadOperationBatchBuilders<Parent>::build(usedPlanes, defaultValue, firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename DefaultValueType, typename FirstType> \
+FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue, \
+                        const std::array<FirstType, BATCH_N>& firstInstance) { \
+    return ReadOperationBatchBuilders<Parent>::build(usedPlanes, defaultValue, firstInstance); \
+}
+
+#define DECLARE_READ_PARENT \
+DECLARE_READ_PARENT_BASIC \
+DECLARE_READ_PARENT_BATCH
+
+#define DECLARE_WRITE_PARENT_BATCH \
+template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance, \
+    const ArrayTypes&... arrays) { \
+    return BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...); \
+} \
+template <size_t BATCH_N, typename FirstType, typename... ArrayTypes> \
+FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, \
+    const ArrayTypes&... arrays) { \
+    return BatchWrite<BATCH_N, typename Parent::Child>::build(firstInstance, arrays...); \
+}
+#define DECLARE_WRITE_PARENT \
+DECLARE_WRITE_PARENT_BASIC \
+DECLARE_WRITE_PARENT_BATCH
     // END Batch operations
+
+    template <typename I, typename O, typename UOperationImpl>
+    struct UnaryOperation {
+        using InputType = I;
+        using OutputType = O;
+        using InstanceType = UnaryType;
+        using InstantiableType = UnaryInstantiableOperation<UOperationImpl>;
+        // build() is fine, it only refers to UOperationImpl::InstantiableType
+        // within the function body/return type, which is instantiated later.
+        FK_HOST_DEVICE_FUSE auto build() {
+            return typename UOperationImpl::InstantiableType{};
+        }
+    };
+
+#define DECLARE_UNARY_PARENT \
+using InputType = typename Parent::InputType; \
+using OutputType = typename Parent::OutputType; \
+using InstanceType = typename Parent::InstanceType; \
+using InstantiableType = typename Parent::InstantiableType; \
+FK_HOST_DEVICE_FUSE InstantiableType build() { \
+    return Parent::build(); \
+}
+
+    template <typename I, typename P, typename O, typename BOperationImpl>
+    struct BinaryOperation {
+        // --- REMOVE using ALIASES that depend on BOperationImpl ---
+        // These caused the incomplete type error during base class instantiation.
+        // We will refer to BOperationImpl::TypeNeeded directly in methods.
+        using InputType = I;
+        using OutputType = O; // Needed for the static exec signature
+        using ParamsType = P; // Needed by OperationData and build(params)
+        using InstanceType = BinaryType;
+        using OperationDataType = OperationData<BOperationImpl>; // Needed by exec/build(opData)
+        using InstantiableType = BinaryInstantiableOperation<BOperationImpl>;
+        // --- exec Method ---
+        // Accesses types only in signature/body -> OK
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
+            // Calls the static exec of the derived class (CRTP)
+            return BOperationImpl::exec(input, opData.params);
+            // Return type deduced via 'auto'
+        }
+        // --- build Methods ---
+        // Accesses types only in signature/body -> OK
+        FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) {
+            // Return type deduced via 'auto'
+            return InstantiableType{ opData };
+        }
+        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) {
+            // Return type deduced via 'auto'
+            return InstantiableType{ {params} };
+        }
+    };
+
+#define DECLARE_BINARY_PARENT \
+using InputType = typename Parent::InputType; \
+using OutputType = typename Parent::OutputType; \
+using ParamsType = typename Parent::ParamsType; \
+using InstanceType = typename Parent::InstanceType; \
+using OperationDataType = typename Parent::OperationDataType; \
+using InstantiableType = typename Parent::InstantiableType; \
+FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, \
+                                       const OperationDataType& opData) { \
+    return Parent::exec(input, opData); \
+} \
+FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) { \
+    return Parent::build(opData); \
+} \
+FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
+    return Parent::build(params); \
+}
 
     // FusedOperation
     namespace fused_operation_impl {
@@ -887,8 +1023,6 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         }
     } // namespace fused_operation_impl
 
-#include <fused_kernel/core/execution_model/default_builders_def.h>
-
     template <typename Enabler, typename... Operations>
     struct FusedOperationOutputType;
 
@@ -910,67 +1044,68 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
 
     template <typename FirstOp, typename... RemOps>
     struct FusedOperation_<std::enable_if_t<allUnaryTypes<FirstOp, RemOps...> && (sizeof...(RemOps) + 1 > 1)>, FirstOp, RemOps...> {
-        using InputType = typename FirstOp::InputType;
-        using OutputType = typename LastType_t<RemOps...>::OutputType;
-        using InstanceType = UnaryType;
-        using Operations = TypeList<FirstOp, RemOps...>;
+        using Parent =
+            UnaryOperation<typename FirstOp::InputType,
+            typename LastType_t<RemOps...>::OutputType,
+            FusedOperation_<std::enable_if_t<allUnaryTypes<FirstOp, RemOps...> && (sizeof...(RemOps) + 1 > 1)>, FirstOp, RemOps...>>;
+        DECLARE_UNARY_PARENT
 
+        using Operations = TypeList<FirstOp, RemOps...>;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return fused_operation_impl::tuple_operate<FirstOp, RemOps...>(input);
-        }
-        using InstantiableType = Unary<FusedOperation_<void, FirstOp, RemOps...>>;
-        FK_HOST_DEVICE_FUSE auto build() {
-            return InstantiableType{};
         }
     };
 
     template <typename Operation>
     struct FusedOperation_<std::enable_if_t<isUnaryType<Operation>>, Operation> {
-        using InputType = typename Operation::InputType;
-        using OutputType = typename Operation::OutputType;
-        using InstanceType = UnaryType;
-        using Operations = TypeList<Operation>;
+        using Parent =
+            UnaryOperation<typename Operation::InputType,
+            typename Operation::OutputType,
+            FusedOperation_<std::enable_if_t<isUnaryType<Operation>>, Operation>>;
+        DECLARE_UNARY_PARENT
 
+        using Operations = TypeList<Operation>;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return Operation::exec(input);
-        }
-        using InstantiableType = Unary<Operation>;
-        FK_HOST_DEVICE_FUSE auto build() {
-            return InstantiableType{};
         }
     };
 
     template <typename... Operations>
     struct FusedOperation_<std::enable_if_t<isComputeType<FirstType_t<Operations...>> &&
         !allUnaryTypes<Operations...>>, Operations...> {
-        using InputType = typename FirstType_t<Operations...>::InputType;
-        using ParamsType = OperationTuple<Operations...>;
-        using OutputType = FOOT<LastType_t<Operations...>>;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
+    private:
+        using SelfType = FusedOperation_<std::enable_if_t<isComputeType<FirstType_t<Operations...>> &&
+            !allUnaryTypes<Operations...>>, Operations...>;
+    public:
+        using Parent =
+            BinaryOperation<typename FirstType_t<Operations...>::InputType,
+                            OperationTuple<Operations...>,
+                            FOOT<LastType_t<Operations...>>,
+                            SelfType>;
+        DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input,
-            const OperationDataType& opData) {
-            return fused_operation_impl::tuple_operate(input, opData.params);
+                                            const ParamsType& params) {
+            return fused_operation_impl::tuple_operate(input, params);
         }
-        using InstantiableType = Binary<FusedOperation_<void, Operations...>>;
-        DEFAULT_BUILD
+    
     };
 
     template <typename... Operations>
     struct FusedOperation_<std::enable_if_t<isAnyReadType<FirstType_t<Operations...>>>, Operations...> {
-        using ParamsType = OperationTuple<Operations...>;
-        using OutputType = FOOT<LastType_t<Operations...>>;
-        using InstanceType = ReadType;
-        using ReadDataType = typename FirstType_t<Operations...>::ReadDataType;
-        // In the future we can improve this by splitting the read op from the compute ops
-        // in the TransformDPP
-        static constexpr bool THREAD_FUSION{ std::is_same_v<ReadDataType, OutputType> && ((sizeof...(Operations) > 1) ? false :
-            FirstType_t<Operations...>::THREAD_FUSION)};
-        using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
-
+    private:
+        static constexpr bool isTFEnabled = std::is_same_v<typename FirstType_t<Operations...>::ReadDataType, FOOT<LastType_t<Operations...>>> && ((sizeof...(Operations) > 1) ? false :
+            FirstType_t<Operations...>::THREAD_FUSION);
+        using SelfType = FusedOperation_<std::enable_if_t<isAnyReadType<FirstType_t<Operations...>>>, Operations...>;
+    public:
+        using Parent = ReadOperation<typename FirstType_t<Operations...>::ReadDataType,
+                                     OperationTuple<Operations...>,
+                                     FOOT<LastType_t<Operations...>>,
+                                     isTFEnabled ? TF::ENABLED : TF::DISABLED,
+                                     SelfType>;
+        DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread,
-            const OperationDataType& opData) {
-            return fused_operation_impl::tuple_operate(thread, opData.params);
+                                            const ParamsType& params) {
+            return fused_operation_impl::tuple_operate(thread, params);
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread,
@@ -991,14 +1126,13 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
-
-        using InstantiableType = Read<FusedOperation_<void, Operations...>>;
-        DEFAULT_BUILD
-            DEFAULT_READ_BATCH_BUILD
     };
 
     template <typename... Operations>
     struct FusedOperation_<std::enable_if_t<isWriteType<FirstType_t<Operations...>>>, Operations...> {
+    private:
+        using SelfType = FusedOperation_<std::enable_if_t<isWriteType<FirstType_t<Operations...>>>, Operations...>;
+    public:
         using ParamsType = OperationTuple<Operations...>;
         using OutputType = FOOT<LastType_t<Operations...>>;
         using InputType = typename FirstType_t<Operations...>::InputType;
@@ -1010,15 +1144,37 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
 
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-            const OperationDataType& opData) {
-            return fused_operation_impl::tuple_operate(thread, input, opData.params);
+                                            const ParamsType& params) {
+            return fused_operation_impl::tuple_operate(thread, input, params);
+        }
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
+                                            const OperationDataType& opData) {
+            return exec(thread, input, opData.params);
         }
         using InstantiableType = MidWrite<FusedOperation_<void, Operations...>>;
-        DEFAULT_BUILD
+        FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) {
+            return InstantiableType{ opData };
+        }
+        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) {
+            return InstantiableType{ { params } };
+        }
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance,
+                                      const ArrayTypes&... arrays) {
+            return BatchOperation::build_batch<SelfType>(firstInstance, arrays...);
+        }
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
+                                const ArrayTypes&... arrays) {
+            return BatchWrite<BATCH_N, SelfType>::build(firstInstance, arrays...);
+        }
     };
 
     template <typename... Operations>
     struct FusedOperation_<std::enable_if_t<isMidWriteType<FirstType_t<Operations...>>>, Operations...> {
+    private:
+        using SelfType = FusedOperation_<std::enable_if_t<isMidWriteType<FirstType_t<Operations...>>>, Operations...>;
+    public:
         using ParamsType = OperationTuple<Operations...>;
         using OutputType = FOOT<LastType_t<Operations...>>;
         using InputType = typename FirstType_t<Operations...>::InputType;
@@ -1030,16 +1186,34 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
 
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-            const OperationDataType& opData) {
-            return fused_operation_impl::tuple_operate(thread, input, opData.params);
+                                            const ParamsType& params) {
+            return fused_operation_impl::tuple_operate(thread, input, params);
+        }
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
+                                            const OperationDataType& opData) {
+            return exec(thread, input, opData.params);
         }
         using InstantiableType = MidWrite<FusedOperation_<void, Operations...>>;
-        DEFAULT_BUILD
+        FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) {
+            return InstantiableType{ opData };
+        }
+        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) {
+            return InstantiableType{ { params } };
+        }
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance,
+            const ArrayTypes&... arrays) {
+            return BatchOperation::build_batch<SelfType>(firstInstance, arrays...);
+        }
+        template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
+        FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
+            const ArrayTypes&... arrays) {
+            return BatchWrite<BATCH_N, SelfType>::build(firstInstance, arrays...);
+        }
     };
 
     template <typename... Operations>
     using FusedOperation = FusedOperation_<void, Operations...>;
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
     // END FusedOperation
 
     // fuseIOps implementation

@@ -15,26 +15,23 @@
 #ifndef FK_CROP_OP
 #define FK_CROP_OP
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/parent_operations.cuh>
 #include <fused_kernel/core/data/rect.h>
 #include <fused_kernel/core/data/point.h>
-
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
 
     template <typename BackIOp = void>
     struct Crop {
-        using InstanceType = ReadBackType;
-        using OutputType = typename BackIOp::Operation::OutputType;
-        using ReadDataType = typename BackIOp::Operation::OutputType;
-        using ParamsType = Rect;
-        using BackFunction = BackIOp;
-        using OperationDataType = OperationData<Crop<BackIOp>>;
-        static constexpr bool THREAD_FUSION{ false };
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const OperationDataType& iOp) {
-            const Point newThread(thread.x + iOp.params.x, thread.y + iOp.params.y);
-            return BackFunction::Operation::exec(newThread, iOp.back_function);
+        using Parent = ReadBackOperation<typename BackIOp::Operation::OutputType,
+                                         Rect,
+                                         BackIOp,
+                                         typename BackIOp::Operation::OutputType,
+                                         Crop<BackIOp>>;
+        DECLARE_READBACK_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+            const Point newThread(thread.x + params.x, thread.y + params.y);
+            return BackFunction::Operation::exec(newThread, back_function);
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -53,25 +50,15 @@ namespace fk {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
 
-        using InstantiableType = ReadBackInstantiableOperation<Crop<BackFunction>>;
-        DEFAULT_BUILD
-
         FK_HOST_FUSE InstantiableType build(const BackFunction& backFunction, const Rect& rect) {
             return InstantiableType{ { rect, backFunction } };
         }
-
-        DEFAULT_READ_BATCH_BUILD
     };
 
     template <>
     struct Crop<void> {
-        using InstanceType = ReadBackType;
-        using OutputType = int;
-        using ReadDataType = int;
-        using ParamsType = Rect;
-        using BackFunction = int;
-        using OperationDataType = OperationData<Crop<void>>;
-        static constexpr bool THREAD_FUSION{ false };
+        using Parent = ReadBackOperation<NullType, Rect, NullType, NullType, Crop<void>>;
+        DECLARE_READBACK_PARENT_INCOMPLETE
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return 1;
@@ -85,22 +72,16 @@ namespace fk {
             return 1;
         }
 
-        using InstantiableType = ReadBackInstantiableOperation<Crop<void>>;
-        DEFAULT_BUILD
-
         FK_HOST_FUSE auto build(const Rect& rectCrop) {
-            return InstantiableType{ { rectCrop, 0 } };
+            return InstantiableType{ { rectCrop, {} } };
         }
 
         template <typename RealBackIOp>
         FK_HOST_FUSE auto build(const RealBackIOp& realBIOp, const InstantiableType& iOp) {
             return Crop<RealBackIOp>::build(realBIOp, iOp.params);
         }
-        DEFAULT_READ_BATCH_BUILD
     };
 
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif
