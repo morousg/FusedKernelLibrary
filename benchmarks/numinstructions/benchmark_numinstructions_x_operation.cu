@@ -70,8 +70,8 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float>& input
 
     const auto readDF = fk::PerThreadRead<fk::_1D, float>::build(inputFirst);
     const auto readDF2 = fk::PerThreadRead<fk::_1D, float>::build(inputSecond);
-    const auto writeDF = fk::PerThreadWrite<fk::_1D, float>::build(outputFirst.ptr());
-    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float>::build(outputSecond.ptr());
+    const auto writeDF = fk::PerThreadWrite<fk::_1D, float>::build({ outputFirst.ptr() });
+    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float>::build({ outputSecond.ptr() });
 
     if constexpr (exactDivision) {
         // Wramming up the GPU

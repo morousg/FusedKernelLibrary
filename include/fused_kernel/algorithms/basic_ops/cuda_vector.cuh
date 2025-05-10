@@ -17,14 +17,12 @@
 
 #include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/logical.cuh>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
     template <typename I, typename O>
     struct Discard {
-        using InputType = I;
-        using OutputType = O;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<I, O, Discard<I, O>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(cn<I> > cn<O>, "Output type should at least have one channel less");
             static_assert(std::is_same_v<typename VectorTraits<I>::base,
@@ -42,68 +40,43 @@ namespace fk {
                 return { input.x, input.y, input.z };
             }
         }
-        using InstantiableType = Unary<Discard<I, O>>;
-        DEFAULT_UNARY_BUILD
-    };
-
-    template <typename T, int... Idx>
-    struct VReorder {
-        using InputType = T;
-        using OutputType = T;
-        using InstanceType = UnaryType;
-        FK_HOST_DEVICE_FUSE T exec(const T& vector) {
-            static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: VReorder<...>::exec<invalid_type>(invalid_type vector)");
-            static_assert(sizeof...(Idx) == cn<T>, "Wrong number of indexes for the cuda vetor type in VReorder.");
-            return { VectorAt<Idx>(vector)... };
-        }
-        using InstantiableType = Unary<VReorder<T, Idx...>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename T, int... Idx>
     struct VectorReorder {
-        using InputType = T;
-        using OutputType = T;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<T, T, VectorReorder<T, Idx...>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
-            static_assert(validCUDAVec<InputType>, "Non valid CUDA vetor type: UnaryVectorReorder");
-            static_assert(cn<InputType> >= 2, "Minimum number of channels is 2: UnaryVectorReorder");
-            return VReorder<T, Idx...>::exec(input);
+            static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: UnaryVectorReorder");
+            static_assert(cn<T> >= 2, "Minimum number of channels is 2: UnaryVectorReorder");
+            return {VectorAt<Idx>(input)...};
         }
-        using InstantiableType = Unary<VectorReorder<T, Idx...>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename T>
     struct VectorReorderRT {
-        using InputType = T;
-        using OutputType = T;
-        using ParamsType = VectorType_t<int, cn<T>>;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<VectorReorderRT<T>>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& order) {
-            static_assert(validCUDAVec<InputType>, "Non valid CUDA vetor type");
-            static_assert(cn<InputType> >= 2, "Minimum number of channels is 2");
+        using Parent = BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>>;
+        DECLARE_BINARY_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            static_assert(validCUDAVec<T>, "Non valid CUDA vetor type");
+            static_assert(cn<T> >= 2, "Minimum number of channels is 2");
             if constexpr (cn<T> == 2) {
                 const fk::Array<VBase<T>, 2> temp{ input.x, input.y };
-                return { temp.at[order.params.x], temp.at[order.params.y] };
+                return { temp.at[params.x], temp.at[params.y] };
             } else if constexpr (cn<T> == 3) {
                 const fk::Array<VBase<T>, 3> temp{ input.x, input.y, input.z };
-                return { temp.at[order.params.x], temp.at[order.params.y], temp.at[order.params.z] };
+                return { temp.at[params.x], temp.at[params.y], temp.at[params.z] };
             } else {
                 const fk::Array<VBase<T>, 4> temp{ input.x, input.y, input.z, input.w };
-                return { temp.at[order.params.x], temp.at[order.params.y], temp.at[order.params.z], temp.at[order.params.w] };
+                return { temp.at[params.x], temp.at[params.y], temp.at[params.z], temp.at[params.w] };
             }
         }
-        using InstantiableType = Binary<VectorReorderRT<T>>;
-        DEFAULT_BUILD
     };
 
     template <typename T, typename Operation>
-    struct VectorReduce { 
-        using InputType = T;
-        using OutputType = VBase<T>;
-        using InstanceType = UnaryType;
+    struct VectorReduce {
+        using Parent = UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             if constexpr (std::is_same_v<typename Operation::InstanceType, UnaryType>) {
                 if constexpr (cn<T> == 1) {
@@ -135,52 +108,39 @@ namespace fk {
                 }
             }
         }
-        using InstantiableType = Unary<VectorReduce<T, Operation>>;
-        DEFAULT_UNARY_BUILD
     };
 
     template <typename I, typename O>
     struct AddLast {
-        using InputType = I;
-        using OutputType = O;
-        using ParamsType = typename VectorTraits<I>::base;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<AddLast<I, O>>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
-            static_assert(cn<InputType> == cn<OutputType> -1, "Output type should have one channel more");
-            static_assert(std::is_same_v<typename VectorTraits<InputType>::base, typename VectorTraits<OutputType>::base>,
+        using Parent = BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>>;
+        DECLARE_BINARY_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            static_assert(cn<I> == cn<O> -1, "Output type should have one channel more");
+            static_assert(std::is_same_v<typename VectorTraits<I>::base, typename VectorTraits<O>::base>,
                 "Base types should be the same");
-            const ParamsType newElem = opData.params;
-            if constexpr (cn<InputType> == 1) {
-                if constexpr (std::is_aggregate_v<InputType>) {
-                    return { input.x, newElem };
+            if constexpr (cn<I> == 1) {
+                if constexpr (std::is_aggregate_v<I>) {
+                    return { input.x, params };
                 } else {
-                    return { input, newElem };
+                  return {input, params};
                 }
-            } else if constexpr (cn<InputType> == 2) {
-                return { input.x, input.y, newElem };
-            } else if constexpr (cn<InputType> == 3) {
-                return { input.x, input.y, input.z, newElem };
+            } else if constexpr (cn<I> == 2) {
+              return {input.x, input.y, params};
+            } else if constexpr (cn<I> == 3) {
+              return {input.x, input.y, input.z, params};
             }
         }
-        using InstantiableType = Binary<AddLast<I, O>>;
-        DEFAULT_BUILD
     };
 
     template <typename T>
     struct VectorAnd {
         static_assert(std::is_same_v<VBase<T>, bool>, "VectorAnd only works with boolean vectors");
-        using InputType = T;
-        using OutputType = bool;
-        using InstanceType = UnaryType;
+        using Parent = UnaryOperation<T, VBase<T>, VectorAnd<T>>;
+        DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return VectorReduce<T, Equal<bool, bool>>::exec(input);
         }
-        using InstantiableType = Unary<VectorAnd<T>>;
-        DEFAULT_UNARY_BUILD
     };
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif

@@ -82,13 +82,16 @@ namespace fk {
 
     template <typename Operation>
     struct OperationData<Operation, std::enable_if_t<hasParamsNoArray<Operation> && hasNoBackFunction_v<Operation>, void>> {
+#ifdef COPYABLE_IOPS
         FK_HOST_DEVICE_CNST OperationData() {};
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_) : params(params_) {}
-        typename Operation::ParamsType params{};
+#endif
+        typename Operation::ParamsType params;
     };
 
     template <typename Operation>
     struct OperationData<Operation, std::enable_if_t<hasParamsArray<Operation> && hasNoBackFunction_v<Operation>, void>> {
+#ifdef COPYABLE_IOPS
         FK_HOST_DEVICE_CNST OperationData() {};
         __host__ __forceinline__ OperationData(const typename Operation::ParamsType& params_) {
             std::copy(std::begin(params_), std::end(params_), std::begin(params));
@@ -99,25 +102,29 @@ namespace fk {
             }
             return *this;
         }
-        typename Operation::ParamsType params{};
+#endif
+        typename Operation::ParamsType params;
     };
 
     template <typename Operation> 
     struct OperationData<Operation, std::enable_if_t<hasParamsAndBackFunction_v<Operation> &&
         !std::is_array_v<typename Operation::ParamsType> &&
         !std::is_array_v<typename Operation::BackFunction>, void>> {
+#ifdef COPYABLE_IOPS
         FK_HOST_DEVICE_CNST OperationData() {};
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_,
                                           const typename Operation::BackFunction& back_function_) :
                                           params(params_), back_function(back_function_) {}
-        typename Operation::ParamsType params{};
-        typename Operation::BackFunction back_function{};
+#endif
+        typename Operation::ParamsType params;
+        typename Operation::BackFunction back_function;
     };
 
     template <typename Operation>
     struct OperationData<Operation, std::enable_if_t<hasParamsAndBackFunction_v<Operation> &&
         (std::is_array_v<typename Operation::ParamsType> ||
             std::is_array_v<typename Operation::BackFunction>), void>> {
+#ifdef COPYABLE_IOPS
         __host__ __forceinline__ OperationData() {};
         __host__ __forceinline__ OperationData(const typename Operation::ParamsType& params_,
             const typename Operation::BackFunction& back_function_) {
@@ -147,8 +154,9 @@ namespace fk {
             }
             return *this;
         }
-        typename Operation::ParamsType params{};
-        typename Operation::BackFunction back_function{};
+#endif
+        typename Operation::ParamsType params;
+        typename Operation::BackFunction back_function;
     };
 
     template <typename Enabler, typename... Operations>
@@ -313,7 +321,7 @@ namespace fk {
 
     template <typename... IOps>
     FK_HOST_DEVICE_CNST auto make_operation_tuple(const IOps&... iOps) {
-        const auto fusedOp = fuseDF(iOps...);
+        const auto fusedOp = fuseIOps(iOps...);
         return fusedOp.params;
     }
 

@@ -14,26 +14,19 @@
 
 #include <tests/main.h>
 
-#include <array>
-
-/* This code does not compile with gcc 13.3.0 with:
-*   - CUDA SDK 12.8.1 (nvcc 12.8.93)
-*   - CUDA SDK 12.9.0 (nvcc 12.9.41)
-*
-* It compiles fine with nvcc 12.8.93 or 12.9.41 + MSVC 19.42.34438.0 (MSVC 2022) on Windows
-*/
-
-void test1() {
-    // Remove the constexpr std::size_t NUM, and use 5 directly, and it will compile
-    constexpr std::size_t NUM = 5;
-    [[maybe_unused]] const std::array<int, NUM> d_imgs{ 1, 2, 3, 4, 5 };
-}
-
-void test2() {
-    // Change the std::array size to something different from 5 and it will compile
-    [[maybe_unused]] const std::array<int, 5> d_imgs2{ 6, 7, 8, 9, 10 };
-}
+#include <fused_kernel/core/execution_model/memory_operations.cuh>
+#include <fused_kernel/algorithms/image_processing/border_reader.cuh>
 
 int launch() {
+
+    constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
+        fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
+
+    constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<uchar3>(0));
+
+    static_assert(std::is_same_v<std::decay_t<decltype(borderIOp)>,
+        fk::ReadBack<fk::BorderReader<fk::BorderType::CONSTANT, fk::Read<fk::PerThreadRead<fk::_2D, uchar3>>>>>,
+        "Unexpected type for borderIOp");
+
     return 0;
 }

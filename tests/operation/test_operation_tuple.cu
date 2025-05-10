@@ -24,7 +24,6 @@
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 
 bool test_OTInitialization() {
-
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
 
@@ -35,10 +34,10 @@ bool test_OTInitialization() {
     using Op = fk::PerThreadRead<fk::_2D, uchar>;
     const fk::Read<Op> read{ {input} };
 
-    const fk::OperationTuple<Op> testing{ {read.params} };
+    [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };
 
     const auto test2 = fk::devicefunctions_to_operationtuple(read);
-    const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseDF(read);
+    const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseIOps(read);
 
     using Op2 = fk::SaturateCast<uchar, uint>;
     constexpr fk::Unary<Op2> cast = {};
@@ -57,7 +56,7 @@ bool test_OTInitialization() {
 
     const auto test7 = fk::devicefunctions_to_operationtuple(read, cast);
 
-    const auto test8 = fk::fuseDF(read, cast);
+    const auto test8 = fk::fuseIOps(read, cast);
 
     const auto test9 = fk::Instantiable<fk::FusedOperation<typename decltype(read)::Operation,
                                                                    typename decltype(cast)::Operation>>
@@ -74,12 +73,12 @@ int launch() {
     static_assert(OpTuple1Type::size == 1, "Wrong operation tuple size");
     static_assert(fk::isUnaryType<typename OpTuple1Type::Operation>, "Wrong Operation Type");
 
-    constexpr fk::OperationData<fk::Add<int>> data(3);
+    constexpr fk::OperationData<fk::Add<int>> data{ 3 };
     static_assert(data.params == 3, "Wrong value");
 
     constexpr auto opTuple2 =
         fk::make_operation_tuple_<fk::Add<int, int, int, fk::UnaryType>, fk::Add<int>>
-        (fk::OperationData<fk::Add<int>>(3));
+        (fk::OperationData<fk::Add<int>>{3});
 
     using OpTuple2Type = decltype(opTuple2);
 

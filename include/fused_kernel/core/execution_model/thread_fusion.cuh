@@ -20,6 +20,11 @@
 
 namespace fk {
 
+    enum class TF : bool {
+        ENABLED = true,
+        DISABLED = false
+    };
+
     /* Possible combinations:
     Size, Channels, Types
     1,    1         char, uchar                     8,  8  char4, uchar4        x4
@@ -55,8 +60,18 @@ namespace fk {
     template <uint channelNumber>
     constexpr bool isValidChannelNumber = Find<uint, channelNumber>::one_of(validChannelsSequence);
 
-    template <typename SourceType, uint ELEMS_PER_THREAD>
-    using ThreadFusionType = VectorType_t<VBase<SourceType>, cn<SourceType>* ELEMS_PER_THREAD>;
+    template <typename SourceType, uint ELEMS_PER_THREAD, typename OutputType = SourceType, typename=void>
+    struct ThreadFusionTypeImpl : std::false_type {
+        using type = VectorType_t<VBase<SourceType>, (cn<SourceType>)* ELEMS_PER_THREAD>;
+    };
+
+    template <typename SourceType, uint ELEMS_PER_THREAD, typename OutputType>
+    struct ThreadFusionTypeImpl<SourceType, ELEMS_PER_THREAD, OutputType, std::enable_if_t<!std::is_same_v<SourceType, OutputType> || std::is_same_v<SourceType, NullType>, void>> : std::true_type {
+        using type = OutputType;
+    };
+
+    template <typename SourceType, uint ELEMS_PER_THREAD, typename OutputType>
+    using ThreadFusionType = ThreadFusionTypeImpl<SourceType, ELEMS_PER_THREAD, OutputType>::type;
 
     template <typename ReadType, typename WriteType, bool ENABLED_>
     struct ThreadFusionInfo {
@@ -147,8 +162,8 @@ namespace fk {
             const auto& writeOp = ppLast(instantiableOperations...);
             using ReadOperation = typename FirstType_t<IOpTypes...>::Operation;
             using WriteOperation = typename LastType_t<IOpTypes...>::Operation;
-            const uint readRow = ReadOperation::num_elems_x(Point(0, 0, 0), readOp.params);
-            const uint writeRow = WriteOperation::num_elems_x(Point(0, 0, 0), writeOp.params);
+            const uint readRow = ReadOperation::num_elems_x(Point(0, 0, 0), { readOp.params });
+            const uint writeRow = WriteOperation::num_elems_x(Point(0, 0, 0), { writeOp.params });
             return (readRow % elems_per_thread == 0) && (writeRow % elems_per_thread == 0);
         } else {
             return true;

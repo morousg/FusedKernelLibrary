@@ -16,36 +16,28 @@
 #define FK_STATIC_LOOP
 
 #include <fused_kernel/core/execution_model/instantiable_operations.cuh>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
     template <typename Operation, int ITERATIONS>
     struct StaticLoop {
-        using InputType = typename Operation::InputType;
-        using OutputType = typename Operation::OutputType;
-        using ParamsType = typename Operation::ParamsType;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<StaticLoop<Operation, ITERATIONS>>;
+        using Parent = BinaryOperation<typename Operation::InputType, typename Operation::ParamsType, typename Operation::OutputType, StaticLoop<Operation, ITERATIONS>>;
+        DECLARE_BINARY_PARENT
 
         private:
         template <int ITERATION>
-        FK_DEVICE_FUSE OutputType helper_exec(const InputType& input, const OperationDataType& opData) {
+        FK_DEVICE_FUSE OutputType helper_exec(const InputType& input, const ParamsType& params) {
             if constexpr (ITERATION + 1 < ITERATIONS) {
-                return helper_exec<ITERATION + 1>(Operation::exec(input, { opData.params }), opData);
+                return helper_exec<ITERATION + 1>(Operation::exec(input, params), params);
             } else {
                 return input;
             }
         }
 
         public:
-        FK_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
-            return helper_exec<0>(Operation::exec(input, { opData.params }), opData);
+        FK_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
+            return helper_exec<0>(Operation::exec(input, params), params);
         }
-        using InstantiableType = Binary<StaticLoop<Operation, ITERATIONS>>;
-        DEFAULT_BUILD
     };
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
 
 #endif
