@@ -21,7 +21,6 @@
 #include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/algorithms/image_processing/interpolation.cuh>
 
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 namespace fk {
     enum WarpType { Affine = 0, Perspective = 1 };
 
@@ -42,14 +41,12 @@ namespace fk {
 
     template <enum WarpType WT>
     struct WarpingCoords {
-        using InputType = Point;
-        using ParamsType = WarpingParameters<WT>;
-        using InstanceType = BinaryType;
-        using OperationDataType = OperationData<WarpingCoords<WT>>;
-        FK_HOST_DEVICE_FUSE float2 exec(const Point& thread, const WarpingParameters<WT>& transMat) {
+        using Parent = BinaryOperation<Point, WarpingParameters<WT>, float2, WarpingCoords<WT>>;
+        DECLARE_BINARY_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const ParamsType& params) {
             const int x = thread.x;
             const int y = thread.y;
-            const auto& transMatRaw = transMat.transformMatrix.data;
+            const auto& transMatRaw = params.transformMatrix.data;
             if constexpr (WT == WarpType::Perspective) {
                 const float coeff = 1.0f / (transMatRaw[2][0] * x + transMatRaw[2][1] * y + transMatRaw[2][2]);
 
@@ -68,20 +65,18 @@ namespace fk {
 
     template<enum WarpType WT, typename BackIOp = void>
     struct Warping {
-        using ReadDataType = typename BackIOp::Operation::ReadDataType;
-        using OutputType = VectorType_t<float, cn<ReadDataType>>;
-        using ParamsType = WarpingParameters<WT>;
-        using BackFunction = BackIOp;
-        using InstanceType = ReadBackType;
-        using OperationDataType = OperationData<Warping<WT, BackIOp>>;
-        static constexpr bool THREAD_FUSION{ false };
-
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const OperationDataType& opData) {
-            const float2 coord = WarpingCoords<WT>::exec(thread, opData.params);
-            const Size sourceSize(BackFunction::Operation::num_elems_x(thread, opData.back_function),
-                                  BackFunction::Operation::num_elems_y(thread, opData.back_function));
+        using Parent = ReadBackOperation<typename BackIOp::Operation::ReadDataType,
+                                         WarpingParameters<WT>,
+                                         BackIOp,
+                                         VectorType_t<float, cn<typename BackIOp::Operation::ReadDataType>>,
+                                         Warping<WT, BackIOp>>;
+        DECLARE_READBACK_PARENT
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+            const float2 coord = WarpingCoords<WT>::exec(thread, params);
+            const Size sourceSize(BackFunction::Operation::num_elems_x(thread, back_function),
+                                  BackFunction::Operation::num_elems_y(thread, back_function));
             if ((coord.x >= 0.f && coord.x < sourceSize.width) && (coord.y >= 0.f && coord.y < sourceSize.height)) {
-                return Interpolate<INTER_LINEAR, BackIOp>::exec(coord, { {sourceSize}, opData.back_function });
+                return Interpolate<INTER_LINEAR, BackIOp>::exec(coord, {sourceSize}, back_function);
             } else {
                 return make_set<OutputType>(0.f);
             }
@@ -102,25 +97,13 @@ namespace fk {
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
-
-        using InstantiableType = ReadBack<Warping<WT, BackIOp>>;
-        DEFAULT_BUILD
-        FK_HOST_FUSE auto build(const ParamsType& params, const BackFunction& iOp) {
-            return ReadBack<Warping<WT, BackFunction>>{{params, iOp}};
-        }
-        DEFAULT_READ_BATCH_BUILD
     };
 
     template<enum WarpType WT>
     struct Warping<WT, void> {
-        using OutputType = NullType;
-        using ReadDataType = NullType;
-        using ParamsType = WarpingParameters<WT>;
-        using BackFunction = NullType;
-        using InstanceType = ReadBackType;
-        using OperationDataType = OperationData<Warping<WT, void>>;
-        static constexpr bool THREAD_FUSION{ false };
-
+        using Parent = ReadBackOperation<NullType, WarpingParameters<WT>,
+                                         NullType, NullType, Warping<WT, void>>;
+        DECLARE_READBACK_PARENT_INCOMPLETE
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return 1;
         }
@@ -133,8 +116,6 @@ namespace fk {
             return 1;
         }
 
-        using InstantiableType = ReadBack<Warping<WT, void>>;
-
         FK_HOST_FUSE auto build(const ParamsType& params) {
             return ReadBack<Warping<WT, void>>{{params, {}}};
         }
@@ -143,12 +124,6 @@ namespace fk {
         FK_HOST_FUSE auto build(const BackIOp& backIOp, const InstantiableType& iOp) {
             return ReadBack<Warping<WT, BackIOp>>{ {iOp.params, backIOp} };
         }
-
-        DEFAULT_BUILD
-        DEFAULT_READ_BATCH_BUILD
     };
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
-
 #endif

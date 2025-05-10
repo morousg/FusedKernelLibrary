@@ -18,7 +18,6 @@
 #include <fused_kernel/algorithms/basic_ops/logical.cuh>
 #include <fused_kernel/core/data/size.h>
 #include <fused_kernel/core/execution_model/instantiable_operations.cuh>
-#include <fused_kernel/core/execution_model/default_builders_def.h>
 
 namespace fk {
     template <typename T>
@@ -106,7 +105,4 @@ namespace fk {
         }
     };
 } // namespace fk
-
-#include <fused_kernel/core/execution_model/default_builders_undef.h>
-
 #endif
