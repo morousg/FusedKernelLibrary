@@ -476,7 +476,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         using OperationDataType = OperationData<WOperationImpl>;
         using InstantiableType = Write<WOperationImpl>;
         template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, const OperationDataType& opData) {
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const OperationDataType& opData) {
             if constexpr (THREAD_FUSION) {
                 WOperationImpl::exec<ELEMS_PER_THREAD>(thread, input, opData.params);
             } else {
@@ -501,7 +501,7 @@ using InstantiableType = typename Parent::InstantiableType; \
 static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION; \
 template <uint ELEMS_PER_THREAD=1> \
 FK_HOST_DEVICE_FUSE void exec(const Point& thread, \
-                              const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input, \
+                              const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, \
                               const OperationDataType& opData) { \
     Parent::template exec<ELEMS_PER_THREAD>(thread, input, opData); \
 } \
@@ -747,7 +747,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
 
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
-                                      const ThreadFusionType<InputType, ELEMS_PER_THREAD>& input,
+                                      const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input,
                                       const ParamsType& params) {
             if constexpr (THREAD_FUSION) {
                 Operation::exec<ELEMS_PER_THREAD>(thread, input, params[thread.z]);

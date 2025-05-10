@@ -61,7 +61,7 @@ namespace fk {
     template <enum InterpolationType IType, enum AspectRatio AR = AspectRatio::IGNORE_AR, typename BackFunction_ = void>
     struct Resize {
         using InterpolateOutputType = typename Interpolate<IType, BackFunction_>::OutputType;
-        using Parent = ReadBackOperation<InterpolateOutputType,
+        using Parent = ReadBackOperation<typename BackFunction_::Operation::OutputType,
                                          ResizeReadParams<IType, AR, std::conditional_t<AR == IGNORE_AR, void, InterpolateOutputType>>,
                                          BackFunction_,
                                          typename Interpolate<IType, BackFunction_>::OutputType,

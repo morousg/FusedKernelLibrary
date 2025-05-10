@@ -70,7 +70,7 @@ namespace fk {
         using type = OutputType;
     };
 
-    template <typename SourceType, uint ELEMS_PER_THREAD, typename OutputType = SourceType>
+    template <typename SourceType, uint ELEMS_PER_THREAD, typename OutputType>
     using ThreadFusionType = ThreadFusionTypeImpl<SourceType, ELEMS_PER_THREAD, OutputType>::type;
 
     template <typename ReadType, typename WriteType, bool ENABLED_>
