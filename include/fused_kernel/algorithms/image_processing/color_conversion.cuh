@@ -19,7 +19,7 @@
 #include <fused_kernel/algorithms/basic_ops/algebraic.cuh>
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/core/execution_model/parent_operations.cuh>
+#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 
 namespace fk {
     template <typename I>

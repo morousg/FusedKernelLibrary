@@ -15,7 +15,7 @@
 #ifndef FK_CUDA_VECTOR
 #define FK_CUDA_VECTOR
 
-#include <fused_kernel/core/execution_model/parent_operations.cuh>
+#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/logical.cuh>
 
 namespace fk {

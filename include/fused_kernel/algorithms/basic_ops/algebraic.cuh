@@ -17,7 +17,7 @@
 
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cuda_vector.cuh>
-#include <fused_kernel/core/execution_model/parent_operations.cuh>
+#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 
 namespace fk {
 

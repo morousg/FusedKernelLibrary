@@ -18,7 +18,7 @@
 #include <fused_kernel/core/execution_model/vector_operations.cuh>
 #include <fused_kernel/core/data/tuple.cuh>
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.cuh>
-#include <fused_kernel/core/execution_model/parent_operations.cuh>
+#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 
 namespace fk {
     enum ShiftDirection { Left, Right };

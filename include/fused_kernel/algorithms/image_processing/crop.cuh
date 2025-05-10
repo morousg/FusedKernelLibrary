@@ -15,7 +15,7 @@
 #ifndef FK_CROP_OP
 #define FK_CROP_OP
 
-#include <fused_kernel/core/execution_model/parent_operations.cuh>
+#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/core/data/rect.h>
 #include <fused_kernel/core/data/point.h>
 

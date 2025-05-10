@@ -19,7 +19,7 @@
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/execution_model/thread_fusion.cuh>
 #include <fused_kernel/core/execution_model/operation_types.cuh>
-#include <fused_kernel/core/execution_model/parent_operations.cuh>
+#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/core/data/array.cuh>
 #include <vector>
 
