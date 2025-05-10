@@ -96,7 +96,7 @@ namespace fk {
         }
     };
 
-#define BODER_READER_DETAILS(BT) \
+#define BORDER_READER_DETAILS(BT) \
 private: \
     using SelfType = \
         BorderReader<BT, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>>; \
@@ -127,7 +127,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
     struct BorderReader<BorderType::CONSTANT, BackIOp,
                         std::enable_if_t<!std::is_same_v<BackIOp, void> &&
                                          !std::is_same_v<BackIOp, TypeList<void, typename BackIOp::Operation::ReadDataType>>, void>> {
-        BODER_READER_DETAILS(BorderType::CONSTANT)
+        BORDER_READER_DETAILS(BorderType::CONSTANT)
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
             const int width = BackFunction::Operation::num_elems_x(thread, back_function);
             const int height = BackFunction::Operation::num_elems_y(thread, back_function);
@@ -145,7 +145,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
     template <typename BackIOp>
     struct BorderReader<BorderType::REPLICATE, BackIOp,
                         std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
-        BODER_READER_DETAILS(BorderType::REPLICATE)
+        BORDER_READER_DETAILS(BorderType::REPLICATE)
         BODER_READER_EXEC
         FK_HOST_FUSE auto build(const BackFunction& backFunction) {
             return InstantiableType{ OperationDataType{{}, backFunction} };
@@ -173,7 +173,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
 
     template <typename BackIOp>
     struct BorderReader<BorderType::REFLECT, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
-        BODER_READER_DETAILS(BorderType::REFLECT)
+        BORDER_READER_DETAILS(BorderType::REFLECT)
         BODER_READER_EXEC
 
         FK_HOST_FUSE auto build(const BackFunction& backFunction) {
@@ -202,7 +202,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
 
     template <typename BackIOp>
     struct BorderReader<BorderType::WRAP, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
-        BODER_READER_DETAILS(BorderType::WRAP)
+        BORDER_READER_DETAILS(BorderType::WRAP)
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
             const int width = BackFunction::Operation::num_elems_x(thread, back_function);
             const int height = BackFunction::Operation::num_elems_y(thread, back_function);
@@ -236,7 +236,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
 
     template <typename BackIOp>
     struct BorderReader<BorderType::REFLECT_101, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
-        BODER_READER_DETAILS(BorderType::REFLECT_101)
+        BORDER_READER_DETAILS(BorderType::REFLECT_101)
         BODER_READER_EXEC
 
         FK_HOST_FUSE auto build(const BackFunction& backFunction) {
@@ -263,7 +263,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
         }
     };
 
-#undef BODER_READER_DETAILS
+#undef BORDER_READER_DETAILS
 #undef BODER_READER_EXEC
 
 }
