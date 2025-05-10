@@ -592,7 +592,7 @@ namespace fk {
         using Parent = UnaryOperation<T, T, SaturateFloat<T>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
-            static_assert(std::is_same_v<VBase<T>, float>, "Satureate float only works with float base types.");
+            static_assert(std::is_same_v<VBase<T>, float>, "Saturate float only works with float base types.");
             return UnaryV<SaturateFloatBase, T, T>::exec(input);
         }
     };

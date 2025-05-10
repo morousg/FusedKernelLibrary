@@ -115,7 +115,7 @@ FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataTyp
     return BackFunction::Operation::num_elems_z(thread, opData.back_function); \
 }
 
-#define BODER_READER_EXEC \
+#define BORDER_READER_EXEC \
 FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) { \
     const int last_col = BackFunction::Operation::num_elems_x(thread, back_function) - 1; \
     const int last_row = BackFunction::Operation::num_elems_y(thread, back_function) - 1; \
@@ -146,7 +146,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
     struct BorderReader<BorderType::REPLICATE, BackIOp,
                         std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
         BORDER_READER_DETAILS(BorderType::REPLICATE)
-        BODER_READER_EXEC
+        BORDER_READER_EXEC
         FK_HOST_FUSE auto build(const BackFunction& backFunction) {
             return InstantiableType{ OperationDataType{{}, backFunction} };
         }
@@ -174,7 +174,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
     template <typename BackIOp>
     struct BorderReader<BorderType::REFLECT, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
         BORDER_READER_DETAILS(BorderType::REFLECT)
-        BODER_READER_EXEC
+        BORDER_READER_EXEC
 
         FK_HOST_FUSE auto build(const BackFunction& backFunction) {
             return InstantiableType{ OperationDataType{{}, backFunction} };
@@ -237,7 +237,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
     template <typename BackIOp>
     struct BorderReader<BorderType::REFLECT_101, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
         BORDER_READER_DETAILS(BorderType::REFLECT_101)
-        BODER_READER_EXEC
+        BORDER_READER_EXEC
 
         FK_HOST_FUSE auto build(const BackFunction& backFunction) {
             return InstantiableType{ OperationDataType{{}, backFunction} };
@@ -264,7 +264,7 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
     };
 
 #undef BORDER_READER_DETAILS
-#undef BODER_READER_EXEC
+#undef BORDER_READER_EXEC
 
 }
 
