@@ -1318,7 +1318,7 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
     struct Fuser {
         template <typename FirstIOp, typename SecondIOp>
         FK_HOST_FUSE auto fuse(const FirstIOp& firstIOp, const SecondIOp& secondIOp) {
-            return then(firstIOp, secondIOp);
+            return fuseAllIOps(firstIOp, secondIOp);
         }
 
         template <typename FirstIOp, typename SecondIOp, typename... RestIOps>
@@ -1333,12 +1333,12 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         * and Operations.
         */
         template <typename... InstantiableOperations>
-        FK_HOST_FUSE auto fuseIOps(const InstantiableOperations&... instantiableOperations) {
+        FK_HOST_FUSE auto fuseNonBatchForwardIOps(const InstantiableOperations&... instantiableOperations) {
             return operationTupleToIOp(iOpsToOperationTuple(instantiableOperations...));
         }
 
         template <typename SelfType, typename ContinuationIOp>
-        FK_HOST_FUSE auto then(const SelfType& selfIOp, const ContinuationIOp& cIOp) {
+        FK_HOST_FUSE auto fuseAllIOps(const SelfType& selfIOp, const ContinuationIOp& cIOp) {
             using Operation = typename SelfType::Operation;
             if constexpr (isBatchOperation<Operation> && isBatchOperation<typename ContinuationIOp::Operation>) {
                 static_assert(Operation::BATCH == ContinuationIOp::Operation::BATCH,
@@ -1419,7 +1419,7 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
                     using BuilderType = typename ContinuationIOp::Operation;
                     return BuilderType::build(selfIOp, cIOp);
                 } else {
-                    return fuseIOps(selfIOp, cIOp);
+                    return fuseNonBatchForwardIOps(selfIOp, cIOp);
                 }
             }
         }
@@ -1436,8 +1436,8 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         FK_HOST_FUSE auto make_fusedArray(const std::index_sequence<Idx...>&,
                                           const std::array<ThisIOp, BATCH>& thisArray,
                                           const std::array<ForwardIOp, BATCH>& fwdArray) {
-            using ResultingType = decltype(fuseIOps(std::declval<ThisIOp>(), std::declval<ForwardIOp>()));
-            return std::array<ResultingType, BATCH>{fuseIOps(thisArray[Idx], fwdArray[Idx])...};
+            using ResultingType = decltype(fuseNonBatchForwardIOps(std::declval<ThisIOp>(), std::declval<ForwardIOp>()));
+            return std::array<ResultingType, BATCH>{fuseNonBatchForwardIOps(thisArray[Idx], fwdArray[Idx])...};
         }
     };
     // END Fuser implementation
