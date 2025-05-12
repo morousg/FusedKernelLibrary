@@ -61,17 +61,17 @@ constexpr bool test_InstantiableFusedOperationToOperationTuple() {
     constexpr bool mustFalse3 = isNotAllUnaryFusedOperation<FusedOperation<UIntFloat, UFloatInt>>;
     static_assert(!mustFalse3, "FusedOperation<UIntFloat, UFloatInt> is an all Unary FusedOperation");
     constexpr auto fusedOp0 = Binary<FusedOperation<Add<float>>>{};
-    [[maybe_unused]] constexpr auto operationTuple = Fuser::InstantiableFusedOperationToOperationTuple<Binary<FusedOperation<Add<float>>>>::value(fusedOp0);
+    [[maybe_unused]] constexpr auto operationTuple = InstantiableFusedOperationToOperationTuple<Binary<FusedOperation<Add<float>>>>::value(fusedOp0);
     constexpr auto fusedOp = MWPerThrFloat::build(OperationData<MWPerThrFloat>{});
     using FusedOpType = std::decay_t<decltype(fusedOp)>;
-    [[maybe_unused]] constexpr auto operationTuple2 = Fuser::InstantiableFusedOperationToOperationTuple<FusedOpType>::value(fusedOp);
+    [[maybe_unused]] constexpr auto operationTuple2 = InstantiableFusedOperationToOperationTuple<FusedOpType>::value(fusedOp);
 
     return true;
 }
 
 int launch() {
     constexpr ComplexType complexVar{};
-    [[maybe_unused]] constexpr auto opTuple = Fuser::InstantiableFusedOperationToOperationTuple<ComplexType>::value(complexVar);
+    [[maybe_unused]] constexpr auto opTuple = InstantiableFusedOperationToOperationTuple<ComplexType>::value(complexVar);
 
     return test_InstantiableFusedOperationToOperationTuple() ? 0 : -1;
 }
