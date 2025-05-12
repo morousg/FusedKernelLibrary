@@ -56,140 +56,22 @@ namespace fk { // namespace FusedKernel
     struct has_operation<T, std::void_t<typename T::Operation>> : std::true_type {};
     // Combine checks into a single struct
     template <typename T> struct IsBatchOperation :
-        std::integral_constant<bool, has_batch<T>::value && has_operation<T>::value> {};
+        std::integral_constant<bool, has_batch<T>::value&& has_operation<T>::value> {};
     // Helper variable template
     template <typename T>
     constexpr bool isBatchOperation = IsBatchOperation<T>::value;
 
     enum PlanePolicy { PROCESS_ALL = 0, CONDITIONAL_WITH_DEFAULT = 1 };
 
+    struct Fuser;
+
     template <typename Operation_t>
     struct ReadInstantiableOperation final : public OperationData<Operation_t> {
         DEVICE_FUNCTION_DETAILS_IS_ASSERT(ReadType)
-    private:
-        template <size_t BATCH, size_t... Idx, typename BackwardIOp, typename ForwardIOp>
-        FK_HOST_FUSE auto make_fusedArrayBack(const std::index_sequence<Idx...>&,
-                                              const std::array<BackwardIOp, BATCH>& bkArray,
-                                              const std::array<ForwardIOp, BATCH>& fwdArray) {
-            using ResultingType =
-                decltype(ForwardIOp::Operation::build(std::declval<BackwardIOp>(), std::declval<ForwardIOp>()));
-            return std::array<ResultingType, BATCH>{ForwardIOp::Operation::build(bkArray[Idx], fwdArray[Idx])...};
-        }
-        template <size_t BATCH, size_t... Idx, typename ThisIOp, typename ForwardIOp>
-        FK_HOST_FUSE auto make_fusedArray(const std::index_sequence<Idx...>&,
-                                          const std::array<ThisIOp, BATCH>& thisArray,
-                                          const std::array<ForwardIOp, BATCH>& fwdArray) {
-            using ResultingType = decltype(fuseIOps(std::declval<ThisIOp>(), std::declval<ForwardIOp>()));
-            return std::array<ResultingType, BATCH>{fuseIOps(thisArray[Idx], fwdArray[Idx])...};
-        }
-        template <size_t BATCH, typename BackwardIOp, typename ForwardIOp, typename DefaultValueType>
-        FK_HOST_FUSE auto then_helper(const std::array<BackwardIOp, BATCH>& backOpArray,
-                                      const std::array<ForwardIOp, BATCH>& forwardOpArray,
-                                      const int& usedPlanes,
-                                      const DefaultValueType& defaultValue) {
-            const auto fusedArray =
-                make_fusedArrayBack<BATCH>(std::make_index_sequence<BATCH>{}, backOpArray, forwardOpArray);
-            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
-            return ContinuationIOpNewType::Operation::build(usedPlanes, defaultValue, fusedArray);
-        }
-        template <size_t BATCH, typename BackwardIOp, typename ForwardIOp>
-        FK_HOST_FUSE auto then_helper_2arr(const std::array<BackwardIOp, BATCH>& backOpArray,
-                                           const std::array<ForwardIOp, BATCH>& forwardOpArray) {
-            const auto fusedArray =
-                make_fusedArrayBack<BATCH>(std::make_index_sequence<BATCH>{}, backOpArray, forwardOpArray);
-            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
-            return ContinuationIOpNewType::Operation::build(fusedArray);
-        }
-        template <size_t BATCH, typename ThisIOp, typename ForwardIOp>
-        FK_HOST_FUSE auto then_helper(const ReadInstantiableOperation<Operation_t>& thisIOp,
-                                      const std::array<ThisIOp, BATCH>& thisArray,
-                                      const ForwardIOp& forwardIOp) {
-            const auto forwardOpArray = make_set_std_array<BATCH>(forwardIOp);
-            const auto fusedArray =
-                make_fusedArray<BATCH>(std::make_index_sequence<BATCH>{}, thisArray, forwardOpArray);
-            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
-            if constexpr (Operation::PP == PROCESS_ALL) {
-                return ContinuationIOpNewType::Operation::build(fusedArray);
-            } else {
-                using NewOutputType = typename ContinuationIOpNewType::Operation::OutputType;
-                using OldOutputType = std::decay_t<decltype(thisIOp.params.default_value)>;
-                const auto default_value = thisIOp.params.default_value;
-                const auto val =
-                    UnaryV<CastBase<VBase<OldOutputType>, VBase<NewOutputType>>, OldOutputType, NewOutputType>::exec(default_value);
-                return ContinuationIOpNewType::Operation::build(thisIOp.params.usedPlanes, val, fusedArray);
-            }
-        }
-    public:
-        template <typename ContinuationIOp>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            if constexpr (isBatchOperation<Operation> && isBatchOperation<typename ContinuationIOp::Operation>) {
-                static_assert(Operation::BATCH == ContinuationIOp::Operation::BATCH,
-                    "Fusing two batch operations of different BATCH size is not allowed.");
-                static_assert(isReadBackType<typename ContinuationIOp::Operation::Operation>,
-                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
-                constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
-                const auto backOpArray = BatchOperation::toArray(*this);
-                const auto forwardOpArray = BatchOperation::toArray(cIOp);
-                if constexpr (Operation::PP == PROCESS_ALL && ContinuationIOp::Operation::PP == PROCESS_ALL) {
-                    return then_helper_2arr<BATCH>(backOpArray, forwardOpArray);
-                } else if constexpr (Operation::PP == PROCESS_ALL && ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
-                    return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp.params.usedPlanes, cIOp.params.default_value);
-                } else if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == PROCESS_ALL) {
-                    using BackType = std::decay_t<decltype(backOpArray)>;
-                    using ForType = std::decay_t<decltype(forwardOpArray)>;
-                    using FusedType = typename decltype(make_fusedArray<BATCH>(std::declval<std::make_index_sequence<BATCH>>(), std::declval<BackType>(), std::declval<ForType>()))::value_type;
-                    using DefaultValueType = typename FusedType::Operation::OutputType;
-                    if constexpr (std::is_same_v<typename Operation::OutputType, DefaultValueType>) {
-                        return then_helper<BATCH>(backOpArray, forwardOpArray, this->params.usedPlanes, this->params.default_value);
-                    } else {
-                        using Original = typename BackType::value_type::Operation::OutputType;
-                        const auto defaultValue = UnaryV<CastBase<VBase<Original>, VBase<DefaultValueType>>, Original, DefaultValueType>::exec(this->params.default_value);
-                        return then_helper<BATCH>(backOpArray, forwardOpArray, this->params.usedPlanes, defaultValue);
-                    }
-                } else if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
-                    if (this->params.usedPlanes != cIOp.params.usedPlanes) {
-                        throw std::invalid_argument("Fusing two batch read operations with different number of used planes is not valid");
-                    }
-                    // We will take the default value of the continuation operation
-                    return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp.params.usedPlanes, cIOp.params.default_value);
-                }
 
-            } else if constexpr (!isBatchOperation<Operation> && isBatchOperation<typename ContinuationIOp::Operation>) {
-                static_assert(isReadBackType<typename ContinuationIOp::Operation::Operation>,
-                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
-                constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
-                const auto backOpArray = make_set_std_array<BATCH>(*this);
-                const auto forwardOpArray = BatchOperation::toArray(cIOp);
-                if constexpr (ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
-                    return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp.params.usedPlanes, cIOp.params.default_value);
-                } else {
-                    return then_helper_2arr<BATCH>(backOpArray, forwardOpArray);
-                }
-            } else if constexpr (isBatchOperation<Operation> && !isBatchOperation<typename ContinuationIOp::Operation>) {
-                static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
-                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
-                constexpr size_t BATCH = static_cast<size_t>(Operation::BATCH);
-                if constexpr (isReadBackType<ContinuationIOp>) {
-                    const auto backOpArray = BatchOperation::toArray(*this);
-                    const auto forwardOpArray = make_set_std_array<BATCH>(cIOp);
-                    if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT) {
-                        return then_helper<BATCH>(backOpArray, forwardOpArray, this->params.usedPlanes, this->params.default_value);
-                    } else {
-                        return then_helper_2arr<BATCH>(backOpArray, forwardOpArray);
-                    }
-                } else {
-                    const auto thisArray = BatchOperation::toArray(*this);
-                    return then_helper<BATCH>(*this, thisArray, cIOp);
-                }
-            } else if constexpr (!isBatchOperation<Operation> && !isBatchOperation<typename ContinuationIOp::Operation>) {
-                static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
-                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
-                if constexpr (isReadBackType<ContinuationIOp>) {
-                    return ContinuationIOp::Operation::build(*this, cIOp);
-                } else {
-                    return fuseIOps(*this, cIOp);
-                }
-            }
+            template <typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const -> decltype(Fuser_t::then(std::declval<decltype(*this)>(), std::declval<ContinuationIOp>())) {
+            return Fuser_t::then(*this, cIOp);
         }
 
         template <typename ContinuationIOp, typename... ContinuationIOps>
@@ -205,49 +87,10 @@ namespace fk { // namespace FusedKernel
     template <typename Operation_t>
     struct ReadBackInstantiableOperation final : public OperationData<Operation_t> {
         DEVICE_FUNCTION_DETAILS_IS_ASSERT(ReadBackType)
-    private:
-        template <size_t BATCH, size_t... Idx, typename BackwardIOp, typename ForwardIOp>
-        FK_HOST_FUSE auto make_fusedArray(const std::index_sequence<Idx...>&,
-                                          const std::array<BackwardIOp, BATCH>& bkArray,
-                                          const std::array<ForwardIOp, BATCH>& fwdArray) {
-            using ResultingType =
-                decltype(ForwardIOp::Operation::build(std::declval<BackwardIOp>(), std::declval<ForwardIOp>()));
-            return std::array<ResultingType, BATCH>{ForwardIOp::Operation::build(bkArray[Idx], fwdArray[Idx])...};
+            template <typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const -> decltype(Fuser_t::then_rb(std::declval<decltype(*this)>(), std::declval<ContinuationIOp>())) {
+            return Fuser_t::then_rb(*this, cIOp);
         }
-        template <size_t BATCH, typename BackwardIOp, typename ForwardIOp, typename MainBatchIOp>
-        FK_HOST_FUSE auto then_helper(const std::array<BackwardIOp, BATCH>& backOpArray,
-                                      const std::array<ForwardIOp, BATCH>& forwardOpArray,
-                                      const MainBatchIOp& mainIOp) {
-            const auto fusedArray =
-                make_fusedArray<BATCH>(std::make_index_sequence<BATCH>{}, backOpArray, forwardOpArray);
-            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
-            if constexpr (MainBatchIOp::Operation::PP == PROCESS_ALL) {
-                return ContinuationIOpNewType::Operation::build(fusedArray);
-            } else {
-                return ContinuationIOpNewType::Operation::build(mainIOp.params.usedPlanes, mainIOp.params.default_value, fusedArray);
-            }
-        }
-    public:
-        template <typename ContinuationIOp>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            if constexpr (isBatchOperation<typename ContinuationIOp::Operation>) {
-                static_assert(isReadBackType<typename ContinuationIOp::Operation::Operation>,
-                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
-                constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
-                const auto backOpArray = make_set_std_array<BATCH>(*this);
-                const auto forwardOpArray = BatchOperation::toArray(cIOp);
-                return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp);
-            } else {
-                static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
-                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
-                if constexpr (isReadBackType<ContinuationIOp>) {
-                    return ContinuationIOp::Operation::build(*this, cIOp);
-                } else {
-                    return fuseIOps(*this, cIOp);
-                }
-            }
-        }
-
         template <typename ContinuationIOp, typename... ContinuationIOps>
         FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
             return then(cIOp).then(cIOps...);
@@ -272,14 +115,18 @@ namespace fk { // namespace FusedKernel
     struct BinaryInstantiableOperation final : public OperationData<Operation_t> {
         DEVICE_FUNCTION_DETAILS_IS_ASSERT(BinaryType)
 
-        template <typename... ContinuationsDF>
-        FK_HOST_DEVICE_FUSE auto then(const BinaryInstantiableOperation<Operation_t>& thisIOp, const ContinuationsDF&... cDFs) {
-            return fuseIOps(thisIOp, cDFs...);
+            template <typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_DEVICE_FUSE auto then_internal(const BinaryInstantiableOperation<Operation_t>& thisIOp, const ContinuationIOp& cIOp) {
+            return Fuser_t::fuse(thisIOp, cIOp);
         }
 
-        template <typename... ContinuationsDF>
-        FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return BinaryInstantiableOperation<Operation_t>::then(*this, cDFs...);
+        template <typename ContinuationIOp, typename... ContinuationIOps>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
+            if constexpr (sizeof...(ContinuationIOps) > 0) {
+                return then_internal(*this, cIOp).then(cIOps...);
+            } else {
+                return then_internal(*this, cIOp);
+            }
         }
     };
 
@@ -297,9 +144,18 @@ namespace fk { // namespace FusedKernel
     struct TernaryInstantiableOperation final : public OperationData<Operation_t> {
         DEVICE_FUNCTION_DETAILS_IS_ASSERT(TernaryType)
 
-        template <typename... ContinuationsDF>
-        FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseIOps(*this, cDFs...);
+            template <typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_DEVICE_FUSE auto then_internal(const TernaryInstantiableOperation<Operation_t>& thisIOp, const ContinuationIOp& cIOp) {
+            return Fuser_t::fuse(thisIOp, cIOp);
+        }
+
+        template <typename ContinuationIOp, typename... ContinuationIOps>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
+            if constexpr (sizeof...(ContinuationIOps) > 0) {
+                return then_internal(*this, cIOp).then(cIOps...);
+            } else {
+                return then_internal(*this, cIOp);
+            }
         }
     };
 
@@ -315,9 +171,18 @@ namespace fk { // namespace FusedKernel
     struct UnaryInstantiableOperation {
         DEVICE_FUNCTION_DETAILS_IS_ASSERT(UnaryType)
 
-        template <typename... ContinuationsDF>
-        FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseIOps(*this, cDFs...);
+            template <typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_FUSE auto then_internal(const UnaryInstantiableOperation<Operation_t>& thisIOp, const ContinuationIOp& cIOp) {
+            return Fuser_t::fuse(thisIOp, cIOp);
+        }
+
+        template <typename ContinuationIOp, typename... ContinuationIOps>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
+            if constexpr (sizeof...(ContinuationIOps) > 0) {
+                return then_internal(*this, cIOp).then(cIOps...);
+            } else {
+                return then_internal(*this, cIOp);
+            }
         }
     };
 
@@ -330,13 +195,18 @@ namespace fk { // namespace FusedKernel
     template <typename Operation_t>
     struct MidWriteInstantiableOperation final : public OperationData<Operation_t> {
         DEVICE_FUNCTION_DETAILS_IS(MidWriteType)
-        static_assert(std::is_same_v<typename Operation::InstanceType, WriteType> ||
-                      std::is_same_v<typename Operation::InstanceType, MidWriteType>,
-                      "Operation is not WriteType or MidWriteType");
+            static_assert(std::is_same_v<typename Operation::InstanceType, WriteType> ||
+                std::is_same_v<typename Operation::InstanceType, MidWriteType>,
+                "Operation is not WriteType or MidWriteType");
 
-        template <typename... ContinuationsDF>
-        FK_HOST_CNST auto then(const ContinuationsDF&... cDFs) const {
-            return fuseIOps(*this, cDFs...);
+        template <typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
+            return Fuser_t::fuse(*this, cIOp);
+        }
+
+        template <typename ContinuationIOp, typename... ContinuationIOps>
+        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
+            return then(cIOp).then(cIOps...);
         }
     };
 
@@ -411,7 +281,7 @@ namespace fk { // namespace FusedKernel
     using Instantiable = typename InstantiableOperationType<Operation>::type;
 
     // PARENT OPERATIONS
-    template <typename RT, typename P, typename O, enum class TF TFE, typename ROperationImpl>
+    template <typename RT, typename P, typename O, enum class TF TFE, typename ROperationImpl, bool IS_FUSED = false>
     struct ReadOperation {
         using Child = ROperationImpl;
         using ParamsType = P;
@@ -421,10 +291,11 @@ namespace fk { // namespace FusedKernel
         using OutputType = O;
         using OperationDataType = OperationData<ROperationImpl>;
         using InstantiableType = Read<ROperationImpl>;
+        static constexpr bool IS_FUSED_OP = IS_FUSED;
 
-        template <uint ELEMS_PER_THREAD=1, typename CH = Child>
+        template <uint ELEMS_PER_THREAD = 1, typename CH = Child>
         FK_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType>
-        exec(const Point& thread, const OperationDataType& opData) {
+            exec(const Point& thread, const OperationDataType& opData) {
             if constexpr (std::bool_constant<THREAD_FUSION>::value) {
                 return ROperationImpl::template exec<ELEMS_PER_THREAD>(thread, opData.params);
             } else {
@@ -448,6 +319,7 @@ using InstanceType = typename Parent::InstanceType; \
 using OutputType = typename Parent::OutputType; \
 using OperationDataType = typename Parent::OperationDataType; \
 using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool IS_FUSED_OP = Parent::IS_FUSED_OP; \
 static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION; \
 template <uint ELEMS_PER_THREAD=1> \
 FK_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> \
@@ -465,7 +337,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     return Parent::build(params); \
 }
 
-    template <typename I, typename P, typename WT, enum class TF TFE, typename WOperationImpl>
+    template <typename I, typename P, typename WT, enum class TF TFE, typename WOperationImpl, bool IS_FUSED = false>
     struct WriteOperation {
         using Child = WOperationImpl;
         using ParamsType = P;
@@ -475,6 +347,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         static constexpr bool THREAD_FUSION{ static_cast<bool>(TFE) };
         using OperationDataType = OperationData<WOperationImpl>;
         using InstantiableType = Write<WOperationImpl>;
+        static constexpr bool IS_FUSED_OP = IS_FUSED;
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const OperationDataType& opData) {
             if constexpr (THREAD_FUSION) {
@@ -498,6 +371,7 @@ using WriteDataType = typename Parent::WriteDataType; \
 using InstanceType = typename Parent::InstanceType; \
 using OperationDataType = typename Parent::OperationDataType; \
 using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool IS_FUSED_OP = Parent::IS_FUSED_OP; \
 static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION; \
 template <uint ELEMS_PER_THREAD=1> \
 FK_HOST_DEVICE_FUSE void exec(const Point& thread, \
@@ -524,9 +398,9 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         }
         template <typename Operation, size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance,
-                                      const ArrayTypes&... arrays) {
+            const ArrayTypes&... arrays) {
             static_assert(allArraysSameSize_v<BATCH_N, ArrayTypes...>,
-                          "Not all arrays have the same size as BATCH");
+                "Not all arrays have the same size as BATCH");
             return build_helper_generic<Operation>(std::make_index_sequence<BATCH_N>(), firstInstance, arrays...);
         }
     private:
@@ -537,7 +411,7 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
             if constexpr (InstantiableType::template is<ReadType>) {
                 return OutputArrayType{ Operation::build(batchIOp.params.opData[Idx])... };
             } else if constexpr (InstantiableType::template is<WriteType>) {
-                return OutputArrayType{ Operation::build(batchIOp.params[Idx])...};
+                return OutputArrayType{ Operation::build(batchIOp.params[Idx])... };
             } else {
                 static_assert(false, "The IOp passed as parameter is not a batch operation");
             }
@@ -609,10 +483,10 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         static constexpr size_t BATCH = BATCH_;
         static constexpr PlanePolicy PP = PROCESS_ALL;
         using Parent = ReadOperation<typename Operation::ReadDataType,
-                                     BatchReadParams<BATCH, PP, Operation, typename Operation::OutputType>,
-                                     typename Operation::OutputType,
-                                     Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
-                                     BatchRead<BATCH, PROCESS_ALL, Operation_, OutputType_>>;
+            BatchReadParams<BATCH, PP, Operation, typename Operation::OutputType>,
+            typename Operation::OutputType,
+            Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
+            BatchRead<BATCH, PROCESS_ALL, Operation_, OutputType_>>;
         DECLARE_READ_PARENT_BASIC
 
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
@@ -624,14 +498,14 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         // Build BatchRead from an array of InstantiableOperations
         template <typename IOp>
         FK_HOST_FUSE std::enable_if_t<isAnyReadType<IOp>, InstantiableType>
-        build(const std::array<IOp, BATCH>& instantiableOperations) {
+            build(const std::array<IOp, BATCH>& instantiableOperations) {
             static_assert(isAnyReadType<IOp>);
             return build_helper(instantiableOperations, std::make_integer_sequence<int, BATCH>{});
         }
         // Build BatchRead from arrays of Operation::build() parameters
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE std::enable_if_t<!isAnyReadType<FirstType>, InstantiableType>
-        build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) {
+            build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes&... arrays) {
             const auto arrayOfIOps = Operation::build_batch(firstInstance, arrays...);
             return BatchRead<BATCH_N, PP>::build(arrayOfIOps);
         }
@@ -669,10 +543,10 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         static constexpr int BATCH = BATCH_;
         static constexpr PlanePolicy PP = CONDITIONAL_WITH_DEFAULT;
         using Parent = ReadOperation<NullTypeToUchar<typename Operation::ReadDataType>,
-                                     BatchReadParams<BATCH, PP, Operation, NullTypeToAlternative<typename Operation::OutputType, OutputType_>>,
-                                     NullTypeToAlternative<typename Operation::OutputType, OutputType_>,
-                                     Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
-                                     BatchRead<BATCH, PP, Operation, OutputType_>>;
+            BatchReadParams<BATCH, PP, Operation, NullTypeToAlternative<typename Operation::OutputType, OutputType_>>,
+            NullTypeToAlternative<typename Operation::OutputType, OutputType_>,
+            Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
+            BatchRead<BATCH, PP, Operation, OutputType_>>;
         DECLARE_READ_PARENT_BASIC
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
         template <uint ELEMS_PER_THREAD = 1>
@@ -697,8 +571,8 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-                                const std::array<FirstType, BATCH_N>& firstInstance,
-                                const ArrayTypes&... arrays) {
+            const std::array<FirstType, BATCH_N>& firstInstance,
+            const ArrayTypes&... arrays) {
             const auto arrayOfIOps = Operation::build_batch(firstInstance, arrays...);
             return BatchRead<BATCH_N, PP>::build(arrayOfIOps, usedPlanes, defaultValue);
         }
@@ -739,16 +613,16 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
     template <size_t BATCH, typename Operation = void>
     struct BatchWrite {
         using Parent = WriteOperation<typename Operation::InputType,
-                                      typename Operation::ParamsType[BATCH],
-                                      typename Operation::WriteDataType,
-                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
-                                      BatchWrite<BATCH, Operation>>;
+            typename Operation::ParamsType[BATCH],
+            typename Operation::WriteDataType,
+            Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
+            BatchWrite<BATCH, Operation>>;
         DECLARE_WRITE_PARENT_BASIC
 
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
-                                      const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input,
-                                      const ParamsType& params) {
+            const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input,
+            const ParamsType& params) {
             if constexpr (THREAD_FUSION) {
                 Operation::exec<ELEMS_PER_THREAD>(thread, input, params[thread.z]);
             } else {
@@ -764,21 +638,21 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         // Build WriteBatch from array of IOps
         template <typename IOp>
         FK_HOST_FUSE std::enable_if_t<isWriteType<IOp>, InstantiableType>
-        build(const std::array<IOp, BATCH>& iOps) {
+            build(const std::array<IOp, BATCH>& iOps) {
             static_assert(isWriteType<IOp>, "The IOps in the array are not WriteType");
             return build_helper(iOps, std::make_integer_sequence<int, BATCH>{});
         }
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE std::enable_if_t<!isWriteType<FirstType>, InstantiableType>
-        build(const std::array<FirstType, BATCH_N>& firstInstance,
-                                const ArrayTypes&... arrays) {
+            build(const std::array<FirstType, BATCH_N>& firstInstance,
+                const ArrayTypes&... arrays) {
             const auto arrayOfIOps = Operation::build_batch(firstInstance, arrays...);
             return BatchWrite<BATCH_N>::build(arrayOfIOps);
         }
     private:
         template <int... Idx>
         FK_HOST_FUSE InstantiableType build_helper(const std::array<Instantiable<Operation>, BATCH>& iOps,
-                                                   const std::integer_sequence<int, Idx...>&) {
+            const std::integer_sequence<int, Idx...>&) {
             return { {{(iOps[Idx].params)...}} };
         }
     };
@@ -800,13 +674,13 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { \
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-                                const std::array<FirstType, BATCH_N>& firstInstance,
-                                const ArrayTypes&... arrays) {
+            const std::array<FirstType, BATCH_N>& firstInstance,
+            const ArrayTypes&... arrays) {
             return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance, arrays...);
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-                                const std::array<FirstType, BATCH_N>& firstInstance) {
+            const std::array<FirstType, BATCH_N>& firstInstance) {
             if constexpr (isAnyReadType<FirstType>) {
                 return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(firstInstance, usedPlanes, defaultValue);
             } else if constexpr (!isAnyReadType<FirstType>) {
@@ -858,7 +732,7 @@ FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, \
 DECLARE_WRITE_PARENT_BASIC \
 DECLARE_WRITE_PARENT_BATCH
 
-    template <typename RT, typename P, typename B, typename O, typename RBOperationImpl>
+    template <typename RT, typename P, typename B, typename O, typename RBOperationImpl, bool IS_FUSED = false>
     struct ReadBackOperation {
         using Child = RBOperationImpl;
         using ReadDataType = RT;
@@ -868,6 +742,7 @@ DECLARE_WRITE_PARENT_BATCH
         using InstanceType = ReadBackType;
         using OperationDataType = OperationData<RBOperationImpl>;
         using InstantiableType = ReadBackInstantiableOperation<RBOperationImpl>;
+        static constexpr bool IS_FUSED_OP = IS_FUSED;
         static constexpr bool THREAD_FUSION = false;
 
         template <typename BF = BackFunction>
@@ -891,6 +766,7 @@ using BackFunction = typename Parent::BackFunction; \
 using InstanceType = typename Parent::InstanceType; \
 using OperationDataType = typename Parent::OperationDataType; \
 using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool IS_FUSED_OP = Parent::IS_FUSED_OP; \
 static constexpr bool THREAD_FUSION = Parent::THREAD_FUSION;
 
     // DECLARE_READBACK_PARENT
@@ -972,12 +848,13 @@ FK_HOST_DEVICE_FUSE auto build(const ParamsType& params, const BackFunction& bac
 DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
     // END BATCH OPERATIONS
     // PARENT COMPUTE OPERATIONS
-    template <typename I, typename O, typename UOperationImpl>
+    template <typename I, typename O, typename UOperationImpl, bool IS_FUSED = false>
     struct UnaryOperation {
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;
         using InstantiableType = UnaryInstantiableOperation<UOperationImpl>;
+        static constexpr bool IS_FUSED_OP = IS_FUSED;
         // build() is fine, it only refers to UOperationImpl::InstantiableType
         // within the function body/return type, which is instantiated later.
         FK_HOST_DEVICE_FUSE auto build() {
@@ -990,11 +867,12 @@ using InputType = typename Parent::InputType; \
 using OutputType = typename Parent::OutputType; \
 using InstanceType = typename Parent::InstanceType; \
 using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool IS_FUSED_OP = Parent::IS_FUSED_OP; \
 FK_HOST_DEVICE_FUSE InstantiableType build() { \
     return Parent::build(); \
 }
 
-    template <typename I, typename P, typename O, typename BOperationImpl>
+    template <typename I, typename P, typename O, typename BOperationImpl, bool IS_FUSED = false>
     struct BinaryOperation {
         // --- REMOVE using ALIASES that depend on BOperationImpl ---
         // These caused the incomplete type error during base class instantiation.
@@ -1005,6 +883,7 @@ FK_HOST_DEVICE_FUSE InstantiableType build() { \
         using InstanceType = BinaryType;
         using OperationDataType = OperationData<BOperationImpl>; // Needed by exec/build(opData)
         using InstantiableType = BinaryInstantiableOperation<BOperationImpl>;
+        static constexpr bool IS_FUSED_OP = IS_FUSED;
         // --- exec Method ---
         // Accesses types only in signature/body -> OK
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
@@ -1031,6 +910,7 @@ using ParamsType = typename Parent::ParamsType; \
 using InstanceType = typename Parent::InstanceType; \
 using OperationDataType = typename Parent::OperationDataType; \
 using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool IS_FUSED_OP = Parent::IS_FUSED_OP; \
 FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, \
                                        const OperationDataType& opData) { \
     return Parent::exec(input, opData); \
@@ -1041,7 +921,7 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) { \
 FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
     return Parent::build(params); \
 }
-    template <typename I, typename P, typename BF, typename O, typename TOperationImpl>
+    template <typename I, typename P, typename BF, typename O, typename TOperationImpl, bool IS_FUSED = false>
     struct TernaryOperation {
         using InputType = I;
         using OutputType = O;
@@ -1050,6 +930,7 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params) { \
         using InstanceType = TernaryType;
         using OperationDataType = OperationData<TOperationImpl>;
         using InstantiableType = TernaryInstantiableOperation<TOperationImpl>;
+        static constexpr bool IS_FUSED_OP = IS_FUSED;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
             return TOperationImpl::exec(input, opData.params, opData.back_function);
         }
@@ -1069,6 +950,7 @@ using BackFunction = typename Parent::BackFunction; \
 using InstanceType = typename Parent::InstanceType; \
 using OperationDataType = typename Parent::OperationDataType; \
 using InstantiableType = typename Parent::InstantiableType; \
+static constexpr bool IS_FUSED_OP = Parent::IS_FUSED_OP; \
 FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) { \
     return Parent::exec(input, opData); \
 } \
@@ -1119,6 +1001,8 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
             } else if constexpr (isMidWriteType<Operation>) {
                 // We are executing another FusedOperation that is MidWriteType
                 return Operation::exec(thread, i_data, tuple.instance);
+            } else {
+                static_assert(false, "Something wrong in exec_operate");
             }
         }
 
@@ -1193,14 +1077,17 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
     using FOOT = typename FusedOperationOutputType<void, Operations...>::type;
 
     template <typename Enabler, typename... Operations>
-    struct FusedOperation_ {};
+    struct FusedOperation_ {
+        static constexpr bool IS_FUSED_OP{ true };
+    };
 
     template <typename FirstOp, typename... RemOps>
     struct FusedOperation_<std::enable_if_t<allUnaryTypes<FirstOp, RemOps...> && (sizeof...(RemOps) + 1 > 1)>, FirstOp, RemOps...> {
         using Parent =
             UnaryOperation<typename FirstOp::InputType,
             typename LastType_t<RemOps...>::OutputType,
-            FusedOperation_<std::enable_if_t<allUnaryTypes<FirstOp, RemOps...> && (sizeof...(RemOps) + 1 > 1)>, FirstOp, RemOps...>>;
+            FusedOperation_<std::enable_if_t<allUnaryTypes<FirstOp, RemOps...> && (sizeof...(RemOps) + 1 > 1)>, FirstOp, RemOps...>,
+            true>;
         DECLARE_UNARY_PARENT
 
         using Operations = TypeList<FirstOp, RemOps...>;
@@ -1214,7 +1101,8 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         using Parent =
             UnaryOperation<typename Operation::InputType,
             typename Operation::OutputType,
-            FusedOperation_<std::enable_if_t<isUnaryType<Operation>>, Operation>>;
+            FusedOperation_<std::enable_if_t<isUnaryType<Operation>>, Operation>,
+            true>;
         DECLARE_UNARY_PARENT
 
         using Operations = TypeList<Operation>;
@@ -1232,15 +1120,15 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
     public:
         using Parent =
             BinaryOperation<typename FirstType_t<Operations...>::InputType,
-                            OperationTuple<Operations...>,
-                            FOOT<LastType_t<Operations...>>,
-                            SelfType>;
+            OperationTuple<Operations...>,
+            FOOT<LastType_t<Operations...>>,
+            SelfType, true>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input,
-                                            const ParamsType& params) {
+            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(input, params);
         }
-    
+
     };
 
     template <typename... Operations>
@@ -1251,13 +1139,13 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         using SelfType = FusedOperation_<std::enable_if_t<isAnyReadType<FirstType_t<Operations...>>>, Operations...>;
     public:
         using Parent = ReadOperation<typename FirstType_t<Operations...>::ReadDataType,
-                                     OperationTuple<Operations...>,
-                                     FOOT<LastType_t<Operations...>>,
-                                     isTFEnabled ? TF::ENABLED : TF::DISABLED,
-                                     SelfType>;
+            OperationTuple<Operations...>,
+            FOOT<LastType_t<Operations...>>,
+            isTFEnabled ? TF::ENABLED : TF::DISABLED,
+            SelfType, true>;
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread,
-                                            const ParamsType& params) {
+            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(thread, params);
         }
 
@@ -1292,16 +1180,17 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         using InstanceType = MidWriteType;
         // THREAD_FUSION in this case will not be used in the current Transform implementation
         // May be used in future implementations
+        static constexpr bool IS_FUSED_OP{ true };
         static constexpr bool THREAD_FUSION{ false };
         using WriteDataType = typename FirstType_t<Operations...>::WriteDataType;
         using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
 
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-                                            const ParamsType& params) {
+            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(thread, input, params);
         }
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-                                            const OperationDataType& opData) {
+            const OperationDataType& opData) {
             return exec(thread, input, opData.params);
         }
         using InstantiableType = MidWrite<FusedOperation_<void, Operations...>>;
@@ -1313,12 +1202,12 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         }
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance,
-                                      const ArrayTypes&... arrays) {
+            const ArrayTypes&... arrays) {
             return BatchOperation::build_batch<SelfType>(firstInstance, arrays...);
         }
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
-                                const ArrayTypes&... arrays) {
+            const ArrayTypes&... arrays) {
             return BatchWrite<BATCH_N, SelfType>::build(firstInstance, arrays...);
         }
     };
@@ -1334,16 +1223,17 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
         using InstanceType = MidWriteType;
         // THREAD_FUSION in this case will not be used in the current Transform implementation
         // May be used in future implementations
+        static constexpr bool IS_FUSED_OP{ true };
         static constexpr bool THREAD_FUSION{ false };
         using WriteDataType = typename FirstType_t<Operations...>::WriteDataType;
         using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
 
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-                                            const ParamsType& params) {
+            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(thread, input, params);
         }
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-                                            const OperationDataType& opData) {
+            const OperationDataType& opData) {
             return exec(thread, input, opData.params);
         }
         using InstantiableType = MidWrite<FusedOperation_<void, Operations...>>;
@@ -1367,87 +1257,273 @@ FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackF
 
     template <typename... Operations>
     using FusedOperation = FusedOperation_<void, Operations...>;
+
+    template <typename FusedOperationType, typename=void>
+    struct IsAllUnaryFusedOperation : std::false_type {};
+
+    template <typename FusedOperationType>
+    struct IsAllUnaryFusedOperation<FusedOperationType, std::void_t<typename FusedOperationType::Operations>> : std::true_type {};
+    
+    template <typename FusedOperationType, typename=void>
+    struct IsNotAllUnaryFusedOperation : std::true_type {};
+
+    template <typename FusedOperationType>
+    struct IsNotAllUnaryFusedOperation<FusedOperationType, std::void_t<typename FusedOperationType::Operations>> : std::false_type {};
+    
+    template <typename FusedOperationType>
+    constexpr bool isAllUnaryFusedOperation = IsAllUnaryFusedOperation<FusedOperationType>::value;
+
+    template <typename FusedOperationType>
+    constexpr bool isNotAllUnaryFusedOperation = IsNotAllUnaryFusedOperation<FusedOperationType>::value;
     // END FusedOperation
 
     // fuseIOps implementation
-    template <typename T>
-    struct is_fused_operation : std::false_type {};
+    struct Fuser {
+        template <typename IOp, typename Enabler = void>
+        struct InstantiableFusedOperationToOperationTuple {};
 
-    template <typename... Operations>
-    struct is_fused_operation<FusedOperation<Operations...>> : std::true_type {};
+        template <typename FusedIOp>
+        struct InstantiableFusedOperationToOperationTuple<FusedIOp, std::enable_if_t<isAllUnaryFusedOperation<typename FusedIOp::Operation>, void>> {
+            FK_HOST_DEVICE_FUSE auto value(const FusedIOp& iOp) {
+                return TypeListToOT<typename FusedIOp::Operation::Operations>{};
+            }
+        };
+        template <typename FusedIOp>
+        struct InstantiableFusedOperationToOperationTuple<FusedIOp, std::enable_if_t<isNotAllUnaryFusedOperation<typename FusedIOp::Operation>, void>> {
+            FK_HOST_DEVICE_FUSE auto value(const FusedIOp& iOp) {
+                return iOp.params;
+            }
+        };
 
-    template <typename IOp, typename Enabler = void>
-    struct InstantiableFusedOperationToOperationTuple;
+        template <typename IOp>
+        FK_HOST_DEVICE_FUSE auto fusedOperationToOperationTuple(const IOp& df) {
+            return InstantiableFusedOperationToOperationTuple<IOp>::value(df);
+        }
 
-    template <template <typename...> class SomeDF, typename... Operations>
-    struct InstantiableFusedOperationToOperationTuple<SomeDF<FusedOperation<Operations...>>, std::enable_if_t<allUnaryTypes<Operations...>, void>> {
-        FK_HOST_DEVICE_FUSE auto value(const SomeDF<FusedOperation<Operations...>>& df) {
-            return OperationTuple<Operations...>{};
+        template <typename IOp>
+        FK_HOST_DEVICE_FUSE auto devicefunctions_to_operationtuple(const IOp& df) {
+            using Op = typename IOp::Operation;
+            if constexpr (is_fused_operation<Op>::value) {
+                return fusedOperationToOperationTuple(df);
+            } else if constexpr (hasParamsAndBackFunction_v<Op>) {
+                return OperationTuple<Op>{ {df.params, df.back_function} };
+            } else if constexpr (hasParams_v<Op>) {
+                return OperationTuple<Op>{ {df.params} };
+            } else { // UnaryType case
+                return OperationTuple<Op>{};
+            }
+        }
+
+        template <typename IOp, typename... InstantiableOperations>
+        FK_HOST_DEVICE_FUSE auto devicefunctions_to_operationtuple(const IOp& df, const InstantiableOperations&... dfs) {
+            return cat(devicefunctions_to_operationtuple(df), devicefunctions_to_operationtuple(dfs...));
+        }
+
+        template <typename OperationTupleType, typename Enabler = void>
+        struct OperationTupleToInstantiableOperation;
+
+        template <typename... Operations>
+        struct OperationTupleToInstantiableOperation<OperationTuple<Operations...>, std::enable_if_t<allUnaryTypes<Operations...>, void>> {
+            FK_HOST_FUSE auto value(const OperationTuple<Operations...>& opTuple) {
+                return Instantiable<FusedOperation<Operations...>>{};
+            }
+        };
+
+        template <typename... Operations>
+        struct OperationTupleToInstantiableOperation<OperationTuple<Operations...>, std::enable_if_t<!allUnaryTypes<Operations...>, void>> {
+            FK_HOST_FUSE auto value(const OperationTuple<Operations...>& opTuple) {
+                return Instantiable<FusedOperation<Operations...>>{opTuple};
+            }
+        };
+
+        template <typename OperationTuple>
+        FK_HOST_FUSE auto operationTuple_to_InstantiableOperation(const OperationTuple& opTuple) {
+            return OperationTupleToInstantiableOperation<OperationTuple>::value(opTuple);
+        }
+
+        /** @brief fuseIOps: function that creates either a Read or a Binary IOp, composed of a
+        * FusedOperation, where the operations are the ones found in the InstantiableOperations in the
+        * instantiableOperations parameter pack.
+        * This is a convenience function to simplify the implementation of ReadBack and Ternary InstantiableOperations
+        * and Operations.
+        */
+        template <typename... InstantiableOperations>
+        FK_HOST_FUSE auto fuseIOps(const InstantiableOperations&... instantiableOperations) {
+            return operationTuple_to_InstantiableOperation(devicefunctions_to_operationtuple(instantiableOperations...));
+        }
+        template <typename... InstantiableOperations>
+        FK_HOST_FUSE auto fuse(const InstantiableOperations&... instantiableOperations) {
+            return fuseIOps(instantiableOperations...);
+        }
+    private:
+        template <size_t BATCH, size_t... Idx, typename BackwardIOp, typename ForwardIOp>
+        FK_HOST_FUSE auto make_fusedArrayBack(const std::index_sequence<Idx...>&,
+            const std::array<BackwardIOp, BATCH>& bkArray,
+            const std::array<ForwardIOp, BATCH>& fwdArray) {
+            using ResultingType =
+                decltype(ForwardIOp::Operation::build(std::declval<BackwardIOp>(), std::declval<ForwardIOp>()));
+            return std::array<ResultingType, BATCH>{ForwardIOp::Operation::build(bkArray[Idx], fwdArray[Idx])...};
+        }
+        template <size_t BATCH, size_t... Idx, typename ThisIOp, typename ForwardIOp>
+        FK_HOST_FUSE auto make_fusedArray(const std::index_sequence<Idx...>&,
+            const std::array<ThisIOp, BATCH>& thisArray,
+            const std::array<ForwardIOp, BATCH>& fwdArray) {
+            using ResultingType = decltype(fuse(std::declval<ThisIOp>(), std::declval<ForwardIOp>()));
+            return std::array<ResultingType, BATCH>{fuse(thisArray[Idx], fwdArray[Idx])...};
+        }
+        template <size_t BATCH, typename BackwardIOp, typename ForwardIOp, typename DefaultValueType>
+        FK_HOST_FUSE auto then_helper(const std::array<BackwardIOp, BATCH>& backOpArray,
+            const std::array<ForwardIOp, BATCH>& forwardOpArray,
+            const int& usedPlanes,
+            const DefaultValueType& defaultValue) {
+            const auto fusedArray =
+                make_fusedArrayBack<BATCH>(std::make_index_sequence<BATCH>{}, backOpArray, forwardOpArray);
+            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
+            return ContinuationIOpNewType::Operation::build(usedPlanes, defaultValue, fusedArray);
+        }
+        template <size_t BATCH, typename BackwardIOp, typename ForwardIOp>
+        FK_HOST_FUSE auto then_helper_2arr(const std::array<BackwardIOp, BATCH>& backOpArray,
+            const std::array<ForwardIOp, BATCH>& forwardOpArray) {
+            const auto fusedArray =
+                make_fusedArrayBack<BATCH>(std::make_index_sequence<BATCH>{}, backOpArray, forwardOpArray);
+            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
+            return ContinuationIOpNewType::Operation::build(fusedArray);
+        }
+        template <typename Operation, size_t BATCH, typename ThisIOp, typename ForwardIOp>
+        FK_HOST_FUSE auto then_helper(const ReadInstantiableOperation<Operation>& thisIOp,
+            const std::array<ThisIOp, BATCH>& thisArray,
+            const ForwardIOp& forwardIOp) {
+            const auto forwardOpArray = make_set_std_array<BATCH>(forwardIOp);
+            const auto fusedArray =
+                make_fusedArray<BATCH>(std::make_index_sequence<BATCH>{}, thisArray, forwardOpArray);
+            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
+            if constexpr (Operation::PP == PROCESS_ALL) {
+                return ContinuationIOpNewType::Operation::build(fusedArray);
+            } else {
+                using NewOutputType = typename ContinuationIOpNewType::Operation::OutputType;
+                using OldOutputType = std::decay_t<decltype(thisIOp.params.default_value)>;
+                const auto default_value = thisIOp.params.default_value;
+                const auto val =
+                    UnaryV<CastBase<VBase<OldOutputType>, VBase<NewOutputType>>, OldOutputType, NewOutputType>::exec(default_value);
+                return ContinuationIOpNewType::Operation::build(thisIOp.params.usedPlanes, val, fusedArray);
+            }
+        }
+    public:
+        template <typename SelfType, typename ContinuationIOp>
+        FK_HOST_FUSE auto then(const SelfType& selfIOp, const ContinuationIOp& cIOp) {
+            using Operation = typename SelfType::Operation;
+            if constexpr (isBatchOperation<Operation> && isBatchOperation<typename ContinuationIOp::Operation>) {
+                static_assert(Operation::BATCH == ContinuationIOp::Operation::BATCH,
+                    "Fusing two batch operations of different BATCH size is not allowed.");
+                static_assert(isReadBackType<typename ContinuationIOp::Operation::Operation>,
+                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
+                constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
+                const auto backOpArray = BatchOperation::toArray(selfIOp);
+                const auto forwardOpArray = BatchOperation::toArray(cIOp);
+                if constexpr (Operation::PP == PROCESS_ALL && ContinuationIOp::Operation::PP == PROCESS_ALL) {
+                    return then_helper_2arr<BATCH>(backOpArray, forwardOpArray);
+                } else if constexpr (Operation::PP == PROCESS_ALL && ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
+                    return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp.params.usedPlanes, cIOp.params.default_value);
+                } else if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == PROCESS_ALL) {
+                    using BackType = std::decay_t<decltype(backOpArray)>;
+                    using ForType = std::decay_t<decltype(forwardOpArray)>;
+                    using FusedType = typename decltype(make_fusedArray<BATCH>(std::declval<std::make_index_sequence<BATCH>>(), std::declval<BackType>(), std::declval<ForType>()))::value_type;
+                    using DefaultValueType = typename FusedType::Operation::OutputType;
+                    if constexpr (std::is_same_v<typename Operation::OutputType, DefaultValueType>) {
+                        return then_helper<BATCH>(backOpArray, forwardOpArray, selfIOp.params.usedPlanes, selfIOp.params.default_value);
+                    } else {
+                        using Original = typename BackType::value_type::Operation::OutputType;
+                        const auto defaultValue = UnaryV<CastBase<VBase<Original>, VBase<DefaultValueType>>, Original, DefaultValueType>::exec(selfIOp.params.default_value);
+                        return then_helper<BATCH>(backOpArray, forwardOpArray, selfIOp.params.usedPlanes, defaultValue);
+                    }
+                } else if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
+                    if (selfIOp.params.usedPlanes != cIOp.params.usedPlanes) {
+                        throw std::invalid_argument("Fusing two batch read operations with different number of used planes is not valid");
+                    }
+                    // We will take the default value of the continuation operation
+                    return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp.params.usedPlanes, cIOp.params.default_value);
+                }
+
+            } else if constexpr (!isBatchOperation<Operation> && isBatchOperation<typename ContinuationIOp::Operation>) {
+                static_assert(isReadBackType<typename ContinuationIOp::Operation::Operation>,
+                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
+                constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
+                const auto backOpArray = make_set_std_array<BATCH>(selfIOp);
+                const auto forwardOpArray = BatchOperation::toArray(cIOp);
+                if constexpr (ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
+                    return then_helper<BATCH>(backOpArray, forwardOpArray, cIOp.params.usedPlanes, cIOp.params.default_value);
+                } else {
+                    return then_helper_2arr<BATCH>(backOpArray, forwardOpArray);
+                }
+            } else if constexpr (isBatchOperation<Operation> && !isBatchOperation<typename ContinuationIOp::Operation>) {
+                static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
+                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
+                constexpr size_t BATCH = static_cast<size_t>(Operation::BATCH);
+                if constexpr (isReadBackType<ContinuationIOp>) {
+                    const auto backOpArray = BatchOperation::toArray(selfIOp);
+                    const auto forwardOpArray = make_set_std_array<BATCH>(cIOp);
+                    if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT) {
+                        return then_helper<BATCH>(backOpArray, forwardOpArray, selfIOp.params.usedPlanes, selfIOp.params.default_value);
+                    } else {
+                        return then_helper_2arr<BATCH>(backOpArray, forwardOpArray);
+                    }
+                } else {
+                    const auto thisArray = BatchOperation::toArray(selfIOp);
+                    return then_helper<Operation, BATCH>(selfIOp, thisArray, cIOp);
+                }
+            } else if constexpr (!isBatchOperation<Operation> && !isBatchOperation<typename ContinuationIOp::Operation>) {
+                static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
+                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
+                if constexpr (isReadBackType<ContinuationIOp>) {
+                    return ContinuationIOp::Operation::build(selfIOp, cIOp);
+                } else {
+                    return fuse(selfIOp, cIOp);
+                }
+            }
+        }
+    private:
+        template <size_t BATCH, size_t... Idx, typename BackwardIOp, typename ForwardIOp>
+        FK_HOST_FUSE auto make_fusedArray_rb(const std::index_sequence<Idx...>&,
+            const std::array<BackwardIOp, BATCH>& bkArray,
+            const std::array<ForwardIOp, BATCH>& fwdArray) {
+            using ResultingType =
+                decltype(ForwardIOp::Operation::build(std::declval<BackwardIOp>(), std::declval<ForwardIOp>()));
+            return std::array<ResultingType, BATCH>{ForwardIOp::Operation::build(bkArray[Idx], fwdArray[Idx])...};
+        }
+        template <size_t BATCH, typename BackwardIOp, typename ForwardIOp, typename MainBatchIOp>
+        FK_HOST_FUSE auto then_helper_rb(const std::array<BackwardIOp, BATCH>& backOpArray,
+            const std::array<ForwardIOp, BATCH>& forwardOpArray,
+            const MainBatchIOp& mainIOp) {
+            const auto fusedArray =
+                make_fusedArray_rb<BATCH>(std::make_index_sequence<BATCH>{}, backOpArray, forwardOpArray);
+            using ContinuationIOpNewType = typename decltype(fusedArray)::value_type;
+            if constexpr (MainBatchIOp::Operation::PP == PROCESS_ALL) {
+                return ContinuationIOpNewType::Operation::build(fusedArray);
+            } else {
+                return ContinuationIOpNewType::Operation::build(mainIOp.params.usedPlanes, mainIOp.params.default_value, fusedArray);
+            }
+        }
+    public:
+        template <typename SelfType, typename ContinuationIOp, typename Fuser_t = Fuser>
+        FK_HOST_FUSE auto then_rb(const SelfType& selfIOp, const ContinuationIOp& cIOp) {
+            if constexpr (isBatchOperation<typename ContinuationIOp::Operation>) {
+                static_assert(isReadBackType<typename ContinuationIOp::Operation::Operation>,
+                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
+                constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
+                const auto backOpArray = make_set_std_array<BATCH>(selfIOp);
+                const auto forwardOpArray = BatchOperation::toArray(cIOp);
+                return then_helper_rb<BATCH>(backOpArray, forwardOpArray, cIOp);
+            } else {
+                static_assert(!isAnyReadType<ContinuationIOp> || isReadBackType<ContinuationIOp>,
+                    "ReadOperation as continuation is not allowed. It has to be a ReadBackOperation.");
+                if constexpr (isReadBackType<ContinuationIOp>) {
+                    return ContinuationIOp::Operation::build(selfIOp, cIOp);
+                } else {
+                    return Fuser_t::fuse(selfIOp, cIOp);
+                }
+            }
         }
     };
-    template <template <typename...> class SomeDF, typename... Operations>
-    struct InstantiableFusedOperationToOperationTuple<SomeDF<FusedOperation<Operations...>>, std::enable_if_t<!allUnaryTypes<Operations...>, void>> {
-        FK_HOST_DEVICE_FUSE auto value(const SomeDF<FusedOperation<Operations...>>& df) {
-            return df.params;
-        }
-    };
-
-    template <typename IOp>
-    FK_HOST_DEVICE_CNST auto fusedOperationToOperationTuple(const IOp& df) {
-        return InstantiableFusedOperationToOperationTuple<IOp>::value(df);
-    }
-
-    template <typename IOp>
-    FK_HOST_DEVICE_CNST auto devicefunctions_to_operationtuple(const IOp& df) {
-        using Op = typename IOp::Operation;
-        if constexpr (is_fused_operation<Op>::value) {
-            return fusedOperationToOperationTuple(df);
-        } else if constexpr (hasParamsAndBackFunction_v<Op>) {
-            return OperationTuple<Op>{ {df.params, df.back_function} };
-        } else if constexpr (hasParams_v<Op>) {
-            return OperationTuple<Op>{ {df.params} };
-        } else { // UnaryType case
-            return OperationTuple<Op>{};
-        }
-    }
-
-    template <typename IOp, typename... InstantiableOperations>
-    FK_HOST_DEVICE_CNST auto devicefunctions_to_operationtuple(const IOp& df, const InstantiableOperations&... dfs) {
-        return cat(devicefunctions_to_operationtuple(df), devicefunctions_to_operationtuple(dfs...));
-    }
-
-    template <typename OperationTupleType, typename Enabler = void>
-    struct OperationTupleToInstantiableOperation;
-
-    template <typename... Operations>
-    struct OperationTupleToInstantiableOperation<OperationTuple<Operations...>, std::enable_if_t<allUnaryTypes<Operations...>, void>> {
-        static inline constexpr auto value(const OperationTuple<Operations...>& opTuple) {
-            return Instantiable<FusedOperation<Operations...>>{};
-        }
-    };
-
-    template <typename... Operations>
-    struct OperationTupleToInstantiableOperation<OperationTuple<Operations...>, std::enable_if_t<!allUnaryTypes<Operations...>, void>> {
-        static inline constexpr auto value(const OperationTuple<Operations...>& opTuple) {
-            return Instantiable<FusedOperation<Operations...>>{opTuple};
-        }
-    };
-
-    template <typename OperationTuple>
-    FK_HOST_CNST auto operationTuple_to_InstantiableOperation(const OperationTuple& opTuple) {
-        return OperationTupleToInstantiableOperation<OperationTuple>::value(opTuple);
-    }
-
-    /** @brief fuseIOps: function that creates either a Read or a Binary IOp, composed of a
-    * FusedOperation, where the operations are the ones found in the InstantiableOperations in the
-    * instantiableOperations parameter pack.
-    * This is a convenience function to simplify the implementation of ReadBack and Ternary InstantiableOperations
-    * and Operations.
-    */
-    template <typename... InstantiableOperations>
-    FK_HOST_CNST auto fuseIOps(const InstantiableOperations&... instantiableOperations) {
-        return operationTuple_to_InstantiableOperation(devicefunctions_to_operationtuple(instantiableOperations...));
-    }
     // END fuseIOps implementation
 } // namespace fk
 

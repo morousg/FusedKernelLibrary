@@ -36,14 +36,14 @@ bool test_OTInitialization() {
 
     [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };
 
-    const auto test2 = fk::devicefunctions_to_operationtuple(read);
-    const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseIOps(read);
+    const auto test2 = fk::Fuser::devicefunctions_to_operationtuple(read);
+    const fk::Read<fk::FusedOperation<Op>> test3 = fk::Fuser::fuseIOps(read);
 
     using Op2 = fk::SaturateCast<uchar, uint>;
     constexpr fk::Unary<Op2> cast = {};
 
-    const auto ot1 = fk::devicefunctions_to_operationtuple(read);
-    constexpr auto ot2 = fk::devicefunctions_to_operationtuple(cast);
+    const auto ot1 = fk::Fuser::devicefunctions_to_operationtuple(read);
+    constexpr auto ot2 = fk::Fuser::devicefunctions_to_operationtuple(cast);
 
     const auto test4 = fk::make_operation_tuple_<Op, Op2>(ot1.instance);
     const auto test5 = fk::make_operation_tuple_<Op, Op2>(fk::get<0>(ot1));
@@ -54,13 +54,13 @@ bool test_OTInitialization() {
 
     const fk::OperationTuple<Op, decltype(ot2)::Operation> test6 = fk::cat(ot1, ot2);
 
-    const auto test7 = fk::devicefunctions_to_operationtuple(read, cast);
+    const auto test7 = fk::Fuser::devicefunctions_to_operationtuple(read, cast);
 
-    const auto test8 = fk::fuseIOps(read, cast);
+    const auto test8 = fk::Fuser::fuseIOps(read, cast);
 
     const auto test9 = fk::Instantiable<fk::FusedOperation<typename decltype(read)::Operation,
                                                                    typename decltype(cast)::Operation>>
-    { fk::devicefunctions_to_operationtuple(read, cast) };
+    { fk::Fuser::devicefunctions_to_operationtuple(read, cast) };
 
     return true;
 }

@@ -17,6 +17,7 @@
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/execution_model/data_parallel_patterns.cuh>
+#include <fused_kernel/core/execution_model/memory_operations.cuh>
 
 namespace fk {
 

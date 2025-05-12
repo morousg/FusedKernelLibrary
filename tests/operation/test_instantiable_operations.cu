@@ -174,7 +174,7 @@ constexpr inline bool test_batched() {
 int launch() {
     constexpr Instantiable<RPerThrFloat> func1{};
     func1.then(UFloatInt::build());
-    fuseIOps(func1, UFloatInt::build());
+    Fuser::fuseIOps(func1, UFloatInt::build());
     constexpr auto func2 =
         func1.then(Instantiable<UFloatInt>{}).
         then(Instantiable<BAddInt>{4}).

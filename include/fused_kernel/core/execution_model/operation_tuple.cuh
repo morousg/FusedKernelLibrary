@@ -275,6 +275,17 @@ namespace fk {
     template <typename TupleType>
     using OTToTypeList = typename OperationTupleTypeToTypeList<TupleType>::type;
 
+    template <typename TypeList_t>
+    struct TypeListToOperationTuple;
+
+    template <typename... Operations>
+    struct TypeListToOperationTuple<TypeList<Operations...>> {
+        using type = OperationTuple<Operations...>;
+    };
+
+    template <typename TypeList_t>
+    using TypeListToOT = typename TypeListToOperationTuple<TypeList_t>::type;
+
     template <int INDEX, typename TupleType>
     using get_ot = TypeAt_t<INDEX, OTToTypeList<TupleType>>;
 
@@ -291,13 +302,7 @@ namespace fk {
     struct NotUnaryRestriction {
         template <typename Type>
         FK_HOST_DEVICE_FUSE bool complies() {
-            using NotUnary =
-                TypeList<ReadType, ReadBackType, BinaryType, TernaryType, MidWriteType, WriteType>;
-            if constexpr (one_of_v<Type, NotUnary>) {
-                return true;
-            } else {
-                return false;
-            }
+            return !std::is_same_v<Type, UnaryType>;
         }
     };
 

@@ -135,10 +135,19 @@ namespace fk {
         }
     }
 
-    template <typename... OperationsOrInstantiableOperations>
-    constexpr bool allUnaryTypes = and_v<isUnaryType<OperationsOrInstantiableOperations>...>;
+    template <typename... OpsOrIOps>
+    constexpr bool allUnaryTypes = and_v<isUnaryType<OpsOrIOps>...>;
 
-    template <typename Enabler, typename... OperationsOrInstantiableOperations>
+    template <typename = void, typename... OpsOrIOps>
+    struct NotAllUnary final : public std::false_type {};
+
+    template <typename... OpsOrIOps>
+    struct NotAllUnary<std::enable_if_t<((!std::is_same_v<typename OpsOrIOps::InstanceType, UnaryType>) || ...), void>, OpsOrIOps...> final : public std::true_type {};
+
+    template <typename... OpsOrIOps>
+    constexpr bool notAllUnaryTypes = NotAllUnary<void, OpsOrIOps...>::value;
+
+    template <typename Enabler, typename... OpsOrIOps>
     struct are_all_unary_types : std::false_type {};
 
     template <typename... OperationsOrInstantiableOperations>
@@ -162,6 +171,15 @@ namespace fk {
 
     template <typename T>
     constexpr bool isCompleteOperation = IsCompleteOperation<T>::value;
+
+    template <typename Enabler, typename T>
+    struct is_fused_operation_ : std::false_type {};
+
+    template <template <typename...> class FusedOperation, typename... Operations>
+    struct is_fused_operation_<std::enable_if_t<FusedOperation<Operations...>::IS_FUSED_OP, void>, FusedOperation<Operations...>> : std::true_type{};
+
+    template <typename Operation>
+    using is_fused_operation = is_fused_operation_<void, Operation>;
 } // namespace fk
 
 #endif
