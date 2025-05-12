@@ -35,7 +35,7 @@ constexpr bool test_fuseDFResultingTypes() {
 
     static_assert(std::is_same_v<Test, uint>);
 
-    constexpr auto fused1 = Fuser::fuse(readOp, addOp, castOp);
+    constexpr auto fused1 = fuse(readOp, addOp, castOp);
 
     constexpr auto read = Read<PerThreadRead<_2D, float>>{ { fk::RawPtr<_2D, float>{nullptr, {128, 4}} } };
     static_assert(std::is_same_v<std::decay_t<decltype(read)>, Read<PerThreadRead<_2D, float>>>, "Unexpected type after fuseIOps");
@@ -61,7 +61,7 @@ constexpr bool test_fuseDFResultingTypes() {
 
     static_assert(result1 && result2, "is_fused_operation does not work properly");
 
-    constexpr auto fused2 = fk::Fuser::fuse(readOp, addOp, writeOp);
+    constexpr auto fused2 = fk::fuse(readOp, addOp, writeOp);
     static_assert(std::is_same_v<typename decltype(fused2)::Operation,
         fk::FusedOperation<fk::PerThreadRead<fk::_2D, float>, fk::Add<float>, fk::PerThreadWrite<fk::_2D, float>>>, "Unexpected type after fuseIOps");
 
@@ -73,8 +73,8 @@ constexpr bool test_fuseFusedOperations() {
     const fk::Binary<fk::Add<float>> addOp{ 3.f };
     const fk::Unary<fk::Cast<float, int>> castOp{};
 
-    const auto fused1 = fk::Fuser::fuse(readOp, addOp);
-    [[maybe_unused]] const auto fused2 = fk::Fuser::fuse(fused1, castOp);
+    const auto fused1 = fk::fuse(readOp, addOp);
+    [[maybe_unused]] const auto fused2 = fk::fuse(fused1, castOp);
 
     return true;
 }

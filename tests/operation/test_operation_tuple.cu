@@ -17,7 +17,7 @@
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/execution_model/operation_tuple.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/iop_fuser.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
@@ -37,7 +37,7 @@ bool test_OTInitialization() {
     [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };
 
     const auto test2 = fk::iOpsToOperationTuple(read);
-    //const fk::Read<fk::FusedOperation<Op>> test3 = fk::Fuser::fuse(read); //Should not compile
+    //const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuse(read); //Should not compile
 
     using Op2 = fk::SaturateCast<uchar, uint>;
     constexpr fk::Unary<Op2> cast = {};
@@ -56,7 +56,7 @@ bool test_OTInitialization() {
 
     const auto test7 = fk::iOpsToOperationTuple(read, cast);
 
-    const auto test8 = fk::Fuser::fuse(read, cast);
+    const auto test8 = fk::fuse(read, cast);
 
     const auto test9 = fk::Instantiable<fk::FusedOperation<typename decltype(read)::Operation,
                                                                    typename decltype(cast)::Operation>>

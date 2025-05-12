@@ -86,7 +86,7 @@ int launch() {
     fk::Unary<fk::SaturateCast<uchar, uint>> cast = {};
     fk::Write<fk::PerThreadWrite<fk::_2D, uint>> write { {output} };
 
-    auto fusedDF = fk::Fuser::fuse(read, cast, fk::Binary<fk::Mul<uint>>{4});
+    auto fusedDF = fk::fuse(read, cast, fk::Binary<fk::Mul<uint>>{4});
     static_assert(std::is_same_v<decltype(fusedDF.params.instance.params), fk::RawPtr<fk::_2D, uchar>>, "Unexpected type for params");
     //fusedDF.params.next.instance.params; // Should not compile
     static_assert(std::is_same_v<decltype(fusedDF.params.next.next.instance.params), uint>, "Unexpected type for params");
