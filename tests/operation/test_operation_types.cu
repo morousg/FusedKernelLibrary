@@ -19,7 +19,6 @@
 #include <fused_kernel/algorithms/image_processing/resize.cuh>
 #include <fused_kernel/algorithms/image_processing/crop.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
-#include <fused_kernel/core/execution_model/iop_fuser.cuh>
 
 // Operation types
 // Read

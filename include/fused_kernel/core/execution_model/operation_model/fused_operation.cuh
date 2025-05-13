@@ -15,7 +15,7 @@
 #ifndef FK_FUSED_OPERATION
 #define FK_FUSED_OPERATION
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/batch_operations.cuh>
 
 namespace fk {
     // FusedOperation

@@ -15,7 +15,7 @@
 #ifndef FK_ARITHMETIC
 #define FK_ARITHMETIC
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 
 namespace fk {

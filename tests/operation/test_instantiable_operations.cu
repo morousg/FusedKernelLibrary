@@ -19,7 +19,6 @@
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/image_processing/resize.cuh>
-#include <fused_kernel/core/execution_model/iop_fuser.cuh>
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/algorithms/basic_ops/set.cuh>
 #include <fused_kernel/fused_kernel.cuh>

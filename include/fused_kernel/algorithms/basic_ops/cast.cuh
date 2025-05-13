@@ -15,8 +15,7 @@
 #ifndef FK_CAST
 #define FK_CAST
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
-#include <fused_kernel/core/execution_model/vector_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast_base.cuh>
 
 namespace fk {

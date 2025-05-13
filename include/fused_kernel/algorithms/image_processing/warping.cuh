@@ -18,7 +18,7 @@
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/algorithms/image_processing/interpolation.cuh>
 
 namespace fk {

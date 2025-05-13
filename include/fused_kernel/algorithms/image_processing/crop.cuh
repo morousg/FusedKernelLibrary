@@ -15,12 +15,11 @@
 #ifndef FK_CROP_OP
 #define FK_CROP_OP
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/data/rect.h>
 #include <fused_kernel/core/data/point.h>
 
 namespace fk {
-
     template <typename BackIOp = void>
     struct Crop {
         using Parent = ReadBackOperation<typename BackIOp::Operation::OutputType,

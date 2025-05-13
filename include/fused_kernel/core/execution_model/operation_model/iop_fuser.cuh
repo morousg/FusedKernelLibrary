@@ -15,7 +15,7 @@
 #ifndef IOP_FUSER_CUH
 #define IOP_FUSER_CUH
 
-#include <fused_kernel/core/execution_model/fused_operation.cuh>
+#include <fused_kernel/core/execution_model/operation_model/fused_operation.cuh>
 
 namespace fk {
 

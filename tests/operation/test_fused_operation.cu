@@ -15,12 +15,9 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
-#include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/algorithms/basic_ops/basic_ops.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
-#include <fused_kernel/algorithms/image_processing/resize.cuh>
-#include <fused_kernel/algorithms/image_processing/color_conversion.cuh>
+#include <fused_kernel/algorithms/image_processing/image_processing.cuh>
 
 using namespace fk;
 

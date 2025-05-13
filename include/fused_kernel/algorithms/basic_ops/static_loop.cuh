@@ -15,7 +15,7 @@
 #ifndef FK_STATIC_LOOP
 #define FK_STATIC_LOOP
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 
 namespace fk {
     template <typename Operation, int ITERATIONS>

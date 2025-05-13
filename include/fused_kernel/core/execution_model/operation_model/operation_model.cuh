@@ -1,4 +1,4 @@
-/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
+/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Huguet)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,11 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef FK_EXECUTION_MODEL
-#define FK_EXECUTION_MODEL
+#ifndef OPERATION_MODEL_CUH
+#define OPERATION_MODEL_CUH
 
-#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
-#include <fused_kernel/core/execution_model/data_parallel_patterns.cuh>
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/iop_fuser.cuh>
 
-#endif // FK_EXECUTION_MODEL
+#endif

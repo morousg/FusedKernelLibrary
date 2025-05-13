@@ -17,7 +17,7 @@
 #define FK_BORDER_READER_CUH
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.cuh>
 
 namespace fk {

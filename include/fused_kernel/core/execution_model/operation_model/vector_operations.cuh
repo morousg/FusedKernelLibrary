@@ -15,7 +15,7 @@
 #ifndef FK_VECTOR_OPERATIONS
 #define FK_VECTOR_OPERATIONS
 
-#include <fused_kernel/core/execution_model/operation_types.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_types.cuh>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 
 namespace fk {

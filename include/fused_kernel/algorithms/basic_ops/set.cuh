@@ -16,7 +16,7 @@
 #define FK_SET
 
 #include <fused_kernel/core/data/ptr_nd.h>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 
 namespace fk {
 

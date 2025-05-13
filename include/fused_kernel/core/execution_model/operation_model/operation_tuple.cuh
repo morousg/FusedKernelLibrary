@@ -18,7 +18,7 @@
 #include <type_traits>
 
 #include <fused_kernel/core/data/tuple.cuh>
-#include <fused_kernel/core/execution_model/operation_types.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_types.cuh>
 
 namespace fk {
     //Operation type traits

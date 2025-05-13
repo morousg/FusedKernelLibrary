@@ -17,9 +17,8 @@
 
 #include <cmath>
 
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/algorithms/basic_ops/logical.cuh>
-#include <fused_kernel/core/execution_model/vector_operations.cuh>
 
 namespace fk {
 
