@@ -18,6 +18,7 @@
 
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 #include <cstddef>
+#include <array>
 
 namespace fk {
     template <typename T, size_t SIZE>
