@@ -1,4 +1,4 @@
-/* Copyright 2023-2025 Oscar Amoros Huguet
+/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,21 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef FK_CAST
-#define FK_CAST
+#ifndef FK_EXECUTION_MODEL
+#define FK_EXECUTION_MODEL
 
 #include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
-#include <fused_kernel/algorithms/basic_ops/cast_base.cuh>
+#include <fused_kernel/core/execution_model/data_parallel_patterns.cuh>
+#include <fused_kernel/core/execution_model/memory_operations.cuh>
 
-namespace fk {
-    template <typename I, typename O>
-    struct Cast final : UnaryOperation<I, O, Cast<I, O>>{
-        using Parent = UnaryOperation<I, O, Cast<I, O>>;
-        DECLARE_UNARY_PARENT
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
-            return UnaryV<CastBase<VBase<I>, VBase<O>>, I, O>::exec(input);
-        }
-    };
-} // namespace fk
-
-#endif
+#endif // FK_EXECUTION_MODEL

@@ -21,7 +21,7 @@ namespace cooperative_groups {};
 namespace cg = cooperative_groups;
 
 #include <fused_kernel/core/utils/parameter_pack_utils.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/execution_model/thread_fusion.cuh>
 
 namespace fk { // namespace FusedKernel

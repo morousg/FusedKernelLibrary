@@ -18,7 +18,6 @@
 #include <fused_kernel/algorithms/image_processing/interpolation.cuh>
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 #include <fused_kernel/core/data/array.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.cuh>

@@ -15,11 +15,11 @@
 #ifndef FK_COLOR_CONVERSION
 #define FK_COLOR_CONVERSION
 
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/algorithms/basic_ops/algebraic.cuh>
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
 
 namespace fk {
     template <typename I>

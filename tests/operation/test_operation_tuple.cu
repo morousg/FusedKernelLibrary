@@ -17,7 +17,7 @@
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
 #include <fused_kernel/core/execution_model/operation_tuple.cuh>
-#include <fused_kernel/core/execution_model/instantiable_operations.cuh>
+#include <fused_kernel/core/execution_model/iop_fuser.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
@@ -36,14 +36,14 @@ bool test_OTInitialization() {
 
     [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };
 
-    const auto test2 = fk::devicefunctions_to_operationtuple(read);
-    const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuseIOps(read);
+    const auto test2 = fk::iOpsToOperationTuple(read);
+    //const fk::Read<fk::FusedOperation<Op>> test3 = fk::fuse(read); //Should not compile
 
     using Op2 = fk::SaturateCast<uchar, uint>;
     constexpr fk::Unary<Op2> cast = {};
 
-    const auto ot1 = fk::devicefunctions_to_operationtuple(read);
-    constexpr auto ot2 = fk::devicefunctions_to_operationtuple(cast);
+    const auto ot1 = fk::iOpsToOperationTuple(read);
+    constexpr auto ot2 = fk::iOpsToOperationTuple(cast);
 
     const auto test4 = fk::make_operation_tuple_<Op, Op2>(ot1.instance);
     const auto test5 = fk::make_operation_tuple_<Op, Op2>(fk::get<0>(ot1));
@@ -54,13 +54,13 @@ bool test_OTInitialization() {
 
     const fk::OperationTuple<Op, decltype(ot2)::Operation> test6 = fk::cat(ot1, ot2);
 
-    const auto test7 = fk::devicefunctions_to_operationtuple(read, cast);
+    const auto test7 = fk::iOpsToOperationTuple(read, cast);
 
-    const auto test8 = fk::fuseIOps(read, cast);
+    const auto test8 = fk::fuse(read, cast);
 
     const auto test9 = fk::Instantiable<fk::FusedOperation<typename decltype(read)::Operation,
                                                                    typename decltype(cast)::Operation>>
-    { fk::devicefunctions_to_operationtuple(read, cast) };
+    { fk::iOpsToOperationTuple(read, cast) };
 
     return true;
 }
