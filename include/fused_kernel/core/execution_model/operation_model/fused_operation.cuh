@@ -54,11 +54,10 @@ namespace fk {
                 // Assuming the behavior of a MidWriteType IOp
                 Operation::exec(thread, i_data, tuple.instance);
                 return i_data;
-            } else if constexpr (isMidWriteType<Operation>) {
+            } else {
+                static_assert(isMidWriteType<Operation>, "The operation should be MidWriteType, and it's not.");
                 // We are executing another FusedOperation that is MidWriteType
                 return Operation::exec(thread, i_data, tuple.instance);
-            } else {
-                static_assert(false, "Something wrong in exec_operate");
             }
         }
 

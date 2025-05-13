@@ -121,7 +121,7 @@ namespace fk {
   }
     // END PARENT COMPUTE OPERATIONS
     // PARENT MEMORY OPERATIONS
-    template <typename RT, typename P, typename O, enum class TF TFE, typename ROperationImpl, bool IS_FUSED = false>
+    template <typename RT, typename P, typename O, enum TF TFE, typename ROperationImpl, bool IS_FUSED = false>
     struct ReadOperation {
         using Child = ROperationImpl;
         using ParamsType = P;
@@ -170,7 +170,7 @@ namespace fk {
   FK_HOST_DEVICE_FUSE auto build(const OperationDataType &opData) { return Parent::build(opData); }                    \
   FK_HOST_DEVICE_FUSE auto build(const ParamsType &params) { return Parent::build(params); }
 
-    template <typename I, typename P, typename WT, enum class TF TFE, typename WOperationImpl, bool IS_FUSED = false>
+    template <typename I, typename P, typename WT, enum TF TFE, typename WOperationImpl, bool IS_FUSED = false>
     struct WriteOperation {
         using Child = WOperationImpl;
         using ParamsType = P;

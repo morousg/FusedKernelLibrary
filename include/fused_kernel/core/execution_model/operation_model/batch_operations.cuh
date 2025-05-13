@@ -60,12 +60,9 @@ namespace fk {
             using OutputArrayType = std::array<Instantiable<Operation>, sizeof...(Idx)>;
             if constexpr (InstantiableType::template is<ReadType>) {
                 return OutputArrayType{ Operation::build(batchIOp.params.opData[Idx])... };
-            }
-            else if constexpr (InstantiableType::template is<WriteType>) {
+            } else {
+                static_assert(InstantiableType::template is<WriteType>, "InstantiableType is not a ReadType or WriteType. It means it is not a batch operation");
                 return OutputArrayType{ Operation::build(batchIOp.params[Idx])... };
-            }
-            else {
-                static_assert(false, "The IOp passed as parameter is not a batch operation");
             }
         }
         template <size_t Idx, typename Array>
@@ -331,13 +328,10 @@ namespace fk {
             if constexpr (isAnyReadType<FirstType>) {
                 return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(firstInstance, usedPlanes,
                     defaultValue);
-            }
-            else if constexpr (!isAnyReadType<FirstType>) {
+            } else {
+                static_assert(!isAnyReadType<FirstType>, "FirstType is a Read or ReadBack type and should not be.");
                 return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue,
                     firstInstance);
-            }
-            else {
-                static_assert(false, "BatchRead: FirstType is not a valid read type");
             }
         }
     };
@@ -409,13 +403,10 @@ namespace fk {
             const std::array<FirstType, BATCH_N>& firstInstance) {
             if constexpr (isAnyReadType<FirstType>) {
                 return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(firstInstance, usedPlanes, defaultValue);
-            }
-            else if constexpr (!isAnyReadType<FirstType>) {
+            } else {
+                static_assert(!isAnyReadType<FirstType>, "FirstType is a Read or ReadBack type and should not be.");
                 const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance);
                 return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
-            }
-            else {
-                static_assert(false, "BatchRead: FirstType is not a valid read type");
             }
         }
     };
