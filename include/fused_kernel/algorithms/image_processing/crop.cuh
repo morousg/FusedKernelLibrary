@@ -60,11 +60,11 @@ namespace fk {
         DECLARE_READBACK_PARENT_INCOMPLETE
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
-            return 1;
+            return opData.params.width;
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
-            return 1;
+            return opData.params.height;
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
