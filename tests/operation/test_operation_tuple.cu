@@ -16,8 +16,7 @@
 #include <tests/main.h>
 
 #include <fused_kernel/core/data/ptr_nd.cuh>
-#include <fused_kernel/core/execution_model/operation_tuple.cuh>
-#include <fused_kernel/core/execution_model/iop_fuser.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/execution_model/memory_operations.cuh>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
 #include <fused_kernel/algorithms/basic_ops/cast.cuh>
