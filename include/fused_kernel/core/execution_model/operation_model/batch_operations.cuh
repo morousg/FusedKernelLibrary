@@ -213,6 +213,7 @@ namespace fk {
                 return BatchRead<BATCH, PP, typename IOp::Operation, DefaultValueType>::build_helper(
                     instantiableOperations, usedPlanes, defaultValue, std::make_integer_sequence<int, BATCH>{});
             } else {
+                static_assert(std::is_same_v<OutputType, DefaultValueType>, "OutputType and DefaultValueType should be the same.");
                 return build_helper(instantiableOperations, usedPlanes, defaultValue, std::make_integer_sequence<int, BATCH>{});
             }
         }
@@ -386,20 +387,21 @@ namespace fk {
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
             const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);
-            return BatchRead<BATCH_N>::build(arrayOfIOps);
+            return BatchRead<BATCH_N, PROCESS_ALL>::build(arrayOfIOps);
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
                                 const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
+            using BuilderType = BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>;
             if constexpr (sizeof...(ArrayTypes) > 0) {
                 const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);
-                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+                return BuilderType::build(arrayOfIOps, usedPlanes, defaultValue);
             } else {
                 if constexpr (isAnyReadType<FirstType>) {
-                    return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(firstInstance, usedPlanes, defaultValue);
+                    return BuilderType::build(firstInstance, usedPlanes, defaultValue);
                 } else {
                     const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance);
-                    return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+                    return BuilderType::build(arrayOfIOps, usedPlanes, defaultValue);
                 }
             }
         }
