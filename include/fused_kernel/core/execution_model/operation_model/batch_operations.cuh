@@ -172,8 +172,19 @@ namespace fk {
             const std::integer_sequence<int, Idx...>&) {
             const uint max_width = cxp::max(Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
             const uint max_height = cxp::max(Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1910) && (_MSC_VER < 1920)
+            // VS2017 compilers need the BatchReadParams type specified
+            return {   
+                       BatchReadParams<BATCH, PP, Operation, typename Operation::OutputType>{
+                           {instantiableOperations[Idx]...},
+                           {max_width, max_height, static_cast<uint>(BATCH)}
+                       }
+                   };
+#else
             return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...},
-                      ActiveThreads{max_width, max_height, BATCH}}} };
+                      ActiveThreads{max_width, max_height, static_cast<uint>(BATCH)}}} };
+#endif
         }
     };
 
@@ -231,10 +242,23 @@ namespace fk {
                                                    const std::integer_sequence<int, Idx...>&) {
             const uint max_width = cxp::max(Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
             const uint max_height = cxp::max(Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+#if defined(_MSC_VER) && (_MSC_VER >= 1910) && (_MSC_VER < 1920)
+            // VS2017 compilers need the BatchReadParams type specified
+            return {
+                       BatchReadParams<BATCH, PP, Operation, NullTypeToAlternative<typename Operation::OutputType, OutputType_>>{
+                           {instantiableOperations[Idx]...},
+                           usedPlanes,
+                           defaultValue,
+                           {max_width, max_height, static_cast<uint>(BATCH)}
+                       }
+            };
+#else
+            // gcc, clang or VS2022
             return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...},
                       usedPlanes,
                       defaultValue,
                       ActiveThreads{max_width, max_height, BATCH}}} };
+#endif
         }
     };
 

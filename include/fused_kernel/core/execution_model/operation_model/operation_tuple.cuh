@@ -78,7 +78,8 @@ namespace fk {
         hasParams_v<Operation> && std::is_array_v<typename Operation::ParamsType>;
 
     // OperationData implementations
-    template <typename Operation, typename Enabler=void> struct OperationData;
+    template <typename Operation, typename Enabler=void>
+    struct OperationData;
 
     template <typename Operation>
     struct OperationData<Operation, std::enable_if_t<hasParamsNoArray<Operation> && hasNoBackFunction_v<Operation>, void>> {

@@ -70,8 +70,11 @@ constexpr bool test_InstantiableFusedOperationToOperationTuple() {
 }
 
 int launch() {
+#if defined(_MSC_VER) && (_MSC_VER >= 1910) && (_MSC_VER < 1920)
+    return test_InstantiableFusedOperationToOperationTuple() ? 0 : -1;
+#else
     constexpr ComplexType complexVar{};
     [[maybe_unused]] constexpr auto opTuple = InstantiableFusedOperationToOperationTuple<ComplexType>::value(complexVar);
-
     return test_InstantiableFusedOperationToOperationTuple() ? 0 : -1;
+#endif
 }
