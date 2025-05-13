@@ -97,19 +97,21 @@ namespace fk {
         ActiveThreads activeThreads;
     };
 
-    template <size_t BATCH, typename Operation>
+    template <size_t BATCH, typename BatchOperation>
     struct BatchReadBase {
-        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationData<Operation>& opData) {
-            return Operation::num_elems_x(thread, opData.params.opData[thread.z]);
+        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationData<BatchOperation>& opData) {
+            return BatchOperation::Operation::num_elems_x(thread, opData.params.opData[thread.z]);
         }
-        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationData<Operation>& opData) {
-            return Operation::num_elems_y(thread, opData.params.opData[thread.z]);
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationData<BatchOperation>& opData) {
+            return BatchOperation::Operation::num_elems_y(thread, opData.params.opData[thread.z]);
         }
-        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationData<Operation>& opData) { return BATCH; }
-        FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationData<Operation>& opData) {
-            return Operation::pitch(thread, opData.params.opData[thread.z]);
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationData<BatchOperation>& opData) {
+            return BATCH;
         }
-        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationData<Operation>& opData) {
+        FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationData<BatchOperation>& opData) {
+            return BatchOperation::Operation::pitch(thread, opData.params.opData[thread.z]);
+        }
+        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationData<BatchOperation>& opData) {
             return opData.params.activeThreads;
         }
     };
@@ -183,6 +185,7 @@ namespace fk {
     template <size_t BATCH_, typename Operation_, typename OutputType_>
     struct BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_> final
         : public BatchReadBase<BATCH_, BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>> {
+
         using Operation = Operation_;
         static constexpr int BATCH = BATCH_;
         static constexpr PlanePolicy PP = CONDITIONAL_WITH_DEFAULT;
@@ -203,20 +206,19 @@ namespace fk {
         }
 
         template <typename IOp, typename DefaultValueType>
-        FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations, const int& usedPlanes,
-            const DefaultValueType& defaultValue) {
+        FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations,
+                                const int& usedPlanes, const DefaultValueType& defaultValue) {
             static_assert(isAnyReadType<IOp>);
             if constexpr (std::is_same_v<OutputType, NullType>) {
                 return BatchRead<BATCH, PP, typename IOp::Operation, DefaultValueType>::build_helper(
                     instantiableOperations, usedPlanes, defaultValue, std::make_integer_sequence<int, BATCH>{});
-            }
-            else {
+            } else {
                 return build_helper(instantiableOperations, usedPlanes, defaultValue, std::make_integer_sequence<int, BATCH>{});
             }
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-            const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
+                                const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
             const auto arrayOfIOps = Operation::build_batch(firstInstance, arrays...);
             return BatchRead<BATCH_N, PP>::build(arrayOfIOps, usedPlanes, defaultValue);
         }
@@ -224,8 +226,8 @@ namespace fk {
     private:
         template <int... Idx>
         FK_HOST_FUSE InstantiableType build_helper(const std::array<Instantiable<Operation>, BATCH>& instantiableOperations,
-            const int& usedPlanes, const OutputType& defaultValue,
-            const std::integer_sequence<int, Idx...>&) {
+                                                   const int& usedPlanes, const OutputType& defaultValue,
+                                                   const std::integer_sequence<int, Idx...>&) {
             const uint max_width = cxp::max(Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
             const uint max_height = cxp::max(Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
             return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...},
@@ -309,29 +311,28 @@ namespace fk {
             return BatchWrite<BATCH, typename IOp::Operation>::build(iOps);
         }
     };
+
     // MEMORY OPERATION BATCH BUILDERS
-    template <typename Parent>
+    template <typename ReadOperation>
     struct ReadOperationBatchBuilders {
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            return BatchRead<BATCH_N, PROCESS_ALL, typename Parent::Child>::build(firstInstance, arrays...);
+            using BuilderType = BatchRead<BATCH_N, PROCESS_ALL, ReadOperation>;
+            return BuilderType::build(firstInstance, arrays...);
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-            const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue,
-                firstInstance, arrays...);
-        }
-        template <size_t BATCH_N, typename DefaultValueType, typename FirstType>
-        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-            const std::array<FirstType, BATCH_N>& firstInstance) {
-            if constexpr (isAnyReadType<FirstType>) {
-                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(firstInstance, usedPlanes,
-                    defaultValue);
+                                const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
+            using BuilderType = BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, ReadOperation>;
+            if constexpr (sizeof...(ArrayTypes) > 0) {
+                return BuilderType::build(usedPlanes, defaultValue, firstInstance, arrays...);
             } else {
-                static_assert(!isAnyReadType<FirstType>, "FirstType is a Read or ReadBack type and should not be.");
-                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, typename Parent::Child>::build(usedPlanes, defaultValue,
-                    firstInstance);
+                if constexpr (isAnyReadType<FirstType>) {
+                    return BuilderType::build(firstInstance, usedPlanes, defaultValue);
+                } else {
+                    static_assert(!isAnyReadType<FirstType>, "FirstType is a Read or ReadBack type and should not be.");
+                    return BuilderType::build(usedPlanes, defaultValue, firstInstance);
+                }
             }
         }
     };
@@ -343,17 +344,12 @@ namespace fk {
   }                                                                                                                    \
   template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>                                                \
   FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N> &firstInstance, const ArrayTypes &...arrays) {          \
-    return ReadOperationBatchBuilders<Parent>::build(firstInstance, arrays...);                                        \
+    return ReadOperationBatchBuilders<typename Parent::Child>::build(firstInstance, arrays...);                                        \
   }                                                                                                                    \
   template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>                     \
   FK_HOST_FUSE auto build(const int &usedPlanes, const DefaultValueType &defaultValue,                                 \
                           const std::array<FirstType, BATCH_N> &firstInstance, const ArrayTypes &...arrays) {          \
-    return ReadOperationBatchBuilders<Parent>::build(usedPlanes, defaultValue, firstInstance, arrays...);              \
-  }                                                                                                                    \
-  template <size_t BATCH_N, typename DefaultValueType, typename FirstType>                                             \
-  FK_HOST_FUSE auto build(const int &usedPlanes, const DefaultValueType &defaultValue,                                 \
-                          const std::array<FirstType, BATCH_N> &firstInstance) {                                       \
-    return ReadOperationBatchBuilders<Parent>::build(usedPlanes, defaultValue, firstInstance);                         \
+    return ReadOperationBatchBuilders<typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance, arrays...);              \
   }
 
 #define DECLARE_READ_PARENT                                                                                            \
@@ -385,33 +381,31 @@ namespace fk {
   }                                                                                                                    \
   DECLARE_READ_PARENT_BATCH
 
-    template <typename Parent>
+    template <typename ReadOperation>
     struct ReadBackIncompleteOperationBatchBuilders {
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...);
+            const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);
             return BatchRead<BATCH_N>::build(arrayOfIOps);
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-            const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance, arrays...);
-            return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
-        }
-        template <size_t BATCH_N, typename DefaultValueType, typename FirstType>
-        FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
-            const std::array<FirstType, BATCH_N>& firstInstance) {
-            if constexpr (isAnyReadType<FirstType>) {
-                return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(firstInstance, usedPlanes, defaultValue);
-            } else {
-                static_assert(!isAnyReadType<FirstType>, "FirstType is a Read or ReadBack type and should not be.");
-                const auto arrayOfIOps = BatchOperation::build_batch<typename Parent::Child>(firstInstance);
+                                const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
+            if constexpr (sizeof...(ArrayTypes) > 0) {
+                const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);
                 return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+            } else {
+                if constexpr (isAnyReadType<FirstType>) {
+                    return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(firstInstance, usedPlanes, defaultValue);
+                } else {
+                    const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance);
+                    return BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>::build(arrayOfIOps, usedPlanes, defaultValue);
+                }
             }
         }
     };
-    template <typename Parent>
-    using RBIncompleteOpBB = ReadBackIncompleteOperationBatchBuilders<Parent>;
+    template <typename ReadOperation>
+    using RBIncompleteOpBB = ReadBackIncompleteOperationBatchBuilders<ReadOperation>;
 
 #define DECLARE_READBACK_PARENT_BATCH_INCOMPLETE                                                                       \
   template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>                                                \
@@ -420,17 +414,12 @@ namespace fk {
   }                                                                                                                    \
   template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>                                                \
   FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N> &firstInstance, const ArrayTypes &...arrays) {          \
-    return RBIncompleteOpBB<Parent>::build(firstInstance, arrays...);                                                  \
+    return RBIncompleteOpBB<typename Parent::Child>::build(firstInstance, arrays...);                                                  \
   }                                                                                                                    \
   template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>                     \
   FK_HOST_FUSE auto build(const int &usedPlanes, const DefaultValueType &defaultValue,                                 \
                           const std::array<FirstType, BATCH_N> &firstInstance, const ArrayTypes &...arrays) {          \
-    return RBIncompleteOpBB<Parent>::build(usedPlanes, defaultValue, firstInstance, arrays...);                        \
-  }                                                                                                                    \
-  template <size_t BATCH_N, typename DefaultValueType, typename FirstType>                                             \
-  FK_HOST_FUSE auto build(const int &usedPlanes, const DefaultValueType &defaultValue,                                 \
-                          const std::array<FirstType, BATCH_N> &firstInstance) {                                       \
-    return RBIncompleteOpBB<Parent>::build(usedPlanes, defaultValue, firstInstance);                                   \
+    return RBIncompleteOpBB<typename Parent::Child>::build(usedPlanes, defaultValue, firstInstance, arrays...);                        \
   }
 
 #define DECLARE_READBACK_PARENT_INCOMPLETE                                                                             \
