@@ -182,6 +182,7 @@ namespace fk {
                        }
                    };
 #else
+            // gcc, clang or VS2022
             return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...},
                       ActiveThreads{max_width, max_height, static_cast<uint>(BATCH)}}} };
 #endif

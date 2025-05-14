@@ -16,6 +16,7 @@
 #define FK_FUSED_OPERATION
 
 #include <fused_kernel/core/execution_model/operation_model/batch_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_tuple.cuh>
 
 namespace fk {
     // FusedOperation
@@ -180,7 +181,7 @@ namespace fk {
             SelfType, true>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input,
-            const ParamsType& params) {
+                                            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(input, params);
         }
 
@@ -200,22 +201,22 @@ namespace fk {
             SelfType, true>;
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread,
-            const ParamsType& params) {
+                                            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(thread, params);
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread,
-            const OperationDataType& opData) {
+                                             const OperationDataType& opData) {
             return ParamsType::Operation::num_elems_x(thread, opData.params.instance);
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread,
-            const OperationDataType& opData) {
+                                             const OperationDataType& opData) {
             return ParamsType::Operation::num_elems_y(thread, opData.params.instance);
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread,
-            const OperationDataType& opData) {
+                                             const OperationDataType& opData) {
             return ParamsType::Operation::num_elems_z(thread, opData.params.instance);
         }
 
@@ -241,11 +242,11 @@ namespace fk {
         using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
 
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-            const ParamsType& params) {
+                                            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(thread, input, params);
         }
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-            const OperationDataType& opData) {
+                                            const OperationDataType& opData) {
             return exec(thread, input, opData.params);
         }
         using InstantiableType = MidWrite<FusedOperation_<void, Operations...>>;
@@ -284,11 +285,11 @@ namespace fk {
         using OperationDataType = OperationData<FusedOperation_<void, Operations...>>;
 
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-            const ParamsType& params) {
+                                            const ParamsType& params) {
             return fused_operation_impl::tuple_operate(thread, input, params);
         }
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const InputType& input,
-            const OperationDataType& opData) {
+                                            const OperationDataType& opData) {
             return exec(thread, input, opData.params);
         }
         using InstantiableType = MidWrite<FusedOperation_<void, Operations...>>;
@@ -300,12 +301,12 @@ namespace fk {
         }
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build_batch(const std::array<FirstType, BATCH_N>& firstInstance,
-            const ArrayTypes&... arrays) {
+                                      const ArrayTypes&... arrays) {
             return BatchOperation::build_batch<SelfType>(firstInstance, arrays...);
         }
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance,
-            const ArrayTypes&... arrays) {
+                                const ArrayTypes&... arrays) {
             return BatchWrite<BATCH_N, SelfType>::build(firstInstance, arrays...);
         }
     };
