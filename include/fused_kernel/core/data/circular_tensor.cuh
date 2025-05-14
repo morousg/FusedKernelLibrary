@@ -133,11 +133,13 @@ namespace fk {
 
             const auto copyOps = buildOperationSequence(nonUpdateRead, writeInstantiableOperation);
 
-            dim3 grid((uint)ceil((float)this->ptr_a.dims.width / (float)this->adjusted_blockSize.x),
-                (uint)ceil((float)this->ptr_a.dims.height / (float)this->adjusted_blockSize.y),
-                BATCH);
+            const dim3 block(std::min(static_cast<int>(this->ptr_a.dims.width), 32),
+                             std::min(static_cast<int>(this->ptr_a.dims.height), 8));
+            const dim3 grid((uint)ceil((float)this->ptr_a.dims.width / static_cast<float>(block.x)),
+                            (uint)ceil((float)this->ptr_a.dims.height / static_cast<float>(block.y)),
+                            BATCH);
 
-            launchDivergentBatchTransformDPP_Kernel<SequenceSelectorType<CT_ORDER, BATCH>> << <grid, this->adjusted_blockSize, 0, stream >> > (updateOps, copyOps);
+            launchDivergentBatchTransformDPP_Kernel<fk::ParArch::GPU_NVIDIA, SequenceSelectorType<CT_ORDER, BATCH>><<<grid, block, 0, stream>>>(updateOps, copyOps);
 
             m_nextUpdateIdx = (m_nextUpdateIdx + 1) % BATCH;
             gpuErrchk(cudaGetLastError());
