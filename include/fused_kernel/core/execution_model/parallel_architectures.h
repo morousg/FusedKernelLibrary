@@ -1,4 +1,4 @@
-/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
+/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Huguet)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,10 +12,23 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef FK_EXECUTION_MODEL
-#define FK_EXECUTION_MODEL
+#ifndef PARALLEL_ARCHITECTURES_H
+#define PARALLEL_ARCHITECTURES_H
 
-#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
-#include <fused_kernel/core/execution_model/executors.cuh>
+namespace fk {
 
-#endif // FK_EXECUTION_MODEL
+    enum class ParArch {
+        CPU,
+        GPU_NVIDIA,
+        GPU_NVIDIA_JIT,
+        GPU_AMD,
+        CPU_OMP,
+        CPU_OMPSS,
+        MULTI_GPU_NVIDIA,
+        CLUSTER_GPU_NVIDIA,
+        None
+    };
+
+} // namespace fk
+
+#endif

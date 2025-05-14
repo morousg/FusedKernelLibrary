@@ -149,9 +149,6 @@ namespace fk {
         FK_HOST_FUSE void h_malloc_init(PtrDims<_1D>& dims) {
             dims.pitch = sizeof(T) * dims.width;
         }
-        FK_HOST_STATIC dim3 getBlockSize(const PtrDims<_1D>& dims) {
-            return getDefaultBlockSize(dims.width, 1);
-        }
     };
 
     template <typename T>
@@ -173,9 +170,6 @@ namespace fk {
         }
         FK_HOST_FUSE void h_malloc_init(PtrDims<_2D>& dims) {
             dims.pitch = sizeof(T) * dims.width;
-        }
-        FK_HOST_STATIC dim3 getBlockSize(const PtrDims<_2D>& dims) {
-            return getDefaultBlockSize(dims.width, dims.height);
         }
     };
 
@@ -199,9 +193,6 @@ namespace fk {
             dims.pitch = sizeof(T) * dims.width;
             dims.plane_pitch = dims.pitch * dims.height;
         }
-        FK_HOST_STATIC dim3 getBlockSize(const PtrDims<_3D>& dims) {
-            return getDefaultBlockSize(dims.width, dims.height);
-        }
     };
 
     template <typename T>
@@ -221,9 +212,6 @@ namespace fk {
             dims.plane_pitch = dims.pitch * dims.height;
             dims.color_planes_pitch = dims.plane_pitch * dims.planes;
         }
-        FK_HOST_STATIC dim3 getBlockSize(const PtrDims<T3D>& dims) {
-            return getDefaultBlockSize(dims.width, dims.height);
-        }
     };
 
     template <ND D, typename T>
@@ -238,12 +226,11 @@ namespace fk {
         };
         RefPtr* ref{ nullptr };
         RawPtr<D, T> ptr_a;
-        dim3 adjusted_blockSize;
         MemType type;
         int deviceID;
 
-        inline constexpr Ptr(const RawPtr<D, T>& ptr_a_, RefPtr* ref_, const dim3& bs_, const MemType& type_, const int& devID) :
-            ptr_a(ptr_a_), ref(ref_), adjusted_blockSize(bs_), type(type_), deviceID(devID) {}
+        inline constexpr Ptr(const RawPtr<D, T>& ptr_a_, RefPtr* ref_, const MemType& type_, const int& devID) :
+            ptr_a(ptr_a_), ref(ref_), type(type_), deviceID(devID) {}
 
         inline constexpr void allocDevice() {
             int currentDevice;
@@ -290,7 +277,6 @@ namespace fk {
 
         inline constexpr void initFromOther(const Ptr<D, T>& other) {
             ptr_a = other.ptr_a;
-            adjusted_blockSize = other.adjusted_blockSize;
             type = other.type;
             deviceID = other.deviceID;
             if (other.ref) {
@@ -316,7 +302,6 @@ namespace fk {
             ptr_a.dims = dims;
             type = type_;
             deviceID = deviceID_;
-            adjusted_blockSize = PtrImpl<D, T>::getBlockSize(ptr_a.dims);
         }
 
         inline constexpr void allocPtr(const PtrDims<D>& dims_, const MemType& type_ = Device, const int& deviceID_ = 0) {
@@ -329,7 +314,6 @@ namespace fk {
             switch (type) {
             case Device:
                 allocDevice();
-                adjusted_blockSize = PtrImpl<D, T>::getBlockSize(ptr_a.dims);
                 break;
             case Host:
                 allocHost();
@@ -356,17 +340,17 @@ namespace fk {
             T* ptr = At::point(p, ptr_a);
             ref->cnt++;
             const RawPtr<D, T> newRawPtr = { ptr, newDims };
-            return { newRawPtr, ref, PtrImpl<D,T>::getBlockSize(newDims), type, deviceID };
+            return { newRawPtr, ref, type, deviceID };
         }
+
         inline constexpr PtrDims<D> dims() const {
             return ptr_a.dims;
         }
-        inline dim3 getBlockSize() const {
-            return adjusted_blockSize;
-        }
+
         inline constexpr MemType getMemType() const {
             return type;
         }
+
         inline constexpr int getDeviceID() const {
             return deviceID;
         }
