@@ -218,10 +218,12 @@ namespace fk { // namespace FusedKernel
         }
     };
 
+    template <enum ParArch PA, typename SequenceSelector>
+    struct DivergentBatchTransformDPP;
+    
     template <typename SequenceSelector>
-    struct DivergentBatchTransformDPP {
+    struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
     private:
-
         template <typename... IOps>
         FK_DEVICE_FUSE void launchTransformDPP(const IOps&... iOps) {
             using Details = TransformDPPDetails<false, IOps...>;
@@ -246,9 +248,9 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-    template <typename SequenceSelector, typename... IOpSequences>
+    template <enum ParArch PA, typename SequenceSelector, typename... IOpSequences>
     __global__ void launchDivergentBatchTransformDPP_Kernel(const __grid_constant__ IOpSequences... iOpSequences) {
-        DivergentBatchTransformDPP<SequenceSelector>::exec(iOpSequences...);
+        DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);
     }
 
     template <enum ParArch PA, bool THREAD_DIVISIBLE, bool THREAD_FUSION, typename... IOps>
