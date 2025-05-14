@@ -51,6 +51,7 @@ namespace fk {
     template <bool THREAD_COARSENING>
     struct Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_COARSENING> {
     private:
+        static constexpr ParArch PA = ParArch::GPU_NVIDIA;
         FK_HOST_FUSE uint computeDiscardedThreads(const uint width, const uint height, const uint blockDimx, const uint blockDimy) {
             const uint modX = width % blockDimx;
             const uint modY = height % blockDimy;
@@ -120,7 +121,7 @@ namespace fk {
         template <typename... IOps>
         FK_HOST_FUSE void executeOperations_helper(const cudaStream_t& stream, const IOps&... iOps) {
             constexpr bool THREAD_FUSION = THREAD_COARSENING;
-            const auto tDetails = TransformDPP<void>::build_details<THREAD_FUSION>(iOps...);
+            const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
             if constexpr (decltype(tDetails)::TFI::ENABLED) {
                 const ActiveThreads activeThreads = tDetails.activeThreads;
 
@@ -131,9 +132,9 @@ namespace fk {
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
                 if (!tDetails.threadDivisible) {
-                    launchTransformDPP_Kernel<false> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    launchTransformDPP_Kernel<PA,false> << <grid, block, 0, stream >> > (tDetails, iOps...);
                 } else {
-                    launchTransformDPP_Kernel<true> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    launchTransformDPP_Kernel<PA, true> << <grid, block, 0, stream >> > (tDetails, iOps...);
                 }
             } else {
                 const auto readOp = get<0>(iOps...);
@@ -147,7 +148,7 @@ namespace fk {
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
 
-                launchTransformDPP_Kernel<true> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                launchTransformDPP_Kernel<PA, true><<<grid, block, 0, stream>>>(tDetails, iOps...);
             }
             gpuErrchk(cudaGetLastError());
         }

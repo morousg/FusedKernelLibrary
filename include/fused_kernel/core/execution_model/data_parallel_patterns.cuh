@@ -23,6 +23,7 @@ namespace cg = cooperative_groups;
 #include <fused_kernel/core/utils/parameter_pack_utils.cuh>
 #include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
 #include <fused_kernel/core/execution_model/thread_fusion.cuh>
+#include <fused_kernel/core/execution_model/parallel_architectures.h>
 
 namespace fk { // namespace FusedKernel
     template <bool THREAD_FUSION, typename... IOps>
@@ -55,8 +56,11 @@ namespace fk { // namespace FusedKernel
     template <bool THREAD_FUSION, typename... IOps>
     using TransformDPPDetails = TransformDPPDetails_<void, THREAD_FUSION, IOps...>;
 
-    template <typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
-    struct TransformDPP {
+    template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
+    struct TransformDPP;
+
+    template <typename DPPDetails, bool THREAD_DIVISIBLE>
+    struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE> {
         using Details = DPPDetails;
 
         template <typename T, typename IOp, typename... IOpTypes>
@@ -194,7 +198,7 @@ namespace fk { // namespace FusedKernel
     };
 
     template <>
-    struct TransformDPP<void, true> {
+    struct TransformDPP<ParArch::GPU_NVIDIA, void, true> {
         template <bool THREAD_FUSION, typename FirstIOp, typename... IOps>
         FK_HOST_FUSE auto build_details(const FirstIOp& firstIOp, const IOps&... iOps) {
             using Details = TransformDPPDetails<THREAD_FUSION, FirstIOp, IOps...>;
@@ -221,7 +225,7 @@ namespace fk { // namespace FusedKernel
         template <typename... IOps>
         FK_DEVICE_FUSE void launchTransformDPP(const IOps&... iOps) {
             using Details = TransformDPPDetails<false, IOps...>;
-            TransformDPP<Details, true>::exec(Details{}, iOps...);
+            TransformDPP<ParArch::GPU_NVIDIA, Details, true>::exec(Details{}, iOps...);
         }
 
         template <int OpSequenceNumber, typename... IOps, typename... IOpSequenceTypes>
@@ -247,10 +251,10 @@ namespace fk { // namespace FusedKernel
         DivergentBatchTransformDPP<SequenceSelector>::exec(iOpSequences...);
     }
 
-    template <bool THREAD_DIVISIBLE, bool THREAD_FUSION, typename... IOps>
+    template <enum ParArch PA, bool THREAD_DIVISIBLE, bool THREAD_FUSION, typename... IOps>
     __global__ void launchTransformDPP_Kernel(const __grid_constant__ TransformDPPDetails_<void,THREAD_FUSION, IOps...> tDPPDetails,
                                               const __grid_constant__ IOps... operations) {
-        TransformDPP<TransformDPPDetails_<void, THREAD_FUSION, IOps...>, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
+        TransformDPP<PA, TransformDPPDetails_<void, THREAD_FUSION, IOps...>, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
     }
 } // namespace fk
 
