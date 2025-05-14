@@ -48,9 +48,7 @@ namespace fk {
         static_assert(DPP == DPPType::Transform, "Only Transform is supported for now");
     };
 
-    template <bool THREAD_COARSENING>
-    struct Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_COARSENING> {
-    private:
+    struct ComputeBestSolutionBase {
         static constexpr ParArch PA = ParArch::GPU_NVIDIA;
         FK_HOST_FUSE uint computeDiscardedThreads(const uint width, const uint height, const uint blockDimx, const uint blockDimy) {
             const uint modX = width % blockDimx;
@@ -59,51 +57,55 @@ namespace fk {
             const uint th_disabled_in_Y = modY == 0 ? 0 : blockDimy - modY;
             return (th_disabled_in_X * (modY == 0 ? height : (height + blockDimy)) + th_disabled_in_Y * width);
         }
+    };
 
-        template <uint bxS_t, uint byS_t>
-        struct computeBestSolution {};
+    template <uint bxS_t, uint byS_t>
+    struct computeBestSolution {};
 
-        template <uint bxS_t>
-        struct computeBestSolution<bxS_t, 0> {
-            FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
-                const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[0][bxS_t]);
-                if (minDiscardedThreads > currentDiscardedThreads) {
-                    minDiscardedThreads = currentDiscardedThreads;
-                    bxS = bxS_t;
-                    byS = 0;
-                    if (minDiscardedThreads == 0) return;
-                }
-                computeBestSolution<bxS_t, 1>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+    template <uint bxS_t>
+    struct computeBestSolution<bxS_t, 0> final : public ComputeBestSolutionBase {
+        FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
+            const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[0][bxS_t]);
+            if (minDiscardedThreads > currentDiscardedThreads) {
+                minDiscardedThreads = currentDiscardedThreads;
+                bxS = bxS_t;
+                byS = 0;
+                if (minDiscardedThreads == 0) return;
             }
-        };
+            computeBestSolution<bxS_t, 1>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+        }
+    };
 
-        template <uint bxS_t>
-        struct computeBestSolution<bxS_t, 1> {
-            FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
-                const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[1][bxS_t]);
-                if (minDiscardedThreads > currentDiscardedThreads) {
-                    minDiscardedThreads = currentDiscardedThreads;
-                    bxS = bxS_t;
-                    byS = 1;
-                    if constexpr (bxS_t == 3) return;
-                    if (minDiscardedThreads == 0) return;
-                }
-                computeBestSolution<bxS_t + 1, 0>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+    template <uint bxS_t>
+    struct computeBestSolution<bxS_t, 1> final : public ComputeBestSolutionBase{
+        FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
+            const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[1][bxS_t]);
+            if (minDiscardedThreads > currentDiscardedThreads) {
+                minDiscardedThreads = currentDiscardedThreads;
+                bxS = bxS_t;
+                byS = 1;
+                if constexpr (bxS_t == 3) return;
+                if (minDiscardedThreads == 0) return;
             }
-        };
+            computeBestSolution<bxS_t + 1, 0>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+        }
+    };
 
-        template <>
-        struct computeBestSolution<3, 1> {
-            FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
-                const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[3], blockDimY[1][3]);
-                if (minDiscardedThreads > currentDiscardedThreads) {
-                    minDiscardedThreads = currentDiscardedThreads;
-                    bxS = 3;
-                    byS = 1;
-                }
+    template <>
+    struct computeBestSolution<3, 1> final : public ComputeBestSolutionBase {
+        FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
+            const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[3], blockDimY[1][3]);
+            if (minDiscardedThreads > currentDiscardedThreads) {
+                minDiscardedThreads = currentDiscardedThreads;
+                bxS = 3;
+                byS = 1;
             }
-        };
+        }
+    };
 
+    template <bool THREAD_COARSENING>
+    struct Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_COARSENING> {
+    private:
         FK_HOST_FUSE CtxDim3 getDefaultBlockSize(const uint& width, const uint& height) {
             constexpr uint blockDimX[4] = { 32, 64, 128, 256 };  // Possible block sizes in the x axis
             constexpr uint blockDimY[2][4] = { { 8,  4,   2,   1},
@@ -121,6 +123,7 @@ namespace fk {
         template <typename... IOps>
         FK_HOST_FUSE void executeOperations_helper(const cudaStream_t& stream, const IOps&... iOps) {
             constexpr bool THREAD_FUSION = THREAD_COARSENING;
+            constexpr ParArch PA = ParArch::GPU_NVIDIA;
             const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
             if constexpr (decltype(tDetails)::TFI::ENABLED) {
                 const ActiveThreads activeThreads = tDetails.activeThreads;
@@ -171,21 +174,21 @@ namespace fk {
                 PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
         }
 
-        template <typename I, int BATCH, typename... IOps>
+        template <typename I, size_t BATCH, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
                                             const cudaStream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
             executeOperations_helper(stream, batchReadIOp, iOps...);
         }
 
-        template <typename I, int BATCH, typename... IOps>
+        template <typename I, size_t BATCH, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
                                             const cudaStream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
             executeOperations_helper(stream, batchReadIOp, iOps...);
         }
 
-        template <typename I, typename O, int Batch, typename... IOps>
+        template <typename I, typename O, size_t Batch, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
                                             const Tensor<O>& output, const cudaStream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
@@ -193,7 +196,7 @@ namespace fk {
             executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
         }
 
-        template <typename I, typename O, int Batch, typename... IOps>
+        template <typename I, typename O, size_t Batch, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
                                             const cudaStream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);

@@ -20,19 +20,19 @@
 namespace fk {
 
     template <bool THREAD_FUSSION, typename... Args>
-    __forceinline void executeOperations(const Args&... args) {
+    __forceinline__ void executeOperations(const Args&... args) {
         using Executor = Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_FUSSION>;
         Executor::executeOperations(args...);
     }
 
     template <typename... Args>
-    __forceinline void executeOperations(const Args&... args) {
+    __forceinline__ void executeOperations(const Args&... args) {
         using Executor = Executor<ParArch::GPU_NVIDIA, DPPType::Transform>;
         Executor::executeOperations(args...);
     }
 
     template <enum ParArch PA, enum DPPType DPPT, typename... Args>
-    __forceinline void executeOperations(const Args&... args) {
+    __forceinline__ void executeOperations(const Args&... args) {
         using Executor = Executor<PA, DPPT>;
         Executor::executeOperations(args...);
     }
