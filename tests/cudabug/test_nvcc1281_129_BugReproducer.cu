@@ -23,16 +23,35 @@
 * It compiles fine with nvcc 12.8.93 or 12.9.41 + MSVC 19.42.34438.0 (MSVC 2022) on Windows
 */
 
+#ifdef __CUDACC__  // Only if we're compiling with nvcc
+  // Define a composite version number for easier comparison.
+  #define NVCC_VERSION (__CUDACC_VER_MAJOR__ * 10000 + \
+                        __CUDACC_VER_MINOR__ * 100 +    \
+                        __CUDACC_VER_BUILD__)
+
+  // Define composite numbers for the particular versions you're interested in.
+  #define NVCC_12_8_93 (12 * 10000 + 8 * 100 + 93)
+  #define NVCC_12_9_41 (12 * 10000 + 9 * 100 + 41)
+
+  #if NVCC_VERSION == NVCC_12_8_93
+    #pragma message("nvcc version 12.8.93 detected! Test will be skipped.")
+    // Code specific to nvcc version 12.8.93 can go here.
+  #elif NVCC_VERSION == NVCC_12_9_41
+    #pragma message("nvcc version 12.9.41 detected! Test will be skipped.")
+    // Code specific to nvcc version 12.9.41 can go here.
+  #else
+    #pragma message("Compiling with nvcc version that should compile.")
 void test1() {
     // Remove the constexpr std::size_t NUM, and use 5 directly, and it will compile
     constexpr std::size_t NUM = 5;
     [[maybe_unused]] const std::array<int, NUM> d_imgs{ 1, 2, 3, 4, 5 };
 }
-
 void test2() {
     // Change the std::array size to something different from 5 and it will compile
     [[maybe_unused]] const std::array<int, 5> d_imgs2{ 6, 7, 8, 9, 10 };
 }
+  #endif
+#endif
 
 int launch() {
     return 0;
