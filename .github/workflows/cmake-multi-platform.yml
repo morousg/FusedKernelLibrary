@@ -26,7 +26,7 @@ jobs:
       #  os: [ubuntu-latest, windows-latest]
         os: [jetsonnanoorin]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]        
+        c_compiler: [gcc]        
         include:
           #- os: windows-latest
            # c_compiler: cl
@@ -34,9 +34,7 @@ jobs:
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+         
         exclude:
          # - os: windows-latest
          #   c_compiler: gcc
