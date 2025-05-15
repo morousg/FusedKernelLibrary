@@ -23,16 +23,44 @@
 * It compiles fine with nvcc 12.8.93 or 12.9.41 + MSVC 19.42.34438.0 (MSVC 2022) on Windows
 */
 
+#ifdef __NVCC__
+#define NVCC_VERSION_CALCULATED (__CUDACC_VER_MAJOR__ * 10000 + __CUDACC_VER_MINOR__ * 100 + __CUDACC_VER_BUILD__)
+#define NVCC_VERSION_12_8_93 120893
+
+// Condition 1: we are compiling with MSVC + nvcc OR other compilers + nvcc versions lower than 12.8.93
+#if (defined(_MSC_VER)) || \
+        (!defined(_MSC_VER) && (NVCC_VERSION_CALCULATED < NVCC_VERSION_12_8_93))
+#define WILL_COMPILE 1
+#endif
+
+// Condition 2: we are compiling with gcc/clan AND we are compiling with nvcc versions 12.8.93 or higher
+#if (!defined(_MSC_VER)) && \
+        (NVCC_VERSION_CALCULATED >= NVCC_VERSION_12_8_93)
+#define WILL_NOT_COMPILE 1
+#pragma message("nvcc version 12.8.93 or higher detected! Test will be skipped.")
+#endif
+
+// Undefine helper macros to avoid polluting the global macro namespace
+#undef NVCC_VERSION_CALCULATED
+#undef NVCC_VERSION_12_8_94
+#else
+#define WILL_COMPILE 1
+#endif // __NVCC__
+
+// To check the compilation issue, make sure you are compiling with gcc or clang + nvcc 12.8.93 or higuer
+// and uncomment the line avove
+// #define WILL_COMPILE 1
+#ifdef WILL_COMPILE
 void test1() {
     // Remove the constexpr std::size_t NUM, and use 5 directly, and it will compile
     constexpr std::size_t NUM = 5;
     [[maybe_unused]] const std::array<int, NUM> d_imgs{ 1, 2, 3, 4, 5 };
 }
-
 void test2() {
     // Change the std::array size to something different from 5 and it will compile
     [[maybe_unused]] const std::array<int, 5> d_imgs2{ 6, 7, 8, 9, 10 };
 }
+#endif
 
 int launch() {
     return 0;
