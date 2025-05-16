@@ -392,17 +392,20 @@ namespace fk {
     class Ptr2D : public Ptr<_2D, T> {
     public:
         inline constexpr Ptr2D<T>() {}
-        inline constexpr Ptr2D<T>(const Size& size, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline Ptr2D<T>(const Size& size, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
             Ptr<_2D, T>(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_) {}
-        inline constexpr Ptr2D<T>(const uint& width_, const uint& height_, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline Ptr2D<T>(const uint& width_, const uint& height_, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
             Ptr<_2D, T>(PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
         inline constexpr Ptr2D<T>(const Ptr<_2D, T>& other) : Ptr<_2D, T>(other) {}
 
-        inline constexpr Ptr2D<T>(T* data_, const uint& width_, const uint& height_, const uint& pitch_, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline Ptr2D<T>(T* data_, const uint& width_, const uint& height_, const uint& pitch_, const MemType& type_ = Device, const int& deviceID_ = 0) :
             Ptr<_2D, T>(data_, PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
-        inline constexpr Ptr2D<T> crop2D(const Point& p, const PtrDims<_2D>& newDims) { return Ptr<_2D, T>::crop(p, newDims); }
+        inline Ptr2D<T> crop2D(const Point& p, const PtrDims<_2D>& newDims) { return Ptr<_2D, T>::crop(p, newDims); }
+        inline void Alloc(const fk::Size& size, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) {
+            this->allocPtr(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_);
+        }
     };
 
     // A Ptr3D pointer

@@ -36,43 +36,35 @@ bool benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELE
     using InputType = uchar;
     using OutputType = float;
 
-    const uchar val_init = 10u;
-    const float val_alpha = 1.0f;
-    const float val_sub = 1.f;
-    const float val_div = 3.2f;
+    const InputType val_init = 10u;
+    const OutputType val_alpha = 1.0f;
+    const OutputType val_sub = 1.f;
+    const OutputType val_div = 3.2f;
     try {
         const fk::Size cropSize(60, 120);
         fk::Ptr2D<InputType> d_input((int)NUM_ELEMS_Y, (int)NUM_ELEMS_X);
         fk::setTo(val_init, d_input, stream);
-        std::array<fk::Ptr2D<float>, BATCH> d_output_cv;
-        std::array<fk::Ptr2D<float>, BATCH> h_cvResults;
-        std::array<fk::Ptr2D<float>, BATCH> h_cvGSResults;
+        std::array<fk::Ptr2D<OutputType>, BATCH> d_output_cv;
+        std::array<fk::Ptr2D<OutputType>, BATCH> h_cvResults;
+        std::array<fk::Ptr2D<OutputType>, BATCH> h_cvGSResults;
 
-        cv::cuda::GpuMat d_temp(cropSize, CV_TYPE_O);
-        cv::cuda::GpuMat d_temp2(cropSize, CV_TYPE_O);
+        fk::Tensor<OutputType> d_tensor_output(cropSize.width, cropSize.height, BATCH);
+        fk::Tensor<OutputType> h_tensor_output(cropSize.width, cropSize.height, BATCH, 1, fk::MemType::HostPinned);
 
-        cv::cuda::GpuMat d_tensor_output(BATCH,
-            cropSize.width * cropSize.height,
-            CV_TYPE_O);
-        d_tensor_output.step = cropSize.width * cropSize.height * sizeof(CUDA_T(CV_TYPE_O));
-
-        cv::Mat diff(cropSize, CV_TYPE_O);
-        cv::Mat h_tensor_output(BATCH, cropSize.width * cropSize.height, CV_TYPE_I);
-
-        std::array<cv::cuda::GpuMat, BATCH> crops;
+        std::array<fk::Ptr2D<InputType>, BATCH> crops;
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            crops[crop_i] = cv::cuda::GpuMat(cropSize, CV_TYPE_I, val_init);
-            d_output_cv[crop_i].create(cropSize, CV_TYPE_O);
-            h_cvResults[crop_i].create(cropSize, CV_TYPE_O);
+            crops[crop_i].Alloc(cropSize);
+            d_output_cv[crop_i].Alloc(cropSize, 0, fk::MemType::Device);
+            h_cvResults[crop_i].Alloc(cropSize, 0, fk::MemType::HostPinned);
         }
 
         START_FIRST_BENCHMARK
             for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-                cvGS::executeOperations<false>(crops[crop_i], cv_stream,
-                    cvGS::convertTo<CV_TYPE_I, CV_TYPE_O>((float)alpha),
-                    cvGS::subtract<CV_TYPE_O>(val_sub),
-                    cvGS::divide<CV_TYPE_O>(val_div),
-                    cvGS::write<CV_TYPE_O>(d_output_cv[crop_i]));
+                fk::executeOperations<false>(crops[crop_i], stream,
+                    fk::convertTo<InputType, OutputType>(val_alpha),
+                    fk::subtract<OutputType>(val_sub),
+                    fk::divide<OutputType>(val_div),
+                    fk::write<OutputType>(d_output_cv[crop_i]));
             }
 
         STOP_FIRST_START_SECOND_BENCHMARK
