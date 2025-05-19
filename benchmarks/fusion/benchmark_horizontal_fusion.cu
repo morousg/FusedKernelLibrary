@@ -27,7 +27,7 @@ constexpr size_t INCREMENT = 5;
 
 constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayIndexSecuence<FIRST_VALUE, INCREMENT, NUM_EXPERIMENTS>;
 
-template <int BATCH>
+template <size_t BATCH>
 bool benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const cudaStream_t& stream) {
     std::stringstream error_s;
     bool passed = true;
@@ -60,7 +60,7 @@ bool benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELE
 
         START_FIRST_BENCHMARK
             for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-                fk::executeOperations<false>(crops[crop_i], stream,
+                fk::executeOperations(crops[crop_i], stream,
                     fk::convertTo<InputType, OutputType>(val_alpha),
                     fk::subtract<OutputType>(val_sub),
                     fk::divide<OutputType>(val_div),
@@ -72,11 +72,11 @@ bool benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELE
             // Assuming we use all the batch
             // On Linux it is necessary to pass the BATCH as a template parameter
             // On Windows (VS2022 Community) it is not needed, it is deduced from crops 
-            cvGS::executeOperations<false, BATCH>(crops, cv_stream,
-                cvGS::convertTo<CV_TYPE_I, CV_TYPE_O>((float)alpha),
-                cvGS::subtract<CV_TYPE_O>(val_sub),
-                cvGS::divide<CV_TYPE_O>(val_div),
-                cvGS::write<CV_TYPE_O>(d_tensor_output, cropSize));
+            fk::executeOperations(crops, stream,
+                fk::convertTo<InputType, OutputType>(val_alpha),
+                fk::subtract<OutputType>(val_sub),
+                fk::divide<OutputType>(val_div),
+                fk::write<OutputType>(d_tensor_output, cropSize));
 
         STOP_SECOND_BENCHMARK
 

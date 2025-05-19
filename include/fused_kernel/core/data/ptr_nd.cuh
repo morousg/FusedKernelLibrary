@@ -163,7 +163,7 @@ namespace fk {
             if (ptr_a.dims.pitch == 0) {
                 size_t pitch;
                 gpuErrchk(cudaMallocPitch(&ptr_a.data, &pitch, sizeof(T) * ptr_a.dims.width, ptr_a.dims.height));
-                ptr_a.dims.pitch = (int)pitch;
+                ptr_a.dims.pitch = static_cast<int>(pitch);
             } else {
                 gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<_2D, T>::sizeInBytes(ptr_a.dims)));
             }
@@ -370,6 +370,38 @@ namespace fk {
         Ptr<D, T>& operator=(const Ptr<D, T>& other) {
             initFromOther(other);
             return *this;
+        }
+
+        inline void upload(const Ptr<D, T>& other, cudaStream_t& stream = 0) {
+            constexpr cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+            constexpr MemType otherExpectedMemType = MemType::Device;
+            constexpr MemType thisExpectedMemType = MemType::Host;
+            if (type == thisExpectedMemType) {
+                throw std::runtime_error("Cannot upload from Device to Device. Upload is for copying from Host or HostPinned to Device.");
+            } else {
+                if (other.getMemType() == otherExpectedMemType) {
+                    if (other.dims().pitch == other.dims().width * sizeof(T)) {
+                        if (sizeInBytes() != other.sizeInBytes()) {
+                            throw std::runtime_error("Size mismatch in upload.");
+                        }
+                        const size_t totalBytes = sizeInBytes();
+                        gpuErrchk(cudaMemcpyAsync(other.ptr_a.data, ptr_a.data, totalBytes, kind, stream));
+                    } else {
+                        if constexpr (D > _2D || D == _1D) {
+                            throw std::runtime_error("Padding only supported in 2D pointers");
+                        } else {
+                            gpuErrchk(cudaMemcpy2DAsync(other.ptr_a.data, other.dims.pitch, ptr_a.data, ptr_a.dims.pitch,
+                                ptr_a.dims.width * sizeof(T), ptr_a.dims.height, kind, stream));
+                        }
+                    }
+                } else {
+                    throw std::runtime_error("Upload can only copy to Device pointers");
+                }
+            }
+        }
+
+        inline void download(const Ptr<D, T>& other, cudaStream_t& stream = 0) {
+
         }
     };
 
