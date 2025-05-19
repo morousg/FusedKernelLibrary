@@ -183,10 +183,9 @@ namespace fk {
         }
         FK_HOST_FUSE void d_malloc(RawPtr<_3D, T>& ptr_a) {
             if (ptr_a.dims.pitch == 0) {
-                throw std::exception(); // Not supported to have 2D pitch in a 3D pointer
-            } else {
-                gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<_3D, T>::sizeInBytes(ptr_a.dims)));
+                ptr_a.dims.pitch = sizeof(T) * ptr_a.dims.width;
             }
+            gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<_3D, T>::sizeInBytes(ptr_a.dims)));
             ptr_a.dims.plane_pitch = ptr_a.dims.pitch * ptr_a.dims.height;
         }
         FK_HOST_FUSE void h_malloc_init(PtrDims<_3D>& dims) {
@@ -285,6 +284,26 @@ namespace fk {
             }
         }
 
+        inline void copy(const Ptr<D, T>& other, const cudaMemcpyKind& kind,
+                         const MemType& otherExpectedMemType1, const MemType& otherExpectedMemType2,
+                         const MemType& thisExpectedMemType1, const MemType& thisExpectedMemType2,
+                         const cudaStream_t& stream = 0) {
+            if ((other.dims().pitch == other.dims().width * sizeof(T)) && (ptr_a.dims.pitch == ptr_a.dims.width * sizeof(T))) {
+                if (sizeInBytes() != other.sizeInBytes()) {
+                    throw std::runtime_error("Size mismatch in upload.");
+                }
+                const size_t totalBytes = sizeInBytes();
+                gpuErrchk(cudaMemcpyAsync(other.ptr_a.data, ptr_a.data, totalBytes, kind, stream));
+            } else {
+                if constexpr (D > _2D || D == _1D) {
+                    throw std::runtime_error("Padding only supported in 2D pointers");
+                } else {
+                    gpuErrchk(cudaMemcpy2DAsync(other.ptr().data, other.dims().pitch, ptr_a.data, ptr_a.dims.pitch,
+                        ptr_a.dims.width * sizeof(T), ptr_a.dims.height, kind, stream));
+                }
+            }
+        }
+
     public:
 
         inline constexpr Ptr() {}
@@ -372,36 +391,56 @@ namespace fk {
             return *this;
         }
 
-        inline void upload(const Ptr<D, T>& other, cudaStream_t& stream = 0) {
+        inline void upload(const Ptr<D, T>& other, const cudaStream_t& stream = 0) {
             constexpr cudaMemcpyKind kind = cudaMemcpyHostToDevice;
-            constexpr MemType otherExpectedMemType = MemType::Device;
-            constexpr MemType thisExpectedMemType = MemType::Host;
-            if (type == thisExpectedMemType) {
-                throw std::runtime_error("Cannot upload from Device to Device. Upload is for copying from Host or HostPinned to Device.");
-            } else {
-                if (other.getMemType() == otherExpectedMemType) {
-                    if (other.dims().pitch == other.dims().width * sizeof(T)) {
-                        if (sizeInBytes() != other.sizeInBytes()) {
-                            throw std::runtime_error("Size mismatch in upload.");
-                        }
-                        const size_t totalBytes = sizeInBytes();
-                        gpuErrchk(cudaMemcpyAsync(other.ptr_a.data, ptr_a.data, totalBytes, kind, stream));
-                    } else {
-                        if constexpr (D > _2D || D == _1D) {
-                            throw std::runtime_error("Padding only supported in 2D pointers");
-                        } else {
-                            gpuErrchk(cudaMemcpy2DAsync(other.ptr_a.data, other.dims.pitch, ptr_a.data, ptr_a.dims.pitch,
-                                ptr_a.dims.width * sizeof(T), ptr_a.dims.height, kind, stream));
-                        }
-                    }
+            constexpr MemType otherExpectedMemType1 = MemType::Device;
+            constexpr MemType otherExpectedMemType2 = MemType::Device;
+            constexpr MemType thisExpectedMemType1 = MemType::Host;
+            constexpr MemType thisExpectedMemType2 = MemType::HostPinned;
+            if (type == thisExpectedMemType1 || type == thisExpectedMemType2) {
+                if (other.getMemType() == otherExpectedMemType1 || other.getMemType() == otherExpectedMemType2) {
+                    copy(other, kind, otherExpectedMemType1, otherExpectedMemType2, thisExpectedMemType1, thisExpectedMemType2, stream);
                 } else {
                     throw std::runtime_error("Upload can only copy to Device pointers");
                 }
+            } else {
+                throw std::runtime_error("Upload can only copy from Host or HostPinned pointers.");
             }
         }
 
-        inline void download(const Ptr<D, T>& other, cudaStream_t& stream = 0) {
+        inline void download(const Ptr<D, T>& other, const cudaStream_t& stream = 0) {
+            constexpr cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
+            constexpr MemType otherExpectedMemType1 = MemType::Host;
+            constexpr MemType otherExpectedMemType2 = MemType::HostPinned;
+            constexpr MemType thisExpectedMemType1 = MemType::Device;
+            constexpr MemType thisExpectedMemType2 = MemType::Device;
+            if (type == thisExpectedMemType1 || type == thisExpectedMemType2) {
+                if (other.getMemType() == otherExpectedMemType1 || other.getMemType() == otherExpectedMemType2) {
+                    copy(other, kind, otherExpectedMemType1, otherExpectedMemType2, thisExpectedMemType1, thisExpectedMemType2, stream);
+                } else {
+                    throw std::runtime_error("Download can only copy to Host or HostPinned pointers.");
+                }
+            } else {
+                throw std::runtime_error("Download can only copy from Device pointers.");
+            }
+        }
 
+        inline T at(const Point& p) const {
+            return *At::cr_point(p, ptr_a);
+        }
+
+        inline T& at(const Point& p) {
+            return *At::point(p, ptr_a);
+        }
+
+        template <enum ND DIM = D>
+        inline std::enable_if_t<(DIM > _2D), Ptr<_2D, T>> getPlane(const uint& plane) {
+            if (plane >= this->ptr_a.dims.planes) {
+                throw std::runtime_error("Plane index out of bounds");
+            }
+            T* const data = PtrAccessor<_3D>::point(Point(0, 0, plane), this->ptr_a);
+
+            return Ptr<_2D, T>(data, PtrDims<_2D>{this->ptr_a.dims.width, this->ptr_a.dims.height, this->ptr_a.dims.pitch}, this->type, this->deviceID);
         }
     };
 
