@@ -170,8 +170,19 @@ namespace fk {
         template <int... Idx>
         FK_HOST_FUSE InstantiableType build_helper(const std::array<Instantiable<Operation>, BATCH>& instantiableOperations,
             const std::integer_sequence<int, Idx...>&) {
+#ifdef NDEBUG
+            // Release mode. Use const variables and variadic template recursion for best performance
             const uint max_width = cxp::max(Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
             const uint max_height = cxp::max(Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[Idx])...);
+#else
+            // Debug mode. Loop to avoid stack overflow
+            uint max_width = Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[0]);
+            uint max_height = Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[0]);
+            for (int i = 1; i < BATCH; ++i) {
+                max_width = cxp::max(max_width, Operation::num_elems_x(Point(0u, 0u, 0u), instantiableOperations[i]));
+                max_height = cxp::max(max_height, Operation::num_elems_y(Point(0u, 0u, 0u), instantiableOperations[i]));
+            }
+#endif
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1910) && (_MSC_VER < 1920)
             // VS2017 compilers need the BatchReadParams type specified
