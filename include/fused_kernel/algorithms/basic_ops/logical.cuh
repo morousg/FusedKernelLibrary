@@ -146,8 +146,24 @@ namespace fk {
     struct Equal {
         using Parent = UnaryOperation<Tuple<I1, I2>, bool, Equal<I1, I2>>;
         DECLARE_UNARY_PARENT
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
+        template <int N = cn<I1>>
+        FK_HOST_DEVICE_FUSE std::enable_if_t<N==1, OutputType> exec(const InputType& input) {
             return get<0>(input) == get<1>(input);
+        }
+        template <int N = cn<I1>>
+        FK_HOST_DEVICE_FUSE std::enable_if_t<N == 2, OutputType> exec(const InputType& input) {
+            const auto result = get<0>(input) == get<1>(input);
+            return result.x && result.y;
+        }
+        template <int N = cn<I1>>
+        FK_HOST_DEVICE_FUSE std::enable_if_t<N == 3, OutputType> exec(const InputType& input) {
+            const auto result = get<0>(input) == get<1>(input);
+            return result.x && result.y && result.z;
+        }
+        template <int N = cn<I1>>
+        FK_HOST_DEVICE_FUSE std::enable_if_t<N == 4, OutputType> exec(const InputType& input) {
+            const auto result = get<0>(input) == get<1>(input);
+            return result.x && result.y && result.z && result.w;
         }
     };
 } //namespace fk

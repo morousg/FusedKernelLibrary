@@ -130,14 +130,16 @@ namespace fk {
 
                 const CtxDim3 ctx_block = getDefaultBlockSize(activeThreads.x, activeThreads.y);
 
-                const dim3 block{ ctx_block.x, ctx_block.y, activeThreads.z };
+                const dim3 block{ ctx_block.x, ctx_block.y, 1 };
                 const dim3 grid{ static_cast<uint>(ceil(activeThreads.x / static_cast<float>(block.x))),
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
                 if (!tDetails.threadDivisible) {
                     launchTransformDPP_Kernel<PA,false> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    gpuErrchk(cudaGetLastError());
                 } else {
                     launchTransformDPP_Kernel<PA, true> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    gpuErrchk(cudaGetLastError());
                 }
             } else {
                 const auto readOp = get<0>(iOps...);
@@ -146,14 +148,13 @@ namespace fk {
 
                 const CtxDim3 ctx_block = getDefaultBlockSize(activeThreads.x, activeThreads.y);
 
-                const dim3 block{ ctx_block.x, ctx_block.y, activeThreads.z };
+                const dim3 block{ ctx_block.x, ctx_block.y, 1 };
                 const dim3 grid{ static_cast<uint>(ceil(activeThreads.x / static_cast<float>(block.x))),
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
-
                 launchTransformDPP_Kernel<PA, true><<<grid, block, 0, stream>>>(tDetails, iOps...);
+                gpuErrchk(cudaGetLastError());
             }
-            gpuErrchk(cudaGetLastError());
         }
     public:
         template <typename... IOps>
