@@ -107,11 +107,11 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
     if (!passed) {
         if (!exception) {
             std::stringstream ss;
-            ss << "benchark_Horizontal_Fusion";
+            ss << "benchmark_Horizontal_Fusion";
             std::cout << ss.str() << " failed!! RESULT ERROR: Some results do not match baseline." << std::endl;
         } else {
             std::stringstream ss;
-            ss << "benchark_Horizontal_Fusion";
+            ss << "benchmark_Horizontal_Fusion";
             std::cout << ss.str() << "> failed!! EXCEPTION: " << error_s.str() << std::endl;
         }
     }
@@ -202,11 +202,11 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
     if (!passed) {
         if (!exception) {
             std::stringstream ss;
-            ss << "benchark_Horizontal_Fusion_NO_CPU_OVERHEAD";
+            ss << "benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD";
             std::cout << ss.str() << " failed!! RESULT ERROR: Some results do not match baseline." << std::endl;
         } else {
             std::stringstream ss;
-            ss << "benchark_Horizontal_Fusion_NO_CPU_OVERHEAD";
+            ss << "benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD";
             std::cout << ss.str() << "> failed!! EXCEPTION: " << error_s.str() << std::endl;
         }
     }
