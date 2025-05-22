@@ -30,7 +30,7 @@ constexpr size_t INCREMENT = 5;
 constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayIndexSecuence<FIRST_VALUE, INCREMENT, NUM_EXPERIMENTS>;
 
 template <size_t BATCH>
-bool benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, cudaStream_t stream) {
+bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, cudaStream_t stream) {
     constexpr std::string_view FIRST_LABEL{ "Iterated Batch" };
     constexpr std::string_view SECOND_LABEL{ "Fused Batch" };
     std::stringstream error_s;
@@ -120,7 +120,7 @@ bool benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELE
 }
 
 template <size_t BATCH>
-bool benchark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, cudaStream_t stream) {
+bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, cudaStream_t stream) {
     constexpr std::string_view FIRST_LABEL{ "Iterated Batch" };
     constexpr std::string_view SECOND_LABEL{ "Fused Batch" };
     std::stringstream error_s;
@@ -215,19 +215,19 @@ bool benchark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const
 }
 
 template <size_t... Is>
-bool launch_benchark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, cudaStream_t stream) {
+bool launch_benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, cudaStream_t stream) {
     bool passed = true;
 
-    passed &= (benchark_Horizontal_Fusion<variableDimensionValues[Is]>(NUM_ELEMS_X, NUM_ELEMS_Y, stream) && ...);
+    passed &= (benchmark_Horizontal_Fusion<variableDimensionValues[Is]>(NUM_ELEMS_X, NUM_ELEMS_Y, stream) && ...);
 
     return passed;
 }
 
 template <size_t... Is>
-bool launch_benchark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, cudaStream_t stream) {
+bool launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, cudaStream_t stream) {
     bool passed = true;
 
-    passed &= (benchark_Horizontal_Fusion_NO_CPU_OVERHEAD<variableDimensionValues[Is]>(NUM_ELEMS_X, NUM_ELEMS_Y, stream) && ...);
+    passed &= (benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD<variableDimensionValues[Is]>(NUM_ELEMS_X, NUM_ELEMS_Y, stream) && ...);
 
     return passed;
 }
@@ -239,12 +239,12 @@ int launch() {
     gpuErrchk(cudaStreamCreate(&stream));
 
     warmup = true;
-    launch_benchark_Horizontal_Fusion(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
-    launch_benchark_Horizontal_Fusion_NO_CPU_OVERHEAD(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
+    launch_benchmark_Horizontal_Fusion(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
+    launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
     warmup = false;
 
-    launch_benchark_Horizontal_Fusion(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
-    launch_benchark_Horizontal_Fusion_NO_CPU_OVERHEAD(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
+    launch_benchmark_Horizontal_Fusion(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
+    launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
 
     gpuErrchk(cudaStreamDestroy(stream));
 
