@@ -19,6 +19,7 @@
 #include <benchmarks/twoExecutionsBenchmark.h>
 
 #include <fused_kernel/core/core.cuh>
+#include <fused_kernel/algorithms/image_processing/saturate.cuh>
 #include <iostream>
 #include <fused_kernel/fused_kernel.cuh>
 #include "tests/nvtx.h"
@@ -53,14 +54,13 @@ bool testThreadFusionSameTypeIO(cudaStream_t& stream) {
         fk::Ptr2D<T> h_cvGSResults(NUM_ELEMS_Y, NUM_ELEMS_X, 0, fk::MemType::HostPinned);
         fk::Ptr2D<T> h_cvGSResults_ThreadFusion(NUM_ELEMS_Y, NUM_ELEMS_X, 0, fk::MemType::HostPinned);
 
-        // In this case it's not OpenCV, it's cvGPUSpeedup without thread fusion
         START_FIRST_BENCHMARK
-        // cvGPUSpeedup non fusion version
+        // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, T>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS);
         fk::executeOperations(stream, read, write);
         STOP_FIRST_START_SECOND_BENCHMARK
-        // cvGPUSpeedup fusion version
+        // fusion version
         const auto readTF = fk::PerThreadRead<fk::_2D, T>::build(d_input);
         const auto writeTF = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS_ThreadFusion);
         fk::executeOperations<true>(stream, readTF, writeTF);
@@ -93,6 +93,68 @@ bool testThreadFusionSameTypeIO(cudaStream_t& stream) {
     return passed;
 }
 
+template <typename I, typename O, size_t RESOLUTION>
+bool testThreadFusionDifferentTypeIO(cudaStream_t stream) {
+    std::stringstream error_s;
+    bool passed = true;
+    bool exception = false;
+
+    constexpr size_t BATCH = RESOLUTION;
+
+    constexpr uint NUM_ELEMS_X = static_cast<uint>(RESOLUTION);
+    constexpr uint NUM_ELEMS_Y = static_cast<uint>(RESOLUTION);
+
+    constexpr I val_init = fk::make_set<I>(2);
+
+    try {
+        fk::Ptr2D<I> d_input(NUM_ELEMS_X, NUM_ELEMS_Y);
+        fk::setTo(val_init, d_input, stream);
+        fk::Ptr2D<O> d_output_cvGS(NUM_ELEMS_X, NUM_ELEMS_Y);
+        fk::Ptr2D<O> d_output_cvGS_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y);
+
+        fk::Ptr2D<O> h_cvGSResults(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
+        fk::Ptr2D<O> h_cvGSResults_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
+
+        START_FIRST_BENCHMARK
+        // non fusion version
+        const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
+        const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
+        fk::executeOperations(stream, read, fk::SaturateCast<I, O>::build(), write);
+        STOP_FIRST_START_SECOND_BENCHMARK
+        // fusion version
+        const auto readTF = fk::PerThreadRead<fk::_2D, I>::build(d_input);
+        const auto writeTF = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS_ThreadFusion);
+        fk::executeOperations<true>(stream, readTF, fk::SaturateCast<I, O>::build(), writeTF);
+        STOP_SECOND_BENCHMARK
+
+        // Verify results
+        d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
+        d_output_cvGS.download(h_cvGSResults, stream);
+
+        gpuErrchk(cudaStreamSynchronize(stream));
+
+        passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
+    }
+    catch (const std::exception& e) {
+        error_s << e.what();
+        passed = false;
+        exception = true;
+    }
+
+    if (!passed) {
+        if (!exception) {
+            std::stringstream ss;
+            ss << "testThreadFusionTimes<" << fk::typeToString<I>() << ", " << fk::typeToString<O>();
+            std::cout << ss.str() << "> failed!! RESULT ERROR: Some results do not match baseline." << std::endl;
+        } else {
+            std::stringstream ss;
+            ss << "testThreadFusionTimes<" << fk::typeToString<I>() << ", " << fk::typeToString<O>();
+            std::cout << ss.str() << "> failed!! EXCEPTION: " << error_s.str() << std::endl;
+        }
+    }
+    return passed;
+}
+
 template <size_t... IDX>
 bool testThreadFusionSameTypeIO_launcher_impl(cudaStream_t stream, const std::integer_sequence<size_t, IDX...>&) {
     bool passed = true;
@@ -119,8 +181,36 @@ bool testThreadFusionSameTypeIO_launcher_impl(cudaStream_t stream, const std::in
         return passed;
 }
 
+template <size_t... IDX>
+bool testThreadFusionDifferentTypeIO_launcher_impl(cudaStream_t stream, const std::index_sequence<IDX...>&) {
+    bool passed = true;
+
+    passed &= (testThreadFusionDifferentTypeIO<uchar, float, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar, float, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar2, float2, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar2, float2, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar3, float3, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar3, float3, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar4, float4, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<uchar4, float4, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort, float, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort, float, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort2, float2, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort2, float2, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort3, float3, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort3, float3, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort4, float4, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeIO<ushort4, float4, variableDimensionValues[IDX] + 1>(stream) && ...);
+
+    return passed;
+}
+
 bool testThreadFusionSameTypeIO_launcher(cudaStream_t stream) {
     return testThreadFusionSameTypeIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
+}
+
+bool testThreadFusionDifferentTypeIO_launcher(cudaStream_t stream) {
+    return testThreadFusionDifferentTypeIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
 }
 
 int launch() {
@@ -130,6 +220,10 @@ int launch() {
     {
         PUSH_RANGE_RAII p("testThreadFusionSameTypeIO");
         passed &= testThreadFusionSameTypeIO_launcher(stream);
+    }
+    {
+        PUSH_RANGE_RAII p("testThreadFusionDifferentTypeIO");
+        passed &= testThreadFusionDifferentTypeIO_launcher(stream);
     }
 
     return 0;
