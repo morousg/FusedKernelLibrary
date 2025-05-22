@@ -20,6 +20,7 @@
 
 #include <fused_kernel/core/core.cuh>
 #include <fused_kernel/algorithms/image_processing/saturate.cuh>
+#include <fused_kernel/algorithms/image_processing/color_conversion.cuh>
 #include <iostream>
 #include <fused_kernel/fused_kernel.cuh>
 #include "tests/nvtx.h"
@@ -134,8 +135,69 @@ bool testThreadFusionDifferentTypeIO(cudaStream_t stream) {
         gpuErrchk(cudaStreamSynchronize(stream));
 
         passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
+    } catch (const std::exception& e) {
+        error_s << e.what();
+        passed = false;
+        exception = true;
     }
-    catch (const std::exception& e) {
+
+    if (!passed) {
+        if (!exception) {
+            std::stringstream ss;
+            ss << "testThreadFusionTimes<" << fk::typeToString<I>() << ", " << fk::typeToString<O>();
+            std::cout << ss.str() << "> failed!! RESULT ERROR: Some results do not match baseline." << std::endl;
+        } else {
+            std::stringstream ss;
+            ss << "testThreadFusionTimes<" << fk::typeToString<I>() << ", " << fk::typeToString<O>();
+            std::cout << ss.str() << "> failed!! EXCEPTION: " << error_s.str() << std::endl;
+        }
+    }
+    return passed;
+}
+
+template <typename I, typename T, typename O, enum fk::ColorConversionCodes CODE, size_t RESOLUTION>
+bool testThreadFusionDifferentTypeAndChannelIO(cudaStream_t stream) {
+    std::stringstream error_s;
+    bool passed = true;
+    bool exception = false;
+
+    constexpr size_t BATCH = RESOLUTION;
+
+    constexpr uint NUM_ELEMS_X = static_cast<uint>(RESOLUTION);
+    constexpr uint NUM_ELEMS_Y = static_cast<uint>(RESOLUTION);
+
+    constexpr I val_init = fk::make_set<I>(2);
+
+    try {
+        fk::Ptr2D<I> d_input(NUM_ELEMS_X, NUM_ELEMS_Y);
+        fk::setTo(val_init, d_input, stream);
+        fk::Ptr2D<O> d_output_cvGS(NUM_ELEMS_X, NUM_ELEMS_Y);
+        fk::Ptr2D<O> d_output_cvGS_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y);
+
+        fk::Ptr2D<O> h_cvGSResults(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
+        fk::Ptr2D<O> h_cvGSResults_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
+
+        // In this case it's not OpenCV, it's cvGPUSpeedup without thread fusion
+        START_FIRST_BENCHMARK
+        // non fusion version
+        const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
+        const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
+        fk::executeOperations(stream, read, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), write);
+        STOP_FIRST_START_SECOND_BENCHMARK
+        // fusion version
+        const auto readTF = fk::PerThreadRead<fk::_2D, I>::build(d_input);
+        const auto writeTF = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS_ThreadFusion);
+        fk::executeOperations<true>(stream, readTF, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), writeTF);
+        STOP_SECOND_BENCHMARK
+
+        // Verify results
+        d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
+        d_output_cvGS.download(h_cvGSResults, stream);
+
+        gpuErrchk(cudaStreamSynchronize(stream));
+
+        passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
+    } catch (const std::exception& e) {
         error_s << e.what();
         passed = false;
         exception = true;
@@ -205,12 +267,34 @@ bool testThreadFusionDifferentTypeIO_launcher_impl(cudaStream_t stream, const st
     return passed;
 }
 
+template <size_t... IDX>
+bool testThreadFusionDifferentTypeAndChannelIO_launcher_impl(cudaStream_t stream, const std::index_sequence<IDX...>&) {
+    bool passed = true;
+
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<uchar3, float3, float4, fk::ColorConversionCodes::COLOR_RGB2RGBA, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<uchar3, float3, float4, fk::ColorConversionCodes::COLOR_RGB2RGBA, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<uchar4, float4, float3, fk::ColorConversionCodes::COLOR_RGBA2RGB, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<uchar4, float4, float3, fk::ColorConversionCodes::COLOR_RGBA2RGB, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<float3, uchar3, uchar4, fk::ColorConversionCodes::COLOR_RGB2RGBA, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<float3, uchar3, uchar4, fk::ColorConversionCodes::COLOR_RGB2RGBA, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<float4, uchar4, uchar3, fk::ColorConversionCodes::COLOR_RGBA2RGB, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<float4, uchar4, uchar3, fk::ColorConversionCodes::COLOR_RGBA2RGB, variableDimensionValues[IDX] + 1>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<float4, uchar4, uchar, fk::ColorConversionCodes::COLOR_RGBA2GRAY, variableDimensionValues[IDX]>(stream) && ...);
+    passed &= (testThreadFusionDifferentTypeAndChannelIO<float4, uchar4, uchar, fk::ColorConversionCodes::COLOR_RGBA2GRAY, variableDimensionValues[IDX] + 1>(stream) && ...);
+
+    return passed;
+}
+
 bool testThreadFusionSameTypeIO_launcher(cudaStream_t stream) {
     return testThreadFusionSameTypeIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
 }
 
 bool testThreadFusionDifferentTypeIO_launcher(cudaStream_t stream) {
     return testThreadFusionDifferentTypeIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
+}
+
+bool testThreadFusionDifferentTypeAndChannelIO_launcher(cudaStream_t stream) {
+    return testThreadFusionDifferentTypeAndChannelIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
 }
 
 int launch() {
@@ -225,6 +309,17 @@ int launch() {
         PUSH_RANGE_RAII p("testThreadFusionDifferentTypeIO");
         passed &= testThreadFusionDifferentTypeIO_launcher(stream);
     }
+    {
+        PUSH_RANGE_RAII p("testThreadFusionDifferentTypeAndChannelIO");
+        passed &= testThreadFusionDifferentTypeAndChannelIO_launcher(stream);
+    }
+    CLOSE_BENCHMARK
 
-    return 0;
+    if (passed) {
+        std::cout << "test_thread_fusion Passed!!!" << std::endl;
+        return 0;
+    } else {
+        std::cout << "test_thread_fusion Failed!!!" << std::endl;
+        return -1;
+    }
 }
