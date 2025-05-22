@@ -96,7 +96,7 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
 }
 
 #define START_FIRST_BENCHMARK                                                                                            \
-  std::cout << "Executing " << __func__ << " fusing " << BATCH << " operations. " << (BATCH - FIRST_VALUE) / INCREMENT \
+  std::cout << "Executing " << __func__ << " using " << BATCH << " " << VARIABLE_DIMENSION_NAME << " " << (BATCH - FIRST_VALUE) / INCREMENT \
             << "/" << NUM_EXPERIMENTS << std::endl;                                                                    \
   cudaEvent_t start, stop;                                                                                             \
   BenchmarkResultsNumbers resF;                                                                                        \

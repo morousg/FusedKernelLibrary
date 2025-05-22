@@ -16,6 +16,7 @@
 
 #include <fused_kernel/core/utils/vlimits.h>
 #include <fused_kernel/core/data/ptr_nd.cuh>
+#include <fused_kernel/algorithms/basic_ops/logical.cuh>
 
 #include <iostream>
 
@@ -36,8 +37,8 @@ inline bool compareAndCheck(const fk::Ptr2D<T>& firstResult, const fk::Ptr2D<T>&
     }
     for (uint y = 0; y < firstResult.dims().height; ++y) {
         for (uint x = 0; x < firstResult.dims().width; ++x) {
-            if (firstResult.at(fk::Point(x, y)) != secondResult.at(fk::Point(x, y))) {
-                std::cout << "Mismatch at (" << x << ", " << y << "): " << firstResult.at(fk::Point(x, y)) << " vs " << secondResult.at(fk::Point(x, y)) << std::endl;
+            if (!fk::Equal<T>::exec(fk::make_tuple(firstResult.at(fk::Point(x, y)), secondResult.at(fk::Point(x, y))))) {
+                std::cout << "Mismatch at (" << x << ", " << y << ") " << std::endl;
                 return false;
             }
         }
