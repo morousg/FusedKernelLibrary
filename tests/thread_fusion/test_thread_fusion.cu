@@ -61,6 +61,8 @@ bool testThreadFusion() {
             data2 == eightNumbers[2] && data3 == eightNumbers[3] &&
             data4 == eightNumbers[4] && data5 == eightNumbers[5] &&
             data6 == eightNumbers[6] && data7 == eightNumbers[7];
+    } else {
+        return false;
     }
 }
 
@@ -94,6 +96,8 @@ namespace fk {
                 Reduction::exec(data1 == fourNumbers[1]) &&
                 Reduction::exec(data2 == fourNumbers[2]) &&
                 Reduction::exec(data3 == fourNumbers[3]);
+        } else {
+            return false;
         }
     }
 }
