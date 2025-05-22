@@ -24,6 +24,7 @@
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.cuh>
 #include <fused_kernel/core/data/data.cuh>
 #include <fused_kernel/core/execution_model/execution_model.cuh>
+#include <fused_kernel/core/utils/type_to_string.h>
 
 #endif // !FK_CORE
 

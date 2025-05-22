@@ -15,6 +15,10 @@
 #include <array>
 
 #include <fused_kernel/core/utils/vlimits.h>
+#include <fused_kernel/core/data/ptr_nd.cuh>
+#include <fused_kernel/algorithms/basic_ops/logical.cuh>
+
+#include <iostream>
 
 template <size_t START_VALUE, size_t INCREMENT, std::size_t... Is>
 constexpr std::array<size_t, sizeof...(Is)> generate_sequence(std::index_sequence<Is...>) {
@@ -23,3 +27,21 @@ constexpr std::array<size_t, sizeof...(Is)> generate_sequence(std::index_sequenc
 
 template <size_t START_VALUE, size_t INCREMENT, size_t NUM_ELEMS>
 constexpr std::array<size_t, NUM_ELEMS> arrayIndexSecuence = generate_sequence<START_VALUE, INCREMENT>(std::make_index_sequence<NUM_ELEMS>{});
+
+template <typename T>
+inline bool compareAndCheck(const fk::Ptr2D<T>& firstResult, const fk::Ptr2D<T>& secondResult) {
+    const bool sameDims = firstResult.dims().width == secondResult.dims().width && firstResult.dims().height == secondResult.dims().height;
+    if (!sameDims) {
+        std::cout << "Dimensions do not match: " << firstResult.dims().width << "x" << firstResult.dims().height << " vs " << secondResult.dims().width << "x" << secondResult.dims().height << std::endl;
+        return false;
+    }
+    for (uint y = 0; y < firstResult.dims().height; ++y) {
+        for (uint x = 0; x < firstResult.dims().width; ++x) {
+            if (!fk::Equal<T>::exec(fk::make_tuple(firstResult.at(fk::Point(x, y)), secondResult.at(fk::Point(x, y))))) {
+                std::cout << "Mismatch at (" << x << ", " << y << ") " << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}

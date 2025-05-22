@@ -253,10 +253,10 @@ namespace fk { // namespace FusedKernel
         DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);
     }
 
-    template <enum ParArch PA, bool THREAD_DIVISIBLE, bool THREAD_FUSION, typename... IOps>
-    __global__ void launchTransformDPP_Kernel(const __grid_constant__ TransformDPPDetails_<void,THREAD_FUSION, IOps...> tDPPDetails,
+    template <enum ParArch PA, bool THREAD_DIVISIBLE, typename TDPPDetails, typename... IOps>
+    __global__ void launchTransformDPP_Kernel(const __grid_constant__ TDPPDetails tDPPDetails,
                                               const __grid_constant__ IOps... operations) {
-        TransformDPP<PA, TransformDPPDetails_<void, THREAD_FUSION, IOps...>, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
+        TransformDPP<PA, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
     }
 } // namespace fk
 

@@ -24,6 +24,7 @@ std::unordered_map<std::string, std::ofstream> currentFile;
 const std::string path{ "" };
 
 constexpr int ITERS = 100;
+bool warmup{false};
 
 struct BenchmarkResultsNumbers {
   float firstElapsedTimeMax;
@@ -95,7 +96,7 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
 }
 
 #define START_FIRST_BENCHMARK                                                                                            \
-  std::cout << "Executing " << __func__ << " fusing " << BATCH << " operations. " << (BATCH - FIRST_VALUE) / INCREMENT \
+  std::cout << "Executing " << __func__ << " using " << BATCH << " " << VARIABLE_DIMENSION_NAME << " " << (BATCH - FIRST_VALUE) / INCREMENT \
             << "/" << NUM_EXPERIMENTS << std::endl;                                                                    \
   cudaEvent_t start, stop;                                                                                             \
   BenchmarkResultsNumbers resF;                                                                                        \
@@ -127,7 +128,8 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   gpuErrchk(cudaEventElapsedTime(&secondElapsedTime[idx], start, stop));                                                     \
   resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;         \
   resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;         \
-  resF.secondElapsedTimeAcum += secondElapsedTime[idx];                                                                          \
+  resF.secondElapsedTimeAcum += secondElapsedTime[idx]; \
+  if (warmup) break;                                                                        \
   }                                                                                                                  \
 processExecution<BATCH, ITERS, variableDimensionValues.size(), variableDimensionValues>(                               \
       resF, __func__, std::string(FIRST_LABEL), std::string(SECOND_LABEL), firstElapsedTime, secondElapsedTime ,VARIABLE_DIMENSION_NAME);
