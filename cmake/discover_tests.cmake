@@ -1,5 +1,8 @@
 set (LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/tests/main.cpp;${CMAKE_SOURCE_DIR}/tests/main.h")
- 
+if (WIN32)
+	list(APPEND LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/manifest.xml") #for utf8 codepage
+endif() 
+
 function (discover_tests DIR)    
     file(
         GLOB_RECURSE
@@ -39,6 +42,7 @@ function (discover_tests DIR)
 		target_link_libraries(${cuda_target} PRIVATE FKL::FKL)
 		
 		set_target_cuda_arch_flags(${cuda_target})
+		add_optimization_flags(${cuda_target})
 		add_test(NAME  ${cuda_target} COMMAND ${cuda_target})
 		target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 
     endforeach()
