@@ -15,12 +15,12 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/core/data/ptr_nd.cuh>
-#include <fused_kernel/core/execution_model/operation_model/operation_model.cuh>
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
-#include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
-#include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/algorithms/image_processing/saturate.cuh>
+#include <fused_kernel/core/data/ptr_nd.h>
+#include <fused_kernel/core/execution_model/operation_model/operation_model.h>
+#include <fused_kernel/core/execution_model/memory_operations.h>
+#include <fused_kernel/algorithms/basic_ops/arithmetic.h>
+#include <fused_kernel/algorithms/basic_ops/cast.h>
+#include <fused_kernel/algorithms/image_processing/saturate.h>
 
 bool test_OTInitialization() {
     cudaStream_t stream;

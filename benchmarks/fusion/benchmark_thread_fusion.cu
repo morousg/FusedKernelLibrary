@@ -18,11 +18,11 @@
 #include <benchmarks/fkBenchmarksCommon.h>
 #include <benchmarks/twoExecutionsBenchmark.h>
 
-#include <fused_kernel/core/core.cuh>
-#include <fused_kernel/algorithms/image_processing/saturate.cuh>
-#include <fused_kernel/algorithms/image_processing/color_conversion.cuh>
+#include <fused_kernel/core/core.h>
+#include <fused_kernel/algorithms/image_processing/saturate.h>
+#include <fused_kernel/algorithms/image_processing/color_conversion.h>
 #include <iostream>
-#include <fused_kernel/fused_kernel.cuh>
+#include <fused_kernel/fused_kernel.h>
 #include "tests/nvtx.h"
 
 constexpr size_t NUM_EXPERIMENTS = 5;

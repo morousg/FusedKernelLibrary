@@ -15,9 +15,9 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
-#include <fused_kernel/algorithms/image_processing/resize.cuh>
-#include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
+#include <fused_kernel/core/execution_model/memory_operations.h>
+#include <fused_kernel/algorithms/image_processing/resize.h>
+#include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 
 template <typename Restriction, typename... ListTypes>
 constexpr bool allInstantiableOperationsComplieWith(const fk::TypeList<ListTypes...>& tl) {

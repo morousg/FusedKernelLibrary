@@ -16,9 +16,9 @@
 #include <benchmarks/fkBenchmarksCommon.h>
 #include <benchmarks/oneExecutionBenchmark.h>
  
-#include <fused_kernel/fused_kernel.cuh>
-#include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
-#include <fused_kernel/algorithms/basic_ops/static_loop.cuh>
+#include <fused_kernel/fused_kernel.h>
+#include <fused_kernel/algorithms/basic_ops/arithmetic.h>
+#include <fused_kernel/algorithms/basic_ops/static_loop.h>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 

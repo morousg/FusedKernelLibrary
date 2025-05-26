@@ -14,10 +14,10 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/core/data/ptr_nd.cuh>
+#include <fused_kernel/core/data/ptr_nd.h>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
-#include <fused_kernel/algorithms/basic_ops/cuda_vector.cuh>
-#include <fused_kernel/fused_kernel.cuh>
+#include <fused_kernel/algorithms/basic_ops/cuda_vector.h>
+#include <fused_kernel/fused_kernel.h>
 
 #include <iostream>
 

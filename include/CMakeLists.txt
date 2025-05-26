@@ -4,7 +4,7 @@ file(
     CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
-	"${CMAKE_CURRENT_SOURCE_DIR}/*.cuh"
+	"${CMAKE_CURRENT_SOURCE_DIR}/*.h"
 )
 
 add_library(headers INTERFACE ${CUDA_SOURCES} )

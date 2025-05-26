@@ -12,13 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
+#include <fused_kernel/core/execution_model/memory_operations.h>
 #include <fused_kernel/core/utils/utils.h>
-#include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
-#include <fused_kernel/algorithms/image_processing/crop.cuh>
-#include <fused_kernel/algorithms/image_processing/color_conversion.cuh>
-#include <fused_kernel/algorithms/image_processing/resize.cuh>
-#include <fused_kernel/fused_kernel.cuh>
+#include <fused_kernel/algorithms/basic_ops/arithmetic.h>
+#include <fused_kernel/algorithms/image_processing/crop.h>
+#include <fused_kernel/algorithms/image_processing/color_conversion.h>
+#include <fused_kernel/algorithms/image_processing/resize.h>
+#include <fused_kernel/fused_kernel.h>
 
 using namespace fk;
 

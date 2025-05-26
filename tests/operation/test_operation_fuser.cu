@@ -14,8 +14,8 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/core/core.cuh>
-#include <fused_kernel/algorithms/algorithms.cuh>
+#include <fused_kernel/core/core.h>
+#include <fused_kernel/algorithms/algorithms.h>
 
 using namespace fk;
 

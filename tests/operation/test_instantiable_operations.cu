@@ -15,13 +15,13 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/algorithms/basic_ops/arithmetic.cuh>
-#include <fused_kernel/algorithms/basic_ops/cast.cuh>
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
-#include <fused_kernel/algorithms/image_processing/resize.cuh>
+#include <fused_kernel/algorithms/basic_ops/arithmetic.h>
+#include <fused_kernel/algorithms/basic_ops/cast.h>
+#include <fused_kernel/core/execution_model/memory_operations.h>
+#include <fused_kernel/algorithms/image_processing/resize.h>
 #include <fused_kernel/core/utils/type_lists.h>
-#include <fused_kernel/algorithms/basic_ops/set.cuh>
-#include <fused_kernel/fused_kernel.cuh>
+#include <fused_kernel/algorithms/basic_ops/set.h>
+#include <fused_kernel/fused_kernel.h>
 
 using namespace fk;
 

@@ -17,9 +17,9 @@
 #include <benchmarks/fkBenchmarksCommon.h>
 #include <benchmarks/twoExecutionsBenchmark.h>
 
-#include <fused_kernel/core/data/ptr_nd.cuh>
-#include <fused_kernel/algorithms/algorithms.cuh>
-#include <fused_kernel/fused_kernel.cuh>
+#include <fused_kernel/core/data/ptr_nd.h>
+#include <fused_kernel/algorithms/algorithms.h>
+#include <fused_kernel/fused_kernel.h>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Batch size" };
 

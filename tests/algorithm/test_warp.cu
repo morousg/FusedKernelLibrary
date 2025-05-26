@@ -14,8 +14,8 @@
 
 #include <tests/main.h>
 
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
-#include <fused_kernel/algorithms/image_processing/warping.cuh>
+#include <fused_kernel/core/execution_model/memory_operations.h>
+#include <fused_kernel/algorithms/image_processing/warping.h>
 
 int launch() {
     constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(

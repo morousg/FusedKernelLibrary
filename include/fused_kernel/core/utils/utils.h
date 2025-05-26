@@ -20,6 +20,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+#if defined(__NVCC__) || defined(__HIPCC__)
 #define FK_DEVICE_FUSE static constexpr __device__ __forceinline__
 #define FK_DEVICE_CNST constexpr __device__ __forceinline__
 #define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE __host__
@@ -27,8 +28,21 @@
 #define FK_HOST_FUSE static constexpr __forceinline__ __host__
 #define FK_HOST_CNST constexpr __forceinline__ __host__
 #define FK_HOST_STATIC static __forceinline__ __host__
+#else
+#define FK_DEVICE_FUSE static constexpr inline
+#define FK_DEVICE_CNST constexpr inline
+#define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE
+#define FK_HOST_DEVICE_CNST FK_DEVICE_CNST
+#define FK_HOST_FUSE static constexpr inline
+#define FK_HOST_CNST constexpr inline
+#define FK_HOST_STATIC static inline
+#endif
 
+#ifdef CUDART_VERSION
 #define CUDART_MAJOR_VERSION CUDART_VERSION/1000
+#else
+#define CUDART_MAJOR_VERSION 0 // We are not compiling with nvcc
+#endif
 
 using uchar = unsigned char;
 using schar = signed char;

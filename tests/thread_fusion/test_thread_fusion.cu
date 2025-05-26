@@ -16,8 +16,8 @@
 #include <tests/main.h>
 
 #include <fused_kernel/core/utils/utils.h>
-#include <fused_kernel/algorithms/basic_ops/cuda_vector.cuh>
-#include <fused_kernel/core/execution_model/thread_fusion.cuh>
+#include <fused_kernel/algorithms/basic_ops/cuda_vector.h>
+#include <fused_kernel/core/execution_model/thread_fusion.h>
 #include "tests/nvtx.h"
 
 template <typename OriginalType>

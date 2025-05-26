@@ -15,8 +15,8 @@
 #include <array>
 
 #include <fused_kernel/core/utils/vlimits.h>
-#include <fused_kernel/core/data/ptr_nd.cuh>
-#include <fused_kernel/algorithms/basic_ops/logical.cuh>
+#include <fused_kernel/core/data/ptr_nd.h>
+#include <fused_kernel/algorithms/basic_ops/logical.h>
 
 #include <iostream>
 

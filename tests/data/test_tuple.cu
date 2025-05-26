@@ -16,9 +16,9 @@
 
 #include <iostream>
 
-#include <fused_kernel/core/execution_model/operation_model/operation_tuple.cuh>
-#include <fused_kernel/algorithms/basic_ops/cuda_vector.cuh>
-#include <fused_kernel/core/execution_model/memory_operations.cuh>
+#include <fused_kernel/core/execution_model/operation_model/operation_tuple.h>
+#include <fused_kernel/algorithms/basic_ops/cuda_vector.h>
+#include <fused_kernel/core/execution_model/memory_operations.h>
 
 constexpr bool buildTuple() {
     constexpr fk::Tuple<int, float, double, float3> test{1, 4.f, 5.0, {4.f, 3.f, 1.f}};
