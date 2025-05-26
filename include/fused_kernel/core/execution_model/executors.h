@@ -206,6 +206,72 @@ namespace fk {
         }
     };
 
+    template <bool THREAD_COARSENING>
+    struct Executor<ParArch::CPU, DPPType::Transform, THREAD_COARSENING> {
+    private:
+        template <typename... IOps>
+        FK_HOST_FUSE void executeOperations_helper(const IOps&... iOps) {
+            constexpr bool THREAD_FUSION = THREAD_COARSENING;
+            constexpr ParArch PA = ParArch::CPU;
+            const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
+            using TDPPDetails = std::decay_t<decltype(tDetails)>;
+            if constexpr (TDPPDetails::TFI::ENABLED) {
+                if (!tDetails.threadDivisible) {
+                    TransformDPP<PA, TDPPDetails, false>::exec(tDetails, iOps...);
+                } else {
+                    TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
+                }
+            } else {
+                TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
+            }
+        }
+    public:
+        template <typename... IOps>
+        FK_HOST_FUSE void executeOperations(const IOps&... iOps) {
+            executeOperations_helper(iOps...);
+        }
+
+        template <typename I, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const IOps&... iOps) {
+            executeOperations_helper(PerThreadRead<_2D, I>::build({ input }), iOps...);
+        }
+
+        template <typename I, typename O, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, const IOps&... iOps) {
+            executeOperations_helper(PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
+        }
+
+        template <typename I, size_t BATCH, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
+                                            const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
+            executeOperations_helper(batchReadIOp, iOps...);
+        }
+
+        template <typename I, size_t BATCH, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
+                                            const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
+            executeOperations_helper(batchReadIOp, iOps...);
+        }
+
+        template <typename I, typename O, size_t Batch, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
+                                            const Tensor<O>& output, const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
+            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
+            executeOperations_helper(batchReadIOp, iOps..., writeOp);
+        }
+
+        template <typename I, typename O, size_t Batch, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
+                                            const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
+            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
+            executeOperations_helper(batchReadIOp, iOps..., writeOp);
+        }
+    };
+
     template <ND D, typename T>
     inline constexpr void setTo(const T& value, Ptr<D, T>& outputPtr, const cudaStream_t& stream = 0) {
         RawPtr<D, T> output = outputPtr.ptr();

@@ -183,12 +183,11 @@ namespace fk {
         static constexpr bool IS_FUSED_OP = IS_FUSED;
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
-            const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input,
-            const OperationDataType& opData) {
+                                      const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input,
+                                      const OperationDataType& opData) {
             if constexpr (THREAD_FUSION) {
-                WOperationImpl::exec<ELEMS_PER_THREAD>(thread, input, opData.params);
-            }
-            else {
+                WOperationImpl::template exec<ELEMS_PER_THREAD>(thread, input, opData.params);
+            } else {
                 WOperationImpl::exec(thread, input, opData.params);
             }
         }

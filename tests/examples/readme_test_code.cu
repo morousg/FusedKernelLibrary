@@ -75,5 +75,30 @@ int launch() {
 
     // Use the Tensor for inference
 
+    // Now in CPU
+    // We have a 4K source image
+    Ptr2D<uchar3> cpu_inputImage(3840, 2160, 0, MemType::Host);
+
+    // We want a Tensor of contiguous memory for all images
+    Tensor<float3> cpu_output(outputSize.width, outputSize.height, BATCH, 1, MemType::Host);
+
+
+    // Create a fused operation that reads the input image,
+    // crops it, resizes it, and applies arithmetic operations
+    const auto mySender_cpu = PerThreadRead<_2D, uchar3>::build(cpu_inputImage)
+        .then(Crop<>::build(crops))
+        .then(Resize<INTER_LINEAR, PRESERVE_AR>::build(outputSize, backgroundColor))
+        .then(Mul<float3>::build(mulValue))
+        .then(Sub<float3>::build(subValue))
+        .then(Div<float3>::build(divValue))
+        .then(ColorConversion<COLOR_RGB2BGR, float3, float3>::build());
+
+    // Define the last operation that will write the results to the output pointer
+    const auto myReceiver_cpu = TensorWrite<float3>::build(cpu_output);
+    // Execute the operations in a single kernel
+    // At compile time, the types are used to define the kernel code
+    // At runtime, the kernel is executed with the provided parameters
+    executeOperations<ParArch::CPU, DPPType::Transform>(mySender_cpu, myReceiver_cpu);
+
     return 0;
 }

@@ -20,20 +20,26 @@
 namespace fk {
 
     template <bool THREAD_FUSSION, typename... Args>
-    __forceinline__ void executeOperations(const Args&... args) {
+    inline void executeOperations(const Args&... args) {
         using Executor = Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_FUSSION>;
         Executor::executeOperations(args...);
     }
 
     template <typename... Args>
-    __forceinline__ void executeOperations(const Args&... args) {
+    inline void executeOperations(const Args&... args) {
         using Executor = Executor<ParArch::GPU_NVIDIA, DPPType::Transform>;
         Executor::executeOperations(args...);
     }
 
     template <enum ParArch PA, enum DPPType DPPT, typename... Args>
-    __forceinline__ void executeOperations(const Args&... args) {
+    inline void executeOperations(const Args&... args) {
         using Executor = Executor<PA, DPPT>;
+        Executor::executeOperations(args...);
+    }
+
+    template <enum ParArch PA, enum DPPType DPPT, bool THREAD_FUSSION, typename... Args>
+    inline void executeOperations(const Args&... args) {
+        using Executor = Executor<PA, DPPT, THREAD_FUSSION>;
         Executor::executeOperations(args...);
     }
 
