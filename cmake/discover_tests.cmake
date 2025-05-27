@@ -43,3 +43,26 @@ function (discover_tests DIR)
 		target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 
     endforeach()
 endfunction()
+
+function (discover_cpu_tests DIR)
+	file(
+        GLOB_RECURSE
+        CPU_SOURCES
+        CONFIGURE_DEPENDS
+        "${DIR}/*.cpp"
+    )
+	foreach(cpu_source ${CPU_SOURCES})
+		get_filename_component(cpu_target ${cpu_source} NAME_WE)           
+		add_executable(${cpu_target} ${cpu_source} )          
+		
+		cmake_path(SET path2 "${DIR}")
+		cmake_path(GET path2 FILENAME DIR_NAME)       
+		set_property(TARGET ${cpu_target} PROPERTY FOLDER cpu_tests/${cpu_target})
+
+		set_target_properties(${cpu_target} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
+		target_include_directories(${cpu_target} PRIVATE "${CMAKE_SOURCE_DIR}")        
+		target_link_libraries(${cpu_target} PRIVATE FKL::FKL)
+		
+		add_test(NAME  ${cpu_target} COMMAND ${cpu_target})
+    endforeach()
+endfunction()

@@ -15,15 +15,17 @@
 #ifndef FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 #define FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 
+#if defined(__NVCC__) || defined(__HIPCC__)
 #include <cooperative_groups.h>
-
 namespace cooperative_groups {};
 namespace cg = cooperative_groups;
+#endif
 
 #include <fused_kernel/core/utils/parameter_pack_utils.h>
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>
 #include <fused_kernel/core/execution_model/thread_fusion.h>
 #include <fused_kernel/core/execution_model/parallel_architectures.h>
+#include <cmath>
 
 namespace fk { // namespace FusedKernel
     template <bool THREAD_FUSION, typename... IOps>
@@ -59,6 +61,7 @@ namespace fk { // namespace FusedKernel
     template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
     struct TransformDPP;
 
+#if defined(__NVCC__) || defined(__HIPCC__)
     template <typename DPPDetails, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE> {
     private:
@@ -81,7 +84,7 @@ namespace fk { // namespace FusedKernel
 
         template <uint IDX, typename TFI, typename InputType, typename... IOpTypes>
         FK_DEVICE_FUSE auto operate_idx(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
-            return operate(thread, TFI::get<IDX>(input), instantiableOperationInstances...);
+            return operate(thread, TFI::template get<IDX>(input), instantiableOperationInstances...);
         }
 
         template <typename TFI, typename InputType, uint... IDX, typename... IOpTypes>
@@ -103,7 +106,7 @@ namespace fk { // namespace FusedKernel
         FK_DEVICE_FUSE auto read(const Point& thread, const ReadIOp& readDF) {
             if constexpr (TFI::ENABLED) {
                 static_assert(isAnyReadType<ReadIOp>, "ReadIOp is not ReadType or ReadBackType");
-                return ReadIOp::Operation::exec<TFI::elems_per_thread>(thread, readDF);
+                return ReadIOp::Operation::template exec<TFI::elems_per_thread>(thread, readDF);
             } else {
                 return ReadIOp::Operation::exec(thread, readDF);
             }
@@ -122,9 +125,9 @@ namespace fk { // namespace FusedKernel
                 const auto tempI = read<TFI, ReadIOp>(thread, readDF);
                 if constexpr (sizeof...(iOps) > 1) {
                     const auto tempO = operate_thread_fusion<TFI>(thread, tempI, iOps...);
-                    WriteOperation::exec<TFI::elems_per_thread>(thread, tempO, writeDF);
+                    WriteOperation::template exec<TFI::elems_per_thread>(thread, tempO, writeDF);
                 } else {
-                    WriteOperation::exec<TFI::elems_per_thread>(thread, tempI, writeDF);
+                    WriteOperation::template exec<TFI::elems_per_thread>(thread, tempI, writeDF);
                 }
             } else {
                 const auto tempI = read<TFI, ReadIOp>(thread, readDF);
@@ -218,6 +221,7 @@ namespace fk { // namespace FusedKernel
             }
         }
     };
+#endif // defined(__NVCC__) || defined(__HIPCC__)
 
     template <typename DPPDetails, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE> {
@@ -241,7 +245,7 @@ namespace fk { // namespace FusedKernel
 
         template <uint IDX, typename TFI, typename InputType, typename... IOpTypes>
         FK_HOST_FUSE auto operate_idx(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
-            return operate(thread, TFI::get<IDX>(input), instantiableOperationInstances...);
+            return operate(thread, TFI::template get<IDX>(input), instantiableOperationInstances...);
         }
 
         template <typename TFI, typename InputType, uint... IDX, typename... IOpTypes>
@@ -263,7 +267,7 @@ namespace fk { // namespace FusedKernel
         FK_HOST_FUSE auto read(const Point& thread, const ReadIOp& readDF) {
             if constexpr (TFI::ENABLED) {
                 static_assert(isAnyReadType<ReadIOp>, "ReadIOp is not ReadType or ReadBackType");
-                return ReadIOp::Operation::exec<TFI::elems_per_thread>(thread, readDF);
+                return ReadIOp::Operation::template exec<TFI::elems_per_thread>(thread, readDF);
             } else {
                 return ReadIOp::Operation::exec(thread, readDF);
             }
@@ -282,9 +286,9 @@ namespace fk { // namespace FusedKernel
                 const auto tempI = read<TFI, ReadIOp>(thread, readDF);
                 if constexpr (sizeof...(iOps) > 1) {
                     const auto tempO = operate_thread_fusion<TFI>(thread, tempI, iOps...);
-                    WriteOperation::exec<TFI::elems_per_thread>(thread, tempO, writeDF);
+                    WriteOperation::template exec<TFI::elems_per_thread>(thread, tempO, writeDF);
                 } else {
-                    WriteOperation::exec<TFI::elems_per_thread>(thread, tempI, writeDF);
+                    WriteOperation::template exec<TFI::elems_per_thread>(thread, tempI, writeDF);
                 }
             } else {
                 const auto tempI = read<TFI, ReadIOp>(thread, readDF);
@@ -379,7 +383,7 @@ namespace fk { // namespace FusedKernel
 
     template <enum ParArch PA, typename SequenceSelector>
     struct DivergentBatchTransformDPP;
-    
+#if defined(__NVCC__) || defined(__HIPCC__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
     private:
@@ -406,7 +410,7 @@ namespace fk { // namespace FusedKernel
             divergent_operate<1>(z, iOpSequences...);
         }
     };
-
+#endif // defined(__NVCC__) || defined(__HIPCC__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::CPU, SequenceSelector> {
     private:
@@ -433,7 +437,7 @@ namespace fk { // namespace FusedKernel
             }
         }
     };
-
+#if defined(__NVCC__) || defined(__HIPCC__)
     template <enum ParArch PA, typename SequenceSelector, typename... IOpSequences>
     __global__ void launchDivergentBatchTransformDPP_Kernel(const __grid_constant__ IOpSequences... iOpSequences) {
         DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);
@@ -444,6 +448,7 @@ namespace fk { // namespace FusedKernel
                                               const __grid_constant__ IOps... operations) {
         TransformDPP<PA, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
     }
+#endif // defined(__NVCC__) || defined(__HIPCC__)
 } // namespace fk
 
 #endif

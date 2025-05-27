@@ -410,7 +410,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
             const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, params.first);
             if constexpr (THREAD_FUSION) {
-                return Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, params.opData[newThreadIdx.z]);
+                return Operation::template exec<ELEMS_PER_THREAD>(newThreadIdx, params.opData[newThreadIdx.z]);
             } else {
                 return Operation::exec(newThreadIdx, params.opData[newThreadIdx.z]);
             }
@@ -448,7 +448,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const ParamsType& params) {
             const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, params.first);
             if constexpr (THREAD_FUSION) {
-                Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, input, params.opData[newThreadIdx.z]);
+                Operation::template exec<ELEMS_PER_THREAD>(newThreadIdx, input, params.opData[newThreadIdx.z]);
             } else {
                 Operation::exec(newThreadIdx, input, params.opData[newThreadIdx.z]);
             }
@@ -473,7 +473,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE const ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
             const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, params.first);
             if constexpr (THREAD_FUSION) {
-                return Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, params.opData);
+                return Operation::template exec<ELEMS_PER_THREAD>(newThreadIdx, params.opData);
             } else {
                 return Operation::exec(newThreadIdx, params.opData);
             }
@@ -513,7 +513,7 @@ namespace fk {
                                       const ParamsType& params) {
             const Point newThreadIdx = circular_batch_internal::computeCircularThreadIdx<direction, BATCH>(thread, params.first);
             if constexpr (THREAD_FUSION) {
-                Operation::exec<ELEMS_PER_THREAD>(newThreadIdx, input, params.opData);
+                Operation::template exec<ELEMS_PER_THREAD>(newThreadIdx, input, params.opData);
             } else {
                 Operation::exec(newThreadIdx, input, params.opData);
             }

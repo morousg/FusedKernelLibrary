@@ -161,7 +161,7 @@ namespace fk {
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE const auto exec_helper(const Point& thread, const OperationData<Operation>(&opData)[BATCH]) {
             if constexpr (THREAD_FUSION) {
-                return Operation::exec<ELEMS_PER_THREAD>(thread, opData[thread.z]);
+                return Operation::template exec<ELEMS_PER_THREAD>(thread, opData[thread.z]);
             }
             else {
                 return Operation::exec(thread, opData[thread.z]);
@@ -309,7 +309,7 @@ namespace fk {
             const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input,
             const ParamsType& params) {
             if constexpr (THREAD_FUSION) {
-                Operation::exec<ELEMS_PER_THREAD>(thread, input, params[thread.z]);
+                Operation::template exec<ELEMS_PER_THREAD>(thread, input, params[thread.z]);
             }
             else {
                 Operation::exec(thread, input, params[thread.z]);

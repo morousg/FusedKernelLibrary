@@ -15,7 +15,7 @@
 #ifndef FK_INSTANTIABLE_OPERATIONS
 #define FK_INSTANTIABLE_OPERATIONS
 
-#include <vector_types.h>
+#include <fused_kernel/core/data/vector_types.h>
 #include <fused_kernel/core/execution_model/operation_model/operation_data.h>
 #include <fused_kernel/core/execution_model/thread_fusion.h>
 #include <fused_kernel/core/utils/parameter_pack_utils.h>

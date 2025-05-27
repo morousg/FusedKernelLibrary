@@ -31,6 +31,7 @@ namespace fk {
         None
     };
 
+#if defined(__NVCC__) || defined(__CUDA_ARCH__)
     struct CtxDim3 {
         uint x;
         uint y;
@@ -41,10 +42,11 @@ namespace fk {
         constexpr CtxDim3(const uint& x, const uint& y) : x(x), y(y), z(1) {}
         constexpr CtxDim3(const uint& x, const uint& y, const uint& z) : x(x), y(y), z(z) {}
     };
+#endif
 
     template <enum ParArch PA, enum DPPType DPP, bool THREAD_COARSENING = false>
     struct Executor {
-        static_assert(PA == ParArch::GPU_NVIDIA, "Only CUDA is supported for now");
+        static_assert(PA == ParArch::GPU_NVIDIA, "Only CUDA and CPU are supported for now");
         static_assert(DPP == DPPType::Transform, "Only Transform is supported for now");
     };
 
@@ -103,6 +105,7 @@ namespace fk {
         }
     };
 
+#if defined(__NVCC__) || defined(__CUDA_ARCH__)
     template <bool THREAD_COARSENING>
     struct Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_COARSENING> {
     private:
@@ -205,6 +208,7 @@ namespace fk {
             executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
         }
     };
+#endif // defined(__NVCC__) || defined(__CUDA_ARCH__)
 
     template <bool THREAD_COARSENING>
     struct Executor<ParArch::CPU, DPPType::Transform, THREAD_COARSENING> {
@@ -272,6 +276,7 @@ namespace fk {
         }
     };
 
+#if defined(__NVCC__) || defined(__CUDA_ARCH__)
     template <ND D, typename T>
     inline constexpr void setTo(const T& value, Ptr<D, T>& outputPtr, const cudaStream_t& stream = 0) {
         RawPtr<D, T> output = outputPtr.ptr();
@@ -292,6 +297,7 @@ namespace fk {
             }
         }
     }
+#endif // defined(__NVCC__) || defined(__CUDA_ARCH__)
 } // namespace fk
 
 #endif // FK_EXECUTORS_CUH

@@ -167,7 +167,7 @@ namespace fk {
         using type = T;
         T data[W];
         static constexpr StaticPtrDims1D<W> dims{};
-        static constexpr ND ND{ _1D };
+        static constexpr ND nd{ _1D };
     };
 
     template<typename T, int W, int H>
@@ -175,7 +175,7 @@ namespace fk {
         using type = T;
         T data[H][W];
         static constexpr StaticPtrDims2D<W, H> dims{};
-        static constexpr ND ND{ _2D };
+        static constexpr ND nd{ _2D };
     };
 
     template<typename T, int W, int H, int P>
@@ -183,7 +183,7 @@ namespace fk {
         using type = T;
         T data[P][H][W];
         static constexpr StaticPtrDims3D<W, H, P> dims{};
-        static constexpr ND ND{ _3D };
+        static constexpr ND nd{ _3D };
     };
 
     template <ND D>
@@ -197,7 +197,7 @@ namespace fk {
         }
 
         template <typename T, typename BiggerType = T>
-        static __device__ __forceinline__ __host__ BiggerType* point(const Point& p, const RawPtr<_1D, T>& ptr) {
+        FK_HOST_DEVICE_STATIC BiggerType* point(const Point& p, const RawPtr<_1D, T>& ptr) {
             return (BiggerType*)ptr.data + p.x;
         }
     };
@@ -210,7 +210,7 @@ namespace fk {
         }
 
         template <typename T, typename BiggerType = T>
-        static __device__ __forceinline__ __host__ BiggerType* point(const Point& p, const RawPtr<_2D, T>& ptr) {
+        FK_HOST_DEVICE_STATIC BiggerType* point(const Point& p, const RawPtr<_2D, T>& ptr) {
             return (BiggerType*)((char*)ptr.data + (p.y * ptr.dims.pitch)) + p.x;
         }
     };
@@ -223,7 +223,7 @@ namespace fk {
         }
 
         template <typename T, typename BiggerType = T>
-        static __device__ __forceinline__ __host__ BiggerType* point(const Point& p, const RawPtr<_3D, T>& ptr) {
+        FK_HOST_DEVICE_STATIC BiggerType* point(const Point& p, const RawPtr<_3D, T>& ptr) {
             return (BiggerType*)((char*)ptr.data + (ptr.dims.plane_pitch * ptr.dims.color_planes * p.z) + (p.y * ptr.dims.pitch)) + p.x;
         }
     };
@@ -236,7 +236,7 @@ namespace fk {
         }
 
         template <typename T, typename BiggerType = T>
-        static __device__ __forceinline__ __host__ BiggerType* point(const Point& p, const RawPtr<T3D, T>& ptr, const uint& color_plane = 0) {
+        FK_HOST_DEVICE_STATIC BiggerType* point(const Point& p, const RawPtr<T3D, T>& ptr, const uint& color_plane = 0) {
             return (BiggerType*)((char*)ptr.data + (color_plane * ptr.dims.color_planes_pitch) + (ptr.dims.plane_pitch * p.z) + (ptr.dims.pitch * p.y)) + p.x;
         }
     };
@@ -397,6 +397,7 @@ namespace fk {
             ptr_a(ptr_a_), ref(ref_), type(type_), deviceID(devID) {}
 
         inline constexpr void allocDevice() {
+            #if defined(__NVCC__) || defined(__HIPCC__)
             int currentDevice;
             gpuErrchk(cudaGetDevice(&currentDevice));
             gpuErrchk(cudaSetDevice(deviceID));
@@ -404,6 +405,9 @@ namespace fk {
             if (currentDevice != deviceID) {
                 gpuErrchk(cudaSetDevice(currentDevice));
             }
+            #else
+            throw std::runtime_error("Device allocation not supported in non-CUDA compilation.");
+            #endif
         }
 
         inline constexpr void allocHost() {
@@ -413,8 +417,12 @@ namespace fk {
         }
 
         inline constexpr void allocHostPinned() {
+            #if defined(__NVCC__) || defined(__HIPCC__)
             PtrImpl<D, T>::h_malloc_init(ptr_a.dims);
             gpuErrchk(cudaMallocHost(&ptr_a.data, PtrImpl<D, T>::sizeInBytes(ptr_a.dims)));
+            #else
+            throw std::runtime_error("Host pinned allocation not supported in non-CUDA compilation.");
+            #endif
         }
 
         inline constexpr void freePrt() {
@@ -423,13 +431,25 @@ namespace fk {
                 if (ref->cnt == 0) {
                     switch (type) {
                     case Device:
-                        gpuErrchk(cudaFree(ref->ptr));
+                        {
+                            #if defined(__NVCC__) || defined(__HIPCC__)
+                            gpuErrchk(cudaFree(ref->ptr));
+                            #else
+                            throw std::runtime_error("Device memory deallocation not supported in non-CUDA compilation.");
+                            #endif
+                        }
                         break;
                     case Host:
                         free(ref->ptr);
                         break;
                     case HostPinned:
-                        gpuErrchk(cudaFreeHost(ref->ptr));
+                        {
+                            #if defined(__NVCC__) || defined(__HIPCC__)
+                            gpuErrchk(cudaFreeHost(ref->ptr));
+                            #else
+                            throw std::runtime_error("Host pinned memory deallocation not supported in non-CUDA compilation.");
+                            #endif
+                        }
                         break;
                     default:
                         break;
@@ -448,7 +468,7 @@ namespace fk {
                 ref->cnt++;
             }
         }
-
+#if defined(__NVCC__) || defined(__HIPCC__)
         inline void copy(const Ptr<D, T>& other, const cudaMemcpyKind& kind,
                          const MemType& otherExpectedMemType1, const MemType& otherExpectedMemType2,
                          const MemType& thisExpectedMemType1, const MemType& thisExpectedMemType2,
@@ -468,7 +488,7 @@ namespace fk {
                 }
             }
         }
-
+#endif
     public:
 
         inline constexpr Ptr() {}
@@ -556,6 +576,7 @@ namespace fk {
             return *this;
         }
 
+#if defined(__NVCC__) || defined(__HIPCC__)
         inline void upload(const Ptr<D, T>& other, const cudaStream_t& stream = 0) {
             constexpr cudaMemcpyKind kind = cudaMemcpyHostToDevice;
             constexpr MemType otherExpectedMemType1 = MemType::Device;
@@ -589,6 +610,7 @@ namespace fk {
                 throw std::runtime_error("Download can only copy from Device pointers.");
             }
         }
+#endif
 
         inline T at(const Point& p) const {
             return *At::cr_point(p, ptr_a);

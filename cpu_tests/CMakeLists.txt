@@ -1,0 +1,4 @@
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+
+discover_cpu_tests(${CMAKE_CURRENT_SOURCE_DIR})
+ 

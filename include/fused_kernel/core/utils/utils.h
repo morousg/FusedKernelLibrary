@@ -17,10 +17,10 @@
 
 #include <string>
 #include <stdexcept>
+#if defined(__CUDACC__) || defined(__CUDA_ARCH__)
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#if defined(__NVCC__) || defined(__HIPCC__)
 #define FK_DEVICE_FUSE static constexpr __device__ __forceinline__
 #define FK_DEVICE_CNST constexpr __device__ __forceinline__
 #define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE __host__
@@ -28,6 +28,7 @@
 #define FK_HOST_FUSE static constexpr __forceinline__ __host__
 #define FK_HOST_CNST constexpr __forceinline__ __host__
 #define FK_HOST_STATIC static __forceinline__ __host__
+#define FK_HOST_DEVICE_STATIC static __forceinline__ __host__ __device__
 #else
 #define FK_DEVICE_FUSE static constexpr inline
 #define FK_DEVICE_CNST constexpr inline
@@ -36,6 +37,7 @@
 #define FK_HOST_FUSE static constexpr inline
 #define FK_HOST_CNST constexpr inline
 #define FK_HOST_STATIC static inline
+#define FK_HOST_DEVICE_STATIC static inline
 #endif
 
 #ifdef CUDART_VERSION
@@ -53,6 +55,7 @@ using ulonglong = unsigned long long;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
+#if defined(__NVCC__) || defined(__CUDA_ARCH__)
 namespace fk {
     inline void gpuAssert(cudaError_t code,
         const char *file,
@@ -72,7 +75,7 @@ namespace fk {
 } // namespace fk
 
 #define gpuErrchk(ans) { fk::gpuAssert((ans), __FILE__, __LINE__, true); }
-
+#endif
 // Null type, used for Operation required aliases that can not still be known, because they are deduced
 // from a backwards operation that is till not defined.
 struct NullType {};

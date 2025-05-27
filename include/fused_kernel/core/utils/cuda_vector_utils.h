@@ -20,28 +20,7 @@
 
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/utils/template_operations.h>
-
-struct bool1 {
-    bool x;
-};
-
-struct bool2 {
-    bool x;
-    bool y;
-};
-
-struct bool3 {
-    bool x;
-    bool y;
-    bool z;
-};
-
-struct bool4 {
-    bool x;
-    bool y;
-    bool z;
-    bool w;
-};
+#include <fused_kernel/core/data/vector_types.h>
 
 namespace fk {
     template <typename BaseType, int Channels>
@@ -225,7 +204,15 @@ namespace fk {
         template <typename T, typename... Numbers>
         FK_HOST_DEVICE_FUSE T type(const Numbers&... pack) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: make::type<invalid_type>()");
-            return { static_cast<decltype(T::x)>(pack)... };
+            if constexpr (std::is_union_v<T>) {
+                return T{ .at = {static_cast<std::decay_t<decltype(T::at[0])>>(pack)... } };
+            } else if constexpr (std::is_class_v<T>) {
+                return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
+            } else {
+                static_assert(std::is_union_v<T> || std::is_class_v<T>,
+                              "make::type can only be used with CUDA vector_types or fk vector_types");
+                return T{};
+            }
         }
     };
 
