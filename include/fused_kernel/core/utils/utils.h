@@ -29,6 +29,7 @@
 #define FK_HOST_CNST constexpr __forceinline__ __host__
 #define FK_HOST_STATIC static __forceinline__ __host__
 #define FK_HOST_DEVICE_STATIC static __forceinline__ __host__ __device__
+#define FK_RESTRICT __restrict__
 #else
 #define FK_DEVICE_FUSE static constexpr inline
 #define FK_DEVICE_CNST constexpr inline
@@ -38,6 +39,11 @@
 #define FK_HOST_CNST constexpr inline
 #define FK_HOST_STATIC static inline
 #define FK_HOST_DEVICE_STATIC static inline
+#ifdef _MSC_VER
+#define FK_RESTRICT __restrict
+#else
+#define FK_RESTRICT __restrict__
+#endif
 #endif
 
 #ifdef CUDART_VERSION
