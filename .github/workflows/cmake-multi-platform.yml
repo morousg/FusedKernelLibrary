@@ -61,6 +61,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCUDA_ARCH="87;"
+        -DARCH_FLAGS="disabled"
         -S ${{ github.workspace }}
 
     - name: Build
