@@ -22,23 +22,23 @@ using ulong = unsigned long int;
 using ulonglong = unsigned long long int;
 
 union bool1 {
-    bool x;
     bool at[1];
+    bool x;
 };
 
 union bool2 {
-    bool x, y;
     bool at[2];
+    struct { bool x, y; };
 };
 
 union bool3 {
-    bool x, y, z;
     bool at[3];
+    struct { bool x, y, z; };
 };
 
 union bool4 {
-    bool x, y, z, w;
     bool at[4];
+    struct { bool x, y, z, w; };
 };
 
 #if defined(__NVCC__) || defined(__HIPCC__)
@@ -51,243 +51,243 @@ union bool4 {
 #define FK_VECTOR_(value) alignas(value)
 
 union char1 {
-    signed char x;
     signed char at[1];
+    signed char x;
 };
 
 union uchar1 {
-    uchar x;
     uchar at[1];
+    uchar x;
 };
 
 union FK_VECTOR_2 char2 {
-    signed char x, y;
     signed char at[2];
+    struct { signed char x, y; };
 };
 
 union FK_VECTOR_2 uchar2 {
-    uchar x, y;
     uchar at[2];
+    struct { uchar x, y; };
 };
 
 union char3 {
-    signed char x, y, z;
     signed char at[3];
+    struct { signed char x, y, z; };
 };
 
 union uchar3 {
-    uchar x, y, z;
     uchar at[3];
+    struct { uchar x, y, z; };
 };
 
 union FK_VECTOR_4 char4 {
-    signed char x, y, z, w;
     signed char at[4];
+    struct { signed char x, y, z, w; };
 };
 
 union FK_VECTOR_4 uchar4 {
-    uchar x, y, z, w;
     uchar at[4];
+    struct { uchar x, y, z, w; };
 };
 
 union short1 {
-    short x;
     short at[1];
+    short x;
 };
 
 union ushort1 {
-    ushort x;
     ushort at[1];
+    ushort x;
 };
 
-union FK_VECTOR_4 short2{
-    short x, y;
+union FK_VECTOR_4 short2 {
     short at[2];
+    struct { short x, y; };
 };
 
-union FK_VECTOR_4 ushort2{
-    ushort x, y;
+union FK_VECTOR_4 ushort2 {
     ushort at[2];
+    struct { ushort x, y; };
 };
 
 union short3 {
-    short x, y, z;
     short at[3];
+    struct { short x, y, z; };
 };
 
 union ushort3 {
-    ushort x, y, z;
     ushort at[3];
+    struct { ushort x, y, z; };
 };
 
 union FK_VECTOR_8 short4 {
-    short x, y, z, w;
     short at[4];
+    struct { short x, y, z, w; };
 };
 
 union FK_VECTOR_8 ushort4 {
-    ushort x, y, z, w;
     ushort at[4];
+    struct { ushort x, y, z, w; };
 };
 
 union int1 {
-    int x;
     int at[1];
+    int x;
 };
 
 union uint1 {
-    unsigned int x;
     unsigned int at[1];
+    unsigned int x;
 };
 
 union FK_VECTOR_8 int2 {
-    int x, y;
     int at[2];
+    struct { int x, y; };
 };
 
 union FK_VECTOR_8 uint2 {
-    unsigned int x, y;
     unsigned int at[2];
+    struct { unsigned int x, y; };
 };
 
 union int3 {
-    int x, y, z;
     int at[3];
+    struct { int x, y, z; };
 };
 
 union uint3 {
-    unsigned int x, y, z;
     unsigned int at[3];
+    struct { unsigned int x, y, z; };
 };
 
 union FK_VECTOR_16 int4 {
-    int x, y, z, w;
     int at[4];
+    struct { int x, y, z, w; };
 };
 
 union FK_VECTOR_16 uint4 {
-    unsigned int x, y, z, w;
     unsigned int at[4];
+    struct { unsigned int x, y, z, w; };
 };
 
 union long1 {
-    long int x;
     long int at[1];
+    long int x;
 };
 
 union ulong1 {
-    ulong x;
     ulong at[1];
+    ulong x;
 };
 
-union FK_VECTOR_(2*sizeof(long int))  long2 {
-    long int x, y;
+union FK_VECTOR_(2 * sizeof(long int)) long2 {
     long int at[2];
+    struct { long int x, y; };
 };
 
-union FK_VECTOR_(2*sizeof(unsigned long int)) ulong2 {
-    ulong x, y;
+union FK_VECTOR_(2 * sizeof(unsigned long int)) ulong2 {
     ulong at[2];
+    struct { ulong x, y; };
 };
 
 union long3 {
-    long int x, y, z;
     long int at[3];
+    struct { long int x, y, z; };
 };
 
 union ulong3 {
-    ulong x, y, z;
     ulong at[3];
+    struct { ulong x, y, z; };
 };
 
 union FK_VECTOR_16 long4 {
-    long int x, y, z, w;
     long int at[4];
+    struct { long int x, y, z, w; };
 };
 
 union FK_VECTOR_16 ulong4 {
-    ulong x, y, z, w;
     ulong at[4];
+    struct { ulong x, y, z, w; };
 };
 
 union float1 {
-    float x;
     float at[1];
+    float x;
 };
 
 union FK_VECTOR_8 float2 {
-    float x, y;
     float at[2];
+    struct { float x, y; };
 };
 
 union float3 {
-    float x, y, z;
     float at[3];
+    struct { float x, y, z; };
 };
 
 union FK_VECTOR_16 float4 {
-    float x, y, z, w;
     float at[4];
+    struct { float x, y, z, w; };
 };
 
 union longlong1 {
-    long long int x;
     long long int at[1];
+    long long int x;
 };
 
 union ulonglong1 {
-    ulonglong x;
     ulonglong at[1];
+    ulonglong x;
 };
 
 union FK_VECTOR_16 longlong2 {
-    long long int x, y;
     long long int at[2];
+    struct { long long int x, y; };
 };
 
 union FK_VECTOR_16 ulonglong2 {
-    ulonglong x, y;
     ulonglong at[2];
+    struct { ulonglong x, y; };
 };
 
 union longlong3 {
-    long long int x, y, z;
     long long int at[3];
+    struct { long long int x, y, z; };
 };
 
 union ulonglong3 {
-    ulonglong x, y, z;
     ulonglong at[3];
+    struct { ulonglong x, y, z; };
 };
 
 union FK_VECTOR_16 longlong4 {
-    long long int x, y, z, w;
     long long int at[4];
+    struct { long long int x, y, z, w; };
 };
 
 union FK_VECTOR_16 ulonglong4 {
-    ulonglong x, y, z, w;
     ulonglong at[4];
+    struct { ulonglong x, y, z, w; };
 };
 
 union double1 {
-    double x;
     double at[1];
+    double x;
 };
 
 union FK_VECTOR_16 double2 {
-    double x, y;
     double at[2];
+    struct { double x, y; };
 };
 
 union FK_VECTOR_16 double3 {
-    double x, y, z;
     double at[3];
+    struct { double x, y, z; };
 };
 
 union FK_VECTOR_16 double4 {
-    double x, y, z, w;
     double at[4];
+    struct { double x, y, z, w; };
 };
 
 #undef FK_VECTOR
