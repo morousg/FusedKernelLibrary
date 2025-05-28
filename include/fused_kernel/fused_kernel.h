@@ -31,6 +31,18 @@ namespace fk {
         using Executor_t = Executor<ParArch::GPU_NVIDIA, DPPType::Transform>;
         Executor_t::executeOperations(args...);
     }
+#else
+    template <bool THREAD_FUSSION, typename... Args>
+    inline void executeOperations(const Args&... args) {
+        using Executor_t = Executor<ParArch::CPU, DPPType::Transform, THREAD_FUSSION>;
+        Executor_t::executeOperations(args...);
+    }
+
+    template <typename... Args>
+    inline void executeOperations(const Args&... args) {
+        using Executor_t = Executor<ParArch::CPU, DPPType::Transform>;
+        Executor_t::executeOperations(args...);
+    }
 #endif
 
     template <enum ParArch PA, enum DPPType DPPT, typename... Args>

@@ -125,7 +125,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, uchar)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const int vi = __float2uint_rn(input);
             if (vi > 255) {
@@ -146,7 +146,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(double, uchar)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const uint vi = __double2uint_rn(input);
             if (vi > 255) {
@@ -247,13 +247,13 @@ namespace fk {
     }
     };
     SATURATE_CAST_BASE(uint, schar)
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
-            if (input > 127) {
-                return 127;
-            } else {
-                return static_cast<OutputType>(input);
-            }
+    FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
+        if (input > 127) {
+            return 127;
+        } else {
+            return static_cast<OutputType>(input);
         }
+    }
     };
     SATURATE_CAST_BASE(uint, char)
     FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -265,7 +265,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, schar)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+    FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const int vi = __float2int_rn(input);
     #else
@@ -281,7 +281,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, char)
-    static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+    FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
         const int vi = __float2int_rn(input);
     #else
@@ -297,7 +297,7 @@ namespace fk {
     }
     };
     SATURATE_CAST_BASE(schar, ushort)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+    FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2uint_rn(static_cast<float>(input));
     #else
@@ -310,7 +310,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(char, ushort)
-    static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+    FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
         return __float2uint_rn(static_cast<float>(input));
     #else
@@ -323,7 +323,7 @@ namespace fk {
     }
     };
     SATURATE_CAST_BASE(short, ushort)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+    FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2uint_rn(static_cast<float>(input));
     #else
@@ -356,7 +356,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, ushort)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const int vi = __float2uint_rn(input);
             if (vi > 65535) {
@@ -377,7 +377,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(double, ushort)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const int vi = __double2uint_rn(input);
             if (vi > 65535) {
@@ -427,7 +427,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, short)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const int vi = __float2int_rn(input);
     #else
@@ -443,7 +443,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(double, short)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             const int vi = __double2int_rn(input);
     #else
@@ -468,7 +468,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, int)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2int_rn(input);
     #else
@@ -477,7 +477,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(double, int)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __double2int_rn(input);
     #else
@@ -486,7 +486,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(schar, uint)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2uint_rn(static_cast<float>(input));
     #else
@@ -499,7 +499,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(char, uint)
-    static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+    FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
         return __float2uint_rn(static_cast<float>(input));
     #else
@@ -512,7 +512,7 @@ namespace fk {
     }
     };
     SATURATE_CAST_BASE(short, uint)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2uint_rn(static_cast<float>(input));
     #else
@@ -525,7 +525,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(int, uint)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2uint_rn(static_cast<float>(input));
     #else
@@ -538,7 +538,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(float, uint)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __float2uint_rn(input);
     #else
@@ -547,7 +547,7 @@ namespace fk {
         }
     };
     SATURATE_CAST_BASE(double, uint)
-        static __host__ __device__ __forceinline__ OutputType exec(const InputType& input) {
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
     #ifdef __CUDA_ARCH__
             return __double2uint_rn(input);
     #else

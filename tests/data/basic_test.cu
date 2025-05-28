@@ -43,8 +43,8 @@ bool testPtr_2D() {
     cudaStream_t stream;
     gpuErrchk(cudaStreamCreate(&stream));
 
-    fk::ReadInstantiableOperation<fk::PerThreadRead<fk::_2D, T>> readCrop{{cropedInput}};
-    fk::ReadInstantiableOperation<fk::PerThreadRead<fk::_2D, T>> readFull{{input}};
+    fk::Read<fk::PerThreadRead<fk::_2D, T>> readCrop{{cropedInput}};
+    fk::Read<fk::PerThreadRead<fk::_2D, T>> readFull{{input}};
 
     fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::_2D, T>> opFinal_2D = { {output} };
     fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::_2D, T>> opFinal_2DBig = { {outputBig} };

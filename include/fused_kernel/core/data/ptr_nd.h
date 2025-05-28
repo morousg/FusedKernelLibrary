@@ -21,6 +21,11 @@
 
 namespace fk {
 	enum MemType { Device, Host, HostPinned };
+#if defined(__NVCC__) || defined(__HIPCC__)
+    constexpr MemType defaultMemType = Device;
+#else
+    constexpr MemType defaultMemType = Host;
+#endif
 
     template <ND D>
     struct PtrDims;
@@ -497,18 +502,18 @@ namespace fk {
             initFromOther(other);
         }
 
-        inline constexpr Ptr(const PtrDims<D>& dims, const MemType& type_ = Device, const int& deviceID_ = 0) {
+        inline constexpr Ptr(const PtrDims<D>& dims, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             allocPtr(dims, type_, deviceID_);
         }
 
-        inline constexpr Ptr(T* data_, const PtrDims<D>& dims, const MemType& type_ = Device, const int& deviceID_ = 0) {
+        inline constexpr Ptr(T* data_, const PtrDims<D>& dims, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             ptr_a.data = data_;
             ptr_a.dims = dims;
             type = type_;
             deviceID = deviceID_;
         }
 
-        inline constexpr void allocPtr(const PtrDims<D>& dims_, const MemType& type_ = Device, const int& deviceID_ = 0) {
+        inline constexpr void allocPtr(const PtrDims<D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             ptr_a.dims = dims_;
             type = type_;
             deviceID = deviceID_;
@@ -635,12 +640,12 @@ namespace fk {
     class Ptr1D : public Ptr<_1D, T> {
     public:
         inline constexpr Ptr1D<T>() {}
-        inline constexpr Ptr1D<T>(const uint& num_elems, const uint& size_in_bytes = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr Ptr1D<T>(const uint& num_elems, const uint& size_in_bytes = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_1D, T>(PtrDims<_1D>(num_elems, size_in_bytes), type_, deviceID_) {}
 
         inline constexpr Ptr1D<T>(const Ptr<_1D, T>& other) : Ptr<_1D, T>(other) {}
 
-        inline constexpr Ptr1D<T>(T* data_, const PtrDims<_1D>& dims_, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr Ptr1D<T>(T* data_, const PtrDims<_1D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_1D, T>(data_, dims_, type_, deviceID_) {}
 
         inline constexpr Ptr1D<T> crop1D(const Point& p, const PtrDims<_1D>& newDims) { return Ptr<_1D, T>::crop(p, newDims); }
@@ -650,14 +655,14 @@ namespace fk {
     class Ptr2D : public Ptr<_2D, T> {
     public:
         inline constexpr Ptr2D<T>() {}
-        inline Ptr2D<T>(const Size& size, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline Ptr2D<T>(const Size& size, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_2D, T>(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_) {}
-        inline Ptr2D<T>(const uint& width_, const uint& height_, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline Ptr2D<T>(const uint& width_, const uint& height_, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_2D, T>(PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
         inline constexpr Ptr2D<T>(const Ptr<_2D, T>& other) : Ptr<_2D, T>(other) {}
 
-        inline Ptr2D<T>(T* data_, const uint& width_, const uint& height_, const uint& pitch_, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline Ptr2D<T>(T* data_, const uint& width_, const uint& height_, const uint& pitch_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_2D, T>(data_, PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
         inline Ptr2D<T> crop2D(const Point& p, const PtrDims<_2D>& newDims) { return Ptr<_2D, T>::crop(p, newDims); }
@@ -670,12 +675,12 @@ namespace fk {
     template <typename T>
     class Ptr3D : public Ptr<_3D, T> {
     public:
-        inline constexpr Ptr3D<T>(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr Ptr3D<T>(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_3D, T>(PtrDims<_3D>(width_, height_, planes_, color_planes_, pitch_), type_, deviceID_) {}
 
         inline constexpr Ptr3D<T>(const Ptr<_3D, T>& other) : Ptr<_3D, T>(other) {}
 
-        inline constexpr Ptr3D<T>(T* data_, const PtrDims<_3D>& dims_, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr Ptr3D<T>(T* data_, const PtrDims<_3D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_3D, T>(data_, dims_, type_, deviceID_) {}
 
         inline constexpr Ptr3D<T> crop3D(const Point& p, const PtrDims<_3D>& newDims) { return Ptr<_3D, T>::crop(p, newDims); }
@@ -685,12 +690,12 @@ namespace fk {
     template <typename T>
     class PtrT3D : public Ptr<T3D, T> {
     public:
-        inline constexpr PtrT3D<T>(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr PtrT3D<T>(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<T3D, T>(PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
 
         inline constexpr PtrT3D<T>(const Ptr<T3D, T>& other) : Ptr<T3D, T>(other) {}
 
-        inline constexpr PtrT3D<T>(T* data_, const PtrDims<T3D>& dims_, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr PtrT3D<T>(T* data_, const PtrDims<T3D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<T3D, T>(data_, dims_, type_, deviceID_) {}
 
         inline constexpr PtrT3D<T> crop3D(const Point& p, const PtrDims<T3D>& newDims) { return Ptr<T3D, T>::crop(p, newDims); }
@@ -704,13 +709,13 @@ namespace fk {
 
         inline constexpr Tensor(const Tensor<T>& other) : Ptr<_3D, T>(other) {}
 
-        inline constexpr Tensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr Tensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_3D, T>(PtrDims<_3D>(width_, height_, planes_, color_planes_, sizeof(T)* width_), type_, deviceID_) {}
 
-        inline constexpr Tensor(T* data, const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr Tensor(T* data, const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<_3D, T>(data, PtrDims<_3D>(width_, height_, planes_, color_planes_, sizeof(T)* width_), type_, deviceID_) {}
 
-        inline constexpr void allocTensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) {
+        inline constexpr void allocTensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             this->allocPtr(PtrDims<_3D>(width_, height_, planes_, color_planes_, sizeof(T) * width_), type_, deviceID_);
         }
     };
@@ -723,13 +728,13 @@ namespace fk {
 
         inline constexpr TensorT(const TensorT<T>& other) : Ptr<T3D, T>(other) {}
 
-        inline constexpr TensorT(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr TensorT(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<T3D, T>(PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
 
-        inline constexpr TensorT(T* data, const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) :
+        inline constexpr TensorT(T* data, const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
             Ptr<T3D, T>(data, PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
 
-        inline constexpr void allocTensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = Device, const int& deviceID_ = 0) {
+        inline constexpr void allocTensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             this->allocPtr(PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_);
         }
     };
