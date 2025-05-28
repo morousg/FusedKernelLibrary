@@ -23,9 +23,7 @@
 using namespace fk;
 
 int launch() {
-
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    Stream stream;
 
     // We set all outputs to the same size
     const Size outputSize(60, 60);
@@ -71,11 +69,12 @@ int launch() {
     // At compile time, the types are used to define the kernel code
     // At runtime, the kernel is executed with the provided parameters
     executeOperations(stream, mySender, myReceiver);
-    gpuErrchk(cudaStreamSynchronize(stream));
+    stream.sync();
 
     // Use the Tensor for inference
 
     // Now in CPU
+    Stream_<ParArch::CPU> stream_cpu;
     // We have a 4K source image
     Ptr2D<uchar3> cpu_inputImage(3840, 2160, 0, MemType::Host);
 
@@ -98,7 +97,7 @@ int launch() {
     // Execute the operations in a single kernel
     // At compile time, the types are used to define the kernel code
     // At runtime, the kernel is executed with the provided parameters
-    executeOperations<ParArch::CPU, DPPType::Transform>(mySender_cpu, myReceiver_cpu);
+    executeOperations<ParArch::CPU, DPPType::Transform>(stream_cpu, mySender_cpu, myReceiver_cpu);
 
     return 0;
 }

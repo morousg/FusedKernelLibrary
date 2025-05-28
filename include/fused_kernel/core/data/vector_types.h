@@ -41,7 +41,7 @@ union bool4 {
     struct { bool x, y, z, w; };
 };
 
-#if defined(__NVCC__) || defined(__HIPCC__)
+#if defined(__NVCC__) || defined(__HIP__)
 #include <vector_types.h>
 #else
 #define FK_VECTOR_2 alignas(2)

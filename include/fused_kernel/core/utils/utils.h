@@ -61,7 +61,7 @@ using ulonglong = unsigned long long;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
-#if defined(__NVCC__) || defined(__CUDA_ARCH__)
+#if defined(__NVCC__) || defined(__HIP__)
 namespace fk {
     inline void gpuAssert(cudaError_t code,
         const char *file,

@@ -53,6 +53,23 @@ namespace fk {
         FK_HOST_FUSE auto build(const T& value, const ActiveThreads& activeThreads) {
             return InstantiableType{ OperationDataType{{ value, activeThreads }} };
         }
+
+        template <enum ND D>
+        FK_HOST_FUSE auto build(const T& value, const PtrDims<D>& dims) {
+            if constexpr (D == ND::_1D) {
+                const ActiveThreads activeThreads(dims.width, 1, 1);
+                return InstantiableType{ OperationDataType{{ value, activeThreads }} };
+            } else if constexpr (D == ND::_2D) {
+                const ActiveThreads activeThreads(dims.width, dims.height, 1);
+                return InstantiableType{ OperationDataType{{ value, activeThreads }} };
+            } else if constexpr (D == ND::_3D) {
+                const ActiveThreads activeThreads(dims.width, dims.height, dims.planes);
+                return InstantiableType{ OperationDataType{{ value, activeThreads }} };
+            } else {
+                static_assert(D == ND::_1D || D == ND::_2D || D == ND::_3D, "Unsupported ND type for ReadSet build.");
+                return InstantiableType{};
+            }
+        }
     };
 } // namespace fk
 

@@ -18,6 +18,7 @@
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 #include <fused_kernel/algorithms/basic_ops/cuda_vector.h>
 #include <fused_kernel/fused_kernel.h>
+#include <fused_kernel/core/execution_model/stream.h>
 
 #include <iostream>
 
@@ -39,7 +40,7 @@ PtrToTest& test_return_by_reference(PtrToTest& somePtr) {
     return somePtr;
 }
 
-void test_upload(const cudaStream_t& stream) {
+void test_upload(const Stream& stream) {
     // Device pointers
     Ptr1D<uchar3> test1D(1333);
     Ptr2D<uchar3> test2D(1333, 444);
@@ -53,14 +54,14 @@ void test_upload(const cudaStream_t& stream) {
     Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
 
     // Must work
-    test1D_h.upload(test1D, stream);
-    test2D_h.upload(test2D, stream);
-    test3D_h.upload(test3D, stream);
-    testTensor_h.upload(testTensor, stream);
+    test1D_h.uploadTo(test1D, stream);
+    test2D_h.uploadTo(test2D, stream);
+    test3D_h.uploadTo(test3D, stream);
+    testTensor_h.uploadTo(testTensor, stream);
 
     // Must not work
     try {
-        test1D.upload(test1D_h);
+        test1D.uploadTo(test1D_h);
     } catch (const std::exception& e) {
         std::cout << "Expected exception: " << e.what() << std::endl;
     }
@@ -69,7 +70,7 @@ void test_upload(const cudaStream_t& stream) {
     // test2D_h.upload(test3D);
 }
 
-void test_download(const cudaStream_t& stream) {
+void test_download(const Stream& stream) {
     // Device pointers
     Ptr1D<uchar3> test1D(1333);
     Ptr2D<uchar3> test2D(1333, 444);
@@ -83,14 +84,14 @@ void test_download(const cudaStream_t& stream) {
     Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
 
     // Must work
-    test1D.download(test1D_h, stream);
-    test2D.download(test2D_h, stream);
-    test3D.download(test3D_h, stream);
-    testTensor.download(testTensor_h, stream);
+    test1D.downloadTo(test1D_h, stream);
+    test2D.downloadTo(test2D_h, stream);
+    test3D.downloadTo(test3D_h, stream);
+    testTensor.downloadTo(testTensor_h, stream);
 
     // Must not work
     try {
-        test1D_h.download(test1D);
+        test1D_h.downloadTo(test1D);
     } catch (const std::exception& e) {
         std::cout << "Expected exception: " << e.what() << std::endl;
     }
@@ -98,11 +99,10 @@ void test_download(const cudaStream_t& stream) {
 
 int launch() {
 
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    Stream stream;
 
     PtrToTest test0(WIDTH, HEIGHT, 0, MemType::HostPinned);
-    setTo(make_<uchar3>(1, 2, 3), test0);
+    setTo(make_<uchar3>(1, 2, 3), test0, stream);
     bool h_correct{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
@@ -131,17 +131,14 @@ int launch() {
     result &= test6.getRefCount() == 1;
 
     PtrToTest test7(WIDTH, HEIGHT);
-    PtrToTest h_test7(WIDTH, HEIGHT, 0, MemType::HostPinned);
     setTo(make_<uchar3>(3,6,10), test7, stream);
-    gpuErrchk(cudaMemcpy2DAsync(h_test7.ptr().data, h_test7.ptr().dims.pitch,
-                                test7.ptr().data, test7.ptr().dims.pitch,
-                                WIDTH * sizeof(uchar3), HEIGHT, cudaMemcpyDeviceToHost, stream));
-    gpuErrchk(cudaStreamSynchronize(stream));
+    test7.download(stream);
+    stream.sync();
 
     bool h_correct2{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            const bool3 boolVect = *PtrAccessor<_2D>::cr_point(Point(x, y), h_test7.ptr()) == make_<uchar3>(3, 6, 10);
+            const bool3 boolVect = test7.at(Point(x, y)) == make_<uchar3>(3, 6, 10);
             h_correct2 &= VectorAnd<bool3>::exec(boolVect);
         }
     }

@@ -15,7 +15,7 @@
 #ifndef FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 #define FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 
-#if defined(__NVCC__) || defined(__HIPCC__)
+#if defined(__NVCC__) || defined(__HIP__)
 #include <cooperative_groups.h>
 namespace cooperative_groups {};
 namespace cg = cooperative_groups;
@@ -61,7 +61,7 @@ namespace fk { // namespace FusedKernel
     template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
     struct TransformDPP;
 
-#if defined(__NVCC__) || defined(__HIPCC__)
+#if defined(__NVCC__) || defined(__HIP__)
     template <typename DPPDetails, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE> {
     private:
@@ -383,7 +383,7 @@ namespace fk { // namespace FusedKernel
 
     template <enum ParArch PA, typename SequenceSelector>
     struct DivergentBatchTransformDPP;
-#if defined(__NVCC__) || defined(__HIPCC__)
+#if defined(__NVCC__) || defined(__HIP__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
     private:
@@ -437,7 +437,7 @@ namespace fk { // namespace FusedKernel
             }
         }
     };
-#if defined(__NVCC__) || defined(__HIPCC__)
+#if defined(__NVCC__) || defined(__HIP__)
     template <enum ParArch PA, typename SequenceSelector, typename... IOpSequences>
     __global__ void launchDivergentBatchTransformDPP_Kernel(const __grid_constant__ IOpSequences... iOpSequences) {
         DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);

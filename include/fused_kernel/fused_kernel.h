@@ -19,7 +19,7 @@
 
 namespace fk {
 
-#if defined(__NVCC__) || defined(__CUDA_ARCH__)
+#if defined(__NVCC__) || defined(__HIP__)
     template <bool THREAD_FUSSION, typename... Args>
     inline void executeOperations(const Args&... args) {
         using Executor_t = Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_FUSSION>;

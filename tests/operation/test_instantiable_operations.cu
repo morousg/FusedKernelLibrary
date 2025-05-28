@@ -208,12 +208,11 @@ int launch() {
     static_assert(op.params == 45);
     static_assert(decltype(op)::Operation::exec(10, op.params) == 55);
 
-    const Ptr2D<uint3> outputAlt(32, 32);
+    Ptr2D<uint3> outputAlt(32, 32);
     Ptr2D<uint3> h_output(32, 32, 0, HostPinned);
     constexpr RawPtr<_2D, uchar3> input{nullptr, PtrDims<_2D>(128, 128)};
     constexpr Size dstSize(32, 32);
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    Stream stream;
 
     constexpr auto someReadOp =
         PerThreadRead<_2D, uchar3>::build(input).then(Cast<uchar3, float3>::build()).then(Resize<INTER_LINEAR>::build(dstSize));
@@ -224,7 +223,7 @@ int launch() {
         std::is_same_v<OperationTuple<PerThreadRead<_2D, uchar3>, Cast<uchar3, float3>>, decltype(someReadOp.back_function.params)>;
     static_assert(correct, "Unexpected resulting type");
 
-    constexpr auto finalOp = someReadOp.then(Mul<float3>::build({ { 3.f, 1.f, 32.f } }));
+    constexpr auto finalOp = someReadOp.then(Mul<float3>::build(make_<float3>(3.f, 1.f, 32.f)));
     static_assert(!isReadBackType<std::decay_t<decltype(finalOp)>>, "Unexpected type for finalOp");
 
     constexpr auto inputAlt = ReadSet<uchar3>::build({ { { 0,0,0 }, {128,128,1} } });
@@ -251,14 +250,10 @@ int launch() {
     static_assert(someReadOpAlt.getActiveThreads().y == 32, "Wrong height");
     static_assert(someReadOpAlt.getActiveThreads().z == 1, "Wrong depth");
 
-    executeOperations(stream, someReadOpAlt, PerThreadWrite<_2D, uint3>::build({ outputAlt }));
+    executeOperations(stream, someReadOpAlt, PerThreadWrite<_2D, uint3>::build(outputAlt));
 
-    gpuErrchk(cudaMemcpy2DAsync(h_output.ptr().data, h_output.dims().pitch,
-                                outputAlt.ptr().data, outputAlt.dims().pitch,
-                                outputAlt.dims().width * sizeof(uint3),
-                                outputAlt.dims().height, cudaMemcpyDeviceToHost, stream));
-
-    gpuErrchk(cudaStreamSynchronize(stream));
+    outputAlt.downloadTo(h_output, stream);
+    stream.sync();
 
     bool correct2{ true };
 

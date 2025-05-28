@@ -25,6 +25,7 @@
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/core/utils/template_operations.h>
 #include <fused_kernel/algorithms/image_processing/saturate.h>
+#include <fused_kernel/core/execution_model/stream.h>
 
 template <typename T>
 bool testPtr_2D() {
@@ -40,8 +41,7 @@ bool testPtr_2D() {
     fk::Ptr2D<T> output(width_crop, height_crop);
     fk::Ptr2D<T> outputBig(width, height);
 
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    fk::Stream stream;
 
     fk::Read<fk::PerThreadRead<fk::_2D, T>> readCrop{{cropedInput}};
     fk::Read<fk::PerThreadRead<fk::_2D, T>> readFull{{input}};
@@ -54,15 +54,11 @@ bool testPtr_2D() {
         fk::executeOperations(stream, readFull, opFinal_2DBig);
     }
 
-    cudaError_t err = cudaStreamSynchronize(stream);
+    stream.sync();
 
     // TODO: use some values and check results correctness
 
-    if (err != cudaSuccess) {
-        return false;
-    } else {
-        return true;
-    }
+    return true;
 }
 
 int launch() {
@@ -73,8 +69,7 @@ int launch() {
     test2Dpassed &= testPtr_2D<float>();
     test2Dpassed &= testPtr_2D<float3>();
 
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    fk::Stream stream;
 
     fk::Ptr2D<uchar> input(64,64);
     fk::Ptr2D<uint> output(64,64);
@@ -89,6 +84,7 @@ int launch() {
     static_assert(std::is_same_v<decltype(fusedDF.params.next.next.instance.params), uint>, "Unexpected type for params");
 
     fk::executeOperations(stream, fusedDF, write);
+    stream.sync();
 
     fk::OperationTuple<fk::PerThreadRead<fk::_2D, uchar>, fk::SaturateCast<uchar, uint>, fk::PerThreadWrite<fk::_2D, uint>> myTup{};
 
@@ -96,8 +92,6 @@ int launch() {
     constexpr bool test1 = std::is_same_v<fk::get_type_t<0, decltype(myTup)>, fk::PerThreadRead<fk::_2D, uchar>>;
     constexpr bool test2 = std::is_same_v<fk::get_type_t<1, decltype(myTup)>, fk::SaturateCast<uchar, uint>>;
     constexpr bool test3 = std::is_same_v<fk::get_type_t<2, decltype(myTup)>, fk::PerThreadWrite<fk::_2D, uint>>;
-
-    gpuErrchk(cudaStreamSynchronize(stream));
 
     if (test2Dpassed && fk::and_v<test1, test2, test3>) {
         std::cout << "cuda_transform executed!!" << std::endl;

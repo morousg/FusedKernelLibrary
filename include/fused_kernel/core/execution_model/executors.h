@@ -20,6 +20,7 @@
 #include <fused_kernel/core/execution_model/data_parallel_patterns.h>
 #include <fused_kernel/core/execution_model/memory_operations.h>
 #include <fused_kernel/algorithms/basic_ops/set.h>
+#include <fused_kernel/core/execution_model/stream.h>
 
 namespace fk {
 
@@ -31,7 +32,7 @@ namespace fk {
         None
     };
 
-#if defined(__NVCC__) || defined(__CUDA_ARCH__)
+#if defined(__NVCC__) || defined(__HIP__)
     struct CtxDim3 {
         uint x;
         uint y;
@@ -105,10 +106,10 @@ namespace fk {
         }
     };
 
-#if defined(__NVCC__) || defined(__CUDA_ARCH__)
-    template <bool THREAD_COARSENING>
-    struct Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_COARSENING> {
+    template <enum ParArch PA, bool THREAD_COARSENING>
+    struct Executor<PA, DPPType::Transform, THREAD_COARSENING> {
     private:
+#if defined(__NVCC__) || defined(__HIP__)
         FK_HOST_FUSE CtxDim3 getDefaultBlockSize(const uint& width, const uint& height) {
             constexpr uint blockDimX[4] = { 32, 64, 128, 256 };  // Possible block sizes in the x axis
             constexpr uint blockDimY[2][4] = { { 8,  4,   2,   1},
@@ -124,7 +125,8 @@ namespace fk {
         }
 
         template <typename... IOps>
-        FK_HOST_FUSE void executeOperations_helper(const cudaStream_t& stream, const IOps&... iOps) {
+        FK_HOST_FUSE void executeOperations_helper(const Stream_<ParArch::GPU_NVIDIA>& stream_, const IOps&... iOps) {
+            const cudaStream_t stream = stream_.getCUDAStream();
             constexpr bool THREAD_FUSION = THREAD_COARSENING;
             constexpr ParArch PA = ParArch::GPU_NVIDIA;
             const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
@@ -159,62 +161,9 @@ namespace fk {
                 gpuErrchk(cudaGetLastError());
             }
         }
-    public:
+#endif
         template <typename... IOps>
-        FK_HOST_FUSE void executeOperations(const cudaStream_t& stream, const IOps&... iOps) {
-            executeOperations_helper(stream, iOps...);
-        }
-
-        template <typename I, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const cudaStream_t& stream,
-                                            const IOps&... iOps) {
-            executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
-        }
-
-        template <typename I, typename O, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
-                                            const cudaStream_t& stream, const IOps&... iOps) {
-            executeOperations_helper(stream,
-                PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
-        }
-
-        template <typename I, size_t BATCH, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
-                                            const cudaStream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
-            executeOperations_helper(stream, batchReadIOp, iOps...);
-        }
-
-        template <typename I, size_t BATCH, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
-                                            const cudaStream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
-            executeOperations_helper(stream, batchReadIOp, iOps...);
-        }
-
-        template <typename I, typename O, size_t Batch, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
-                                            const Tensor<O>& output, const cudaStream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
-            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
-            executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
-        }
-
-        template <typename I, typename O, size_t Batch, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
-                                            const cudaStream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
-            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
-            executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
-        }
-    };
-#endif // defined(__NVCC__) || defined(__CUDA_ARCH__)
-
-    template <bool THREAD_COARSENING>
-    struct Executor<ParArch::CPU, DPPType::Transform, THREAD_COARSENING> {
-    private:
-        template <typename... IOps>
-        FK_HOST_FUSE void executeOperations_helper(const IOps&... iOps) {
+        FK_HOST_FUSE void executeOperations_helper(const Stream_<ParArch::CPU>& stream, const IOps&... iOps) {
             constexpr bool THREAD_FUSION = THREAD_COARSENING;
             constexpr ParArch PA = ParArch::CPU;
             const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
@@ -230,74 +179,72 @@ namespace fk {
             }
         }
     public:
-        template <typename... IOps>
-        FK_HOST_FUSE void executeOperations(const IOps&... iOps) {
-            executeOperations_helper(iOps...);
+        template <typename Stream_t, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Stream_t& stream, const IOps&... iOps) {
+            executeOperations_helper(stream, iOps...);
         }
 
-        template <typename I, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const IOps&... iOps) {
-            executeOperations_helper(PerThreadRead<_2D, I>::build({ input }), iOps...);
+        template <typename Stream_t, typename I, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Stream_t& stream,
+                                            const IOps&... iOps) {
+            executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
         }
 
-        template <typename I, typename O, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, const IOps&... iOps) {
-            executeOperations_helper(PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
+        template <typename Stream_t, typename I, typename O, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
+                                            const Stream_t& stream, const IOps&... iOps) {
+            executeOperations_helper(stream,
+                PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
         }
 
-        template <typename I, size_t BATCH, typename... IOps>
+        template <typename Stream_t, typename I, size_t BATCH, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
-                                            const IOps&... iOps) {
+                                            const Stream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
-            executeOperations_helper(batchReadIOp, iOps...);
+            executeOperations_helper(stream, batchReadIOp, iOps...);
         }
 
-        template <typename I, size_t BATCH, typename... IOps>
+        template <typename Stream_t, typename I, size_t BATCH, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
-                                            const IOps&... iOps) {
+                                            const Stream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
-            executeOperations_helper(batchReadIOp, iOps...);
+            executeOperations_helper(stream, batchReadIOp, iOps...);
         }
 
-        template <typename I, typename O, size_t Batch, typename... IOps>
+        template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
-                                            const Tensor<O>& output, const IOps&... iOps) {
+                                            const Tensor<O>& output, const Stream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
             const auto writeOp = PerThreadWrite<_3D, O>::build(output);
-            executeOperations_helper(batchReadIOp, iOps..., writeOp);
+            executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
         }
 
-        template <typename I, typename O, size_t Batch, typename... IOps>
+        template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
-                                            const IOps&... iOps) {
+                                            const Stream_t& stream, const IOps&... iOps) {
             const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
             const auto writeOp = PerThreadWrite<_3D, O>::build(output);
-            executeOperations_helper(batchReadIOp, iOps..., writeOp);
+            executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
         }
     };
 
-#if defined(__NVCC__) || defined(__CUDA_ARCH__)
-    template <ND D, typename T>
-    inline constexpr void setTo(const T& value, Ptr<D, T>& outputPtr, const cudaStream_t& stream = 0) {
+    template <enum ParArch PA, enum ND D, typename T>
+    inline constexpr void setTo(const T& value, Ptr<D, T>& outputPtr, const Stream_<PA>& stream) {
         RawPtr<D, T> output = outputPtr.ptr();
-        if (outputPtr.getMemType() == MemType::Device) {
-            if constexpr (D == _1D) {
-                const ActiveThreads activeThreads(output.dims.width);
-                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, activeThreads), PerThreadWrite<D, T>::build({ output }));
-            } else if constexpr (D == _2D) {
-                const ActiveThreads activeThreads(output.dims.width, output.dims.height);
-                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, activeThreads), PerThreadWrite<D, T>::build({ output }));
-            } else if constexpr (D == _3D) {
-                const ActiveThreads activeThreads(output.dims.width, output.dims.height, output.dims.planes);
-                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, activeThreads), PerThreadWrite<D, T>::build({ output }));
+#if defined(__NVCC__) || defined(__HIP__)
+        if (outputPtr.getMemType() == MemType::Device || outputPtr.getMemType() == MemType::DeviceAndPinned) {
+            Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+            if (outputPtr.getMemType() == MemType::DeviceAndPinned) {
+                Executor<ParArch::CPU, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr.ptrPinned()));
             }
         } else {
-            for (int i = 0; i < (int)outputPtr.getNumElements(); i++) {
-                output.data[i] = value;
-            }
+            Executor<ParArch::CPU, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
         }
+#else
+        Executor<ParArch::CPU, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+#endif
     }
-#endif // defined(__NVCC__) || defined(__CUDA_ARCH__)
+
 } // namespace fk
 
 #endif // FK_EXECUTORS_CUH
