@@ -19,6 +19,7 @@
 #include <fused_kernel/fused_kernel.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/algorithms/basic_ops/static_loop.h>
+#include <fused_kernel/core/execution_model/stream.h>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 
@@ -53,7 +54,7 @@ struct VerticalFusion {
 };
 
 template <int VARIABLE_DIMENSION>
-inline int testLatencyHiding(cudaStream_t stream) {
+inline int testLatencyHiding(const fk::Stream& stream) {
 
     const fk::Ptr1D<float> input(NUM_ELEMENTS);
     const fk::Ptr1D<float> output(NUM_ELEMENTS);
@@ -80,7 +81,7 @@ inline int testLatencyHiding(cudaStream_t stream) {
 }
 
 template <int... Idx>
-inline int testLatencyHidingHelper(cudaStream_t stream, const std::integer_sequence<int, Idx...>& seq) {
+inline int testLatencyHidingHelper(const fk::Stream& stream, const std::integer_sequence<int, Idx...>& seq) {
     const bool result = ((testLatencyHiding<variableDimensionValues[Idx]>(stream) == 0) && ...);
     if (result) {
         return 0;
@@ -90,8 +91,7 @@ inline int testLatencyHidingHelper(cudaStream_t stream, const std::integer_seque
 }
 
 int launch() {
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    fk::Stream stream;
 
     const int result = testLatencyHidingHelper(stream, std::make_integer_sequence<int, variableDimensionValues.size()>{});
 

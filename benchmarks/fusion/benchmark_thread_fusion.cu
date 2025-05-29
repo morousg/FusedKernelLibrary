@@ -34,7 +34,7 @@ constexpr std::string_view FIRST_LABEL = "Normal";
 constexpr std::string_view SECOND_LABEL = "ThreadFusion";
 
 template <typename T, size_t RESOLUTION>
-bool testThreadFusionSameTypeIO(cudaStream_t& stream) {
+bool testThreadFusionSameTypeIO(fk::Stream& stream) {
     std::stringstream error_s;
     bool passed = true;
     bool exception = false;
@@ -71,7 +71,7 @@ bool testThreadFusionSameTypeIO(cudaStream_t& stream) {
         d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
         d_output_cvGS.download(h_cvGSResults, stream);
 
-        gpuErrchk(cudaStreamSynchronize(stream));
+        stream.sync();
 
         passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
     } catch (const std::exception& e) {
@@ -95,7 +95,7 @@ bool testThreadFusionSameTypeIO(cudaStream_t& stream) {
 }
 
 template <typename I, typename O, size_t RESOLUTION>
-bool testThreadFusionDifferentTypeIO(cudaStream_t stream) {
+bool testThreadFusionDifferentTypeIO(const fk::Stream& stream) {
     std::stringstream error_s;
     bool passed = true;
     bool exception = false;
@@ -156,7 +156,7 @@ bool testThreadFusionDifferentTypeIO(cudaStream_t stream) {
 }
 
 template <typename I, typename T, typename O, enum fk::ColorConversionCodes CODE, size_t RESOLUTION>
-bool testThreadFusionDifferentTypeAndChannelIO(cudaStream_t stream) {
+bool testThreadFusionDifferentTypeAndChannelIO(const fk::Stream& stream) {
     std::stringstream error_s;
     bool passed = true;
     bool exception = false;
@@ -194,7 +194,7 @@ bool testThreadFusionDifferentTypeAndChannelIO(cudaStream_t stream) {
         d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
         d_output_cvGS.download(h_cvGSResults, stream);
 
-        gpuErrchk(cudaStreamSynchronize(stream));
+        stream.sync();
 
         passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
     } catch (const std::exception& e) {
@@ -218,7 +218,7 @@ bool testThreadFusionDifferentTypeAndChannelIO(cudaStream_t stream) {
 }
 
 template <size_t... IDX>
-bool testThreadFusionSameTypeIO_launcher_impl(cudaStream_t stream, const std::integer_sequence<size_t, IDX...>&) {
+bool testThreadFusionSameTypeIO_launcher_impl(fk::Stream& stream, const std::integer_sequence<size_t, IDX...>&) {
     bool passed = true;
 
 #define LAUNCH_testThreadFusionSameTypeIO(BASE) \
@@ -244,7 +244,7 @@ bool testThreadFusionSameTypeIO_launcher_impl(cudaStream_t stream, const std::in
 }
 
 template <size_t... IDX>
-bool testThreadFusionDifferentTypeIO_launcher_impl(cudaStream_t stream, const std::index_sequence<IDX...>&) {
+bool testThreadFusionDifferentTypeIO_launcher_impl(fk::Stream& stream, const std::index_sequence<IDX...>&) {
     bool passed = true;
 
     passed &= (testThreadFusionDifferentTypeIO<uchar, float, variableDimensionValues[IDX]>(stream) && ...);
@@ -268,7 +268,7 @@ bool testThreadFusionDifferentTypeIO_launcher_impl(cudaStream_t stream, const st
 }
 
 template <size_t... IDX>
-bool testThreadFusionDifferentTypeAndChannelIO_launcher_impl(cudaStream_t stream, const std::index_sequence<IDX...>&) {
+bool testThreadFusionDifferentTypeAndChannelIO_launcher_impl(fk::Stream& stream, const std::index_sequence<IDX...>&) {
     bool passed = true;
 
     passed &= (testThreadFusionDifferentTypeAndChannelIO<uchar3, float3, float4, fk::ColorConversionCodes::COLOR_RGB2RGBA, variableDimensionValues[IDX]>(stream) && ...);
@@ -285,21 +285,20 @@ bool testThreadFusionDifferentTypeAndChannelIO_launcher_impl(cudaStream_t stream
     return passed;
 }
 
-bool testThreadFusionSameTypeIO_launcher(cudaStream_t stream) {
+bool testThreadFusionSameTypeIO_launcher(fk::Stream& stream) {
     return testThreadFusionSameTypeIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
 }
 
-bool testThreadFusionDifferentTypeIO_launcher(cudaStream_t stream) {
+bool testThreadFusionDifferentTypeIO_launcher(fk::Stream& stream) {
     return testThreadFusionDifferentTypeIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
 }
 
-bool testThreadFusionDifferentTypeAndChannelIO_launcher(cudaStream_t stream) {
+bool testThreadFusionDifferentTypeAndChannelIO_launcher(fk::Stream& stream) {
     return testThreadFusionDifferentTypeAndChannelIO_launcher_impl(stream, std::make_index_sequence<variableDimensionValues.size()>());
 }
 
 int launch() {
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    fk::Stream stream;
     bool passed = true;
     {
         PUSH_RANGE_RAII p("testThreadFusionSameTypeIO");

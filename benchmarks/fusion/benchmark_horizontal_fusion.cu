@@ -30,7 +30,7 @@ constexpr size_t INCREMENT = 5;
 constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayIndexSecuence<FIRST_VALUE, INCREMENT, NUM_EXPERIMENTS>;
 
 template <size_t BATCH>
-bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, cudaStream_t stream) {
+bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, fk::Stream& stream) {
     constexpr std::string_view FIRST_LABEL{ "Iterated Batch" };
     constexpr std::string_view SECOND_LABEL{ "Fused Batch" };
     std::stringstream error_s;
@@ -49,19 +49,16 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
         fk::Ptr2D<InputType> d_input((int)NUM_ELEMS_Y, (int)NUM_ELEMS_X);
         fk::setTo(val_init, d_input, stream);
         std::array<fk::Ptr2D<OutputType>, BATCH> d_output_cv;
-        std::array<fk::Ptr2D<OutputType>, BATCH> h_cvResults;
         std::array<fk::Ptr2D<OutputType>, BATCH> h_cvGSResults;
 
         fk::Tensor<OutputType> d_tensor_output(cropSize.width, cropSize.height, BATCH);
-        fk::Tensor<OutputType> h_tensor_output(cropSize.width, cropSize.height, BATCH, 1, fk::MemType::HostPinned);
 
         std::array<fk::Ptr2D<InputType>, BATCH> crops;
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
             crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::_2D>{static_cast<uint>(cropSize.width),
                                                                                          static_cast<uint>(cropSize.height), 
                                                                                          static_cast<uint>(d_input.dims().pitch)});
-            d_output_cv[crop_i].Alloc(cropSize, 0, fk::MemType::Device);
-            h_cvResults[crop_i].Alloc(cropSize, 0, fk::MemType::HostPinned);
+            d_output_cv[crop_i].Alloc(cropSize);
         }
 
         START_FIRST_BENCHMARK
@@ -82,18 +79,18 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
             fk::TensorWrite<OutputType>::build(d_tensor_output));
         STOP_SECOND_BENCHMARK
 
-        d_tensor_output.download(h_tensor_output, stream);
+        d_tensor_output.download(stream);
 
         // Verify results
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            d_output_cv[crop_i].download(h_cvResults[crop_i], stream);
+            d_output_cv[crop_i].download(stream);
         }
 
-        gpuErrchk(cudaStreamSynchronize(stream));
+        stream.sync();
 
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            fk::Ptr2D<OutputType> cvRes = h_cvResults[crop_i];
-            fk::Ptr2D<OutputType> cvGSRes = h_tensor_output.getPlane(crop_i);
+            fk::Ptr2D<OutputType> cvRes = d_output_cv[crop_i];
+            fk::Ptr2D<OutputType> cvGSRes = d_tensor_output.getPlane(crop_i);
             bool passedThisTime = compareAndCheck(cvRes, cvGSRes);
             if (!passedThisTime) { std::cout << "Failed on crop idx=" << crop_i << std::endl; }
             passed &= passedThisTime;
@@ -120,7 +117,7 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
 }
 
 template <size_t BATCH>
-bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, cudaStream_t stream) {
+bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, fk::Stream& stream) {
     constexpr std::string_view FIRST_LABEL{ "Iterated Batch" };
     constexpr std::string_view SECOND_LABEL{ "Fused Batch" };
     std::stringstream error_s;
@@ -139,19 +136,15 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
         fk::Ptr2D<InputType> d_input((int)NUM_ELEMS_Y, (int)NUM_ELEMS_X);
         fk::setTo(val_init, d_input, stream);
         std::array<fk::Ptr2D<OutputType>, BATCH> d_output_cv;
-        std::array<fk::Ptr2D<OutputType>, BATCH> h_cvResults;
-        std::array<fk::Ptr2D<OutputType>, BATCH> h_cvGSResults;
 
         fk::Tensor<OutputType> d_tensor_output(cropSize.width, cropSize.height, BATCH);
-        fk::Tensor<OutputType> h_tensor_output(cropSize.width, cropSize.height, BATCH, 1, fk::MemType::HostPinned);
 
         std::array<fk::Ptr2D<InputType>, BATCH> crops;
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
             crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::_2D>{static_cast<uint>(cropSize.width),
                                                                                          static_cast<uint>(cropSize.height), 
                                                                                          static_cast<uint>(d_input.dims().pitch)});
-            d_output_cv[crop_i].Alloc(cropSize, 0, fk::MemType::Device);
-            h_cvResults[crop_i].Alloc(cropSize, 0, fk::MemType::HostPinned);
+            d_output_cv[crop_i].Alloc(cropSize);
         }
 
         // Read Ops
@@ -177,18 +170,18 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
             fk::executeOperations(stream, read, saturate, mul, sub, div, write);
         STOP_SECOND_BENCHMARK
 
-        d_tensor_output.download(h_tensor_output, stream);
+        d_tensor_output.download(stream);
 
         // Verify results
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            d_output_cv[crop_i].download(h_cvResults[crop_i], stream);
+            d_output_cv[crop_i].download(stream);
         }
 
-        gpuErrchk(cudaStreamSynchronize(stream));
+        stream.sync();
 
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            fk::Ptr2D<OutputType> cvRes = h_cvResults[crop_i];
-            fk::Ptr2D<OutputType> cvGSRes = h_tensor_output.getPlane(crop_i);
+            fk::Ptr2D<OutputType> cvRes = d_output_cv[crop_i];
+            fk::Ptr2D<OutputType> cvGSRes = d_tensor_output.getPlane(crop_i);
             bool passedThisTime = compareAndCheck(cvRes, cvGSRes);
             if (!passedThisTime) { std::cout << "Failed on crop idx=" << crop_i << std::endl; }
             passed &= passedThisTime;
@@ -215,7 +208,7 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
 }
 
 template <size_t... Is>
-bool launch_benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, cudaStream_t stream) {
+bool launch_benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, fk::Stream& stream) {
     bool passed = true;
 
     passed &= (benchmark_Horizontal_Fusion<variableDimensionValues[Is]>(NUM_ELEMS_X, NUM_ELEMS_Y, stream) && ...);
@@ -224,7 +217,7 @@ bool launch_benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t&
 }
 
 template <size_t... Is>
-bool launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, cudaStream_t stream) {
+bool launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, const size_t& NUM_ELEMS_Y, const std::index_sequence<Is...>& seq, fk::Stream& stream) {
     bool passed = true;
 
     passed &= (benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD<variableDimensionValues[Is]>(NUM_ELEMS_X, NUM_ELEMS_Y, stream) && ...);
@@ -235,8 +228,7 @@ bool launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_
 int launch() {
     constexpr size_t NUM_ELEMS_X = 3840;
     constexpr size_t NUM_ELEMS_Y = 2160;
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    fk::Stream stream;
 
     warmup = true;
     launch_benchmark_Horizontal_Fusion(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
@@ -245,8 +237,6 @@ int launch() {
 
     launch_benchmark_Horizontal_Fusion(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
     launch_benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(NUM_ELEMS_X, NUM_ELEMS_Y, std::make_index_sequence<NUM_EXPERIMENTS>{}, stream);
-
-    gpuErrchk(cudaStreamDestroy(stream));
 
     return 0;
 }

@@ -141,6 +141,11 @@ namespace fk {
             return VectorReduce<T, Equal<bool, bool>>::exec(input);
         }
     };
+
+    template <typename T>
+    constexpr inline bool vecAnd(const T& value) {
+        return VectorAnd<T>::exec(value);
+    }
 } // namespace fk
 
 #endif

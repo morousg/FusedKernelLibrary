@@ -26,6 +26,7 @@
 #include <fused_kernel/core/utils/template_operations.h>
 #include <fused_kernel/algorithms/image_processing/saturate.h>
 #include <fused_kernel/core/execution_model/stream.h>
+#include <fused_kernel/algorithms/basic_ops/cuda_vector.h>
 
 template <typename T>
 bool testPtr_2D() {
@@ -36,12 +37,13 @@ bool testPtr_2D() {
 
     fk::Point startPoint = {100, 200};
 
+    fk::Stream stream;
+
     fk::Ptr2D<T> input(width, height);
+    fk::setTo(fk::make_set<T>(2), input, stream);
     fk::Ptr2D<T> cropedInput = input.crop(startPoint, fk::PtrDims<fk::_2D>(width_crop, height_crop));
     fk::Ptr2D<T> output(width_crop, height_crop);
     fk::Ptr2D<T> outputBig(width, height);
-
-    fk::Stream stream;
 
     fk::Read<fk::PerThreadRead<fk::_2D, T>> readCrop{{cropedInput}};
     fk::Read<fk::PerThreadRead<fk::_2D, T>> readFull{{input}};
@@ -55,6 +57,16 @@ bool testPtr_2D() {
     }
 
     stream.sync();
+
+    for (int y = 0; y < output.dims().height; ++y) {
+        for (int x = 0; x < output.dims().width; ++x) {
+            const fk::VectorType_t<bool, fk::cn<T>> result = output.at({ x, y }) != fk::make_set<T>(2);
+            if (fk::vecAnd(result)) {
+                std::cout << "Error in output at (" << x << ", " << y << "): " << output.at({ x, y }) << std::endl;
+                return false;
+            }
+        }
+    }
 
     // TODO: use some values and check results correctness
 

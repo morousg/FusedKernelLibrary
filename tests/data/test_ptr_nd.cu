@@ -103,6 +103,7 @@ int launch() {
 
     PtrToTest test0(WIDTH, HEIGHT, 0, MemType::HostPinned);
     setTo(make_<uchar3>(1, 2, 3), test0, stream);
+    stream.sync();
     bool h_correct{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {

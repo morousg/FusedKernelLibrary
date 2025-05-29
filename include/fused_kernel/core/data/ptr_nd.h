@@ -20,6 +20,7 @@
 #include <fused_kernel/core/data/size.h>
 #include <fused_kernel/core/execution_model/stream.h>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
+#include <fused_kernel/core/data/nd.h>
 
 namespace fk {
 	enum MemType { Device, Host, HostPinned, DeviceAndPinned };
@@ -29,7 +30,7 @@ namespace fk {
     constexpr MemType defaultMemType = Host;
 #endif
 
-    template <ND D>
+    template <enum ND D>
     struct PtrDims;
 
     template <>
@@ -131,7 +132,7 @@ namespace fk {
         static constexpr uint planes{ P };
     };
 
-    template <ND D, typename T>
+    template <enum ND D, typename T>
     struct RawPtr;
 
     template <typename T>
@@ -193,7 +194,7 @@ namespace fk {
         static constexpr ND nd{ _3D };
     };
 
-    template <ND D>
+    template <enum ND D>
     struct PtrAccessor;
 
     template <>
@@ -248,7 +249,7 @@ namespace fk {
         }
     };
 
-    template<ND D>
+    template<enum ND D>
     struct StaticPtrAccessor;
 
     template<>
@@ -303,7 +304,7 @@ namespace fk {
         }
     };
 
-    template <ND D, typename T>
+    template <enum ND D, typename T>
     struct PtrImpl;
 
     template <typename T>
@@ -385,7 +386,7 @@ namespace fk {
         }
     };
 
-    template <ND D, typename T>
+    template <enum ND D, typename T>
     class Ptr {
         using Type = T;
         using At = PtrAccessor<D>;
@@ -401,8 +402,10 @@ namespace fk {
         MemType type;
         int deviceID;
 
+        inline constexpr Ptr(RefPtr* ref_, const RawPtr<D, T>& ptr_a_, const RawPtr<D, T>& ptr_pinned_, const MemType& type_, const int& devID) :
+            ref(ref_), ptr_a(ptr_a_), ptr_pinned(ptr_pinned_), type(type_), deviceID(devID) {}
         inline constexpr Ptr(const RawPtr<D, T>& ptr_a_, RefPtr* ref_, const MemType& type_, const int& devID) :
-            ptr_a(ptr_a_), ref(ref_), type(type_), deviceID(devID) {}
+            ref(ref_), ptr_a(ptr_a_), ptr_pinned(ptr_a_), type(type_), deviceID(devID) {}
 
         inline constexpr void allocDevice() {
             #if defined(__NVCC__) || defined(__HIP__)
@@ -540,14 +543,28 @@ namespace fk {
         }
 
         inline constexpr Ptr(T* data_, const PtrDims<D>& dims, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
+            if (type_ == MemType::DeviceAndPinned) {
+                throw std::runtime_error("DeviceAndPinned type requires an additional argument for the pinned pointer.");
+            }
             ptr_a.data = data_;
             ptr_a.dims = dims;
+            ptr_pinned = ptr_a;
+            type = type_;
+            deviceID = deviceID_;
+        }
+
+        inline constexpr Ptr(T* data_, T* pinned_data, const PtrDims<D>& dims, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
+            ptr_a.data = data_;
+            ptr_a.dims = dims;
+            ptr_pinned.data = pinned_data;
+            ptr_pinned.dims = dims;
             type = type_;
             deviceID = deviceID_;
         }
 
         inline constexpr void allocPtr(const PtrDims<D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             ptr_a.dims = dims_;
+            ptr_pinned.dims = dims_;
             type = type_;
             deviceID = deviceID_;
             ref = (RefPtr*)malloc(sizeof(RefPtr));
@@ -580,6 +597,7 @@ namespace fk {
                 {
                     allocDeviceAndPinned();
                 }
+                break;
             default:
                 break;
             }
@@ -600,7 +618,13 @@ namespace fk {
             T* ptr = At::point(p, ptr_a);
             ref->cnt++;
             const RawPtr<D, T> newRawPtr = { ptr, newDims };
-            return { newRawPtr, ref, type, deviceID };
+            if (type == MemType::DeviceAndPinned) {
+                T* pinnedPtr = At::point(p, ptr_pinned);
+                RawPtr<D, T> newPinnedRawPtr = { pinnedPtr, newDims };
+                return { ref, newRawPtr, newPinnedRawPtr, type, deviceID };
+            } else {
+                return { ref, newRawPtr, newRawPtr, type, deviceID };
+            }
         }
 
         inline constexpr PtrDims<D> dims() const {
@@ -685,10 +709,8 @@ namespace fk {
 #endif
 
         inline T at(const Point& p) const {
-            if (type == MemType::DeviceAndPinned) {
+            if (type != MemType::Device) {
                 return *At::cr_point(p, ptr_pinned);
-            } else if (type == MemType::Host || type == MemType::HostPinned) {
-                return *At::cr_point(p, ptr_a);
             } else {
                 throw std::runtime_error("Cannot access data in Device memory from host code");
                 return make_set<T>(0);
@@ -696,24 +718,23 @@ namespace fk {
         }
 
         inline T& at(const Point& p) {
-            if (type == MemType::DeviceAndPinned) {
+            if (type != MemType::Device) {
                 return *At::point(p, ptr_pinned);
-            } else if (type == MemType::Host || type == MemType::HostPinned) {
-                return *At::point(p, ptr_a);
             } else {
                 throw std::runtime_error("Cannot access data in Device memory from host code");
-                return make_set<T>(0);
+                //return make_set<T>(0);
             }
         }
 
         template <enum ND DIM = D>
         inline std::enable_if_t<(DIM > _2D), Ptr<_2D, T>> getPlane(const uint& plane) {
-            if (plane >= this->ptr_a.dims.planes) {
+            if (plane >= this->ptr_pinned.dims.planes) {
                 throw std::runtime_error("Plane index out of bounds");
             }
-            T* const data = PtrAccessor<_3D>::point(Point(0, 0, plane), this->ptr_a);
 
-            return Ptr<_2D, T>(data, PtrDims<_2D>{this->ptr_a.dims.width, this->ptr_a.dims.height, this->ptr_a.dims.pitch}, this->type, this->deviceID);
+            T* const data = PtrAccessor<_3D>::point(Point(0, 0, plane), this->ptr_a);
+            T* const pinned_data = PtrAccessor<_3D>::point(Point(0, 0, plane), this->ptr_pinned);
+            return Ptr<_2D, T>(data, pinned_data, PtrDims<_2D>{this->ptr_a.dims.width, this->ptr_a.dims.height, this->ptr_a.dims.pitch}, this->type, this->deviceID);
         }
     };
 
@@ -747,7 +768,7 @@ namespace fk {
             Ptr<_2D, T>(data_, PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
         inline Ptr2D<T> crop2D(const Point& p, const PtrDims<_2D>& newDims) { return Ptr<_2D, T>::crop(p, newDims); }
-        inline void Alloc(const fk::Size& size, const uint& pitch_ = 0, const MemType& type_ = Device, const int& deviceID_ = 0) {
+        inline void Alloc(const fk::Size& size, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
             this->allocPtr(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_);
         }
     };
