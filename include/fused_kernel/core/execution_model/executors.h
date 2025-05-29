@@ -45,71 +45,188 @@ namespace fk {
     };
 #endif
 
+    template <typename Child>
+    struct BaseExecutor {
+        FK_STATIC_STRUCT(BaseExecutor)
+        template <enum ParArch PA, typename... IOps>
+        FK_HOST_FUSE void executeOperations(Stream_<PA>& stream, const IOps&... iOps) {
+            Child::executeOperations_helper(stream, iOps...);
+        }
+
+        template <enum ParArch PA, typename I, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_<PA>& stream,
+                                            const IOps&... iOps) {
+            Child::executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
+        }
+
+        template <enum ParArch PA, typename I, typename O, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
+                                            Stream_<PA>& stream, const IOps&... iOps) {
+            Child::executeOperations_helper(stream,
+            PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
+        }
+
+        template <enum ParArch PA, typename I, size_t BATCH, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
+                                            Stream_<PA>& stream, const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
+            Child::executeOperations_helper(stream, batchReadIOp, iOps...);
+        }
+
+        template <enum ParArch PA, typename I, size_t BATCH, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
+                                            Stream_<PA>& stream, const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
+            Child::executeOperations_helper(stream, batchReadIOp, iOps...);
+        }
+
+        template <enum ParArch PA, typename I, typename O, size_t Batch, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
+                                            const Tensor<O>& output, Stream_<PA>& stream, const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
+            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
+            Child::executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
+        }
+
+        template <enum ParArch PA, typename I, typename O, size_t Batch, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
+                                            Stream_<PA>& stream, const IOps&... iOps) {
+            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
+            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
+            Child::executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
+        }
+    };
+
+#define DECLARE_EXECUTOR_PARENT_IMPL \
+friend class BaseExecutor<Child>; \
+template <typename Stream_t, typename... IOps> \
+FK_HOST_FUSE void executeOperations(Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(stream, iOps...); \
+} \
+template <typename Stream_t, typename I, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(input, stream, iOps...); \
+} \
+template <typename Stream_t, typename I, typename O, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(input, output, stream, iOps...); \
+} \
+template <typename Stream_t, typename I, size_t BATCH, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue, \
+                                    Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(input, activeBatch, defaultValue, stream, iOps...); \
+} \
+template <typename Stream_t, typename I, size_t BATCH, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(input, stream, iOps...); \
+} \
+template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue, \
+                                    const Tensor<O>& output, Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(input, activeBatch, defaultValue, output, stream, iOps...); \
+} \
+template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output, \
+                                    Stream_t& stream, const IOps&... iOps) { \
+    Parent::executeOperations(input, output, stream, iOps...); \
+}
+
     template <enum ParArch PA, enum DPPType DPP, bool THREAD_COARSENING = false>
     struct Executor {
-        static_assert(PA == ParArch::GPU_NVIDIA, "Only CUDA and CPU are supported for now");
+        FK_STATIC_STRUCT(Executor)
+        static_assert(PA == ParArch::GPU_NVIDIA || PA == ParArch::CPU, "Only CUDA and CPU are supported for now");
         static_assert(DPP == DPPType::Transform, "Only Transform is supported for now");
     };
 
-    struct ComputeBestSolutionBase {
-        static constexpr ParArch PA = ParArch::GPU_NVIDIA;
-        FK_HOST_FUSE uint computeDiscardedThreads(const uint width, const uint height, const uint blockDimx, const uint blockDimy) {
-            const uint modX = width % blockDimx;
-            const uint modY = height % blockDimy;
-            const uint th_disabled_in_X = modX == 0 ? 0 : blockDimx - modX;
-            const uint th_disabled_in_Y = modY == 0 ? 0 : blockDimy - modY;
-            return (th_disabled_in_X * (modY == 0 ? height : (height + blockDimy)) + th_disabled_in_Y * width);
-        }
-    };
-
-    template <uint bxS_t, uint byS_t>
-    struct computeBestSolution {};
-
-    template <uint bxS_t>
-    struct computeBestSolution<bxS_t, 0> final : public ComputeBestSolutionBase {
-        FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
-            const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[0][bxS_t]);
-            if (minDiscardedThreads > currentDiscardedThreads) {
-                minDiscardedThreads = currentDiscardedThreads;
-                bxS = bxS_t;
-                byS = 0;
-                if (minDiscardedThreads == 0) return;
-            }
-            computeBestSolution<bxS_t, 1>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
-        }
-    };
-
-    template <uint bxS_t>
-    struct computeBestSolution<bxS_t, 1> final : public ComputeBestSolutionBase{
-        FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
-            const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[1][bxS_t]);
-            if (minDiscardedThreads > currentDiscardedThreads) {
-                minDiscardedThreads = currentDiscardedThreads;
-                bxS = bxS_t;
-                byS = 1;
-                if constexpr (bxS_t == 3) return;
-                if (minDiscardedThreads == 0) return;
-            }
-            computeBestSolution<bxS_t + 1, 0>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
-        }
-    };
-
-    template <>
-    struct computeBestSolution<3, 1> final : public ComputeBestSolutionBase {
-        FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
-            const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[3], blockDimY[1][3]);
-            if (minDiscardedThreads > currentDiscardedThreads) {
-                minDiscardedThreads = currentDiscardedThreads;
-                bxS = 3;
-                byS = 1;
-            }
-        }
-    };
-
-    template <enum ParArch PA, bool THREAD_COARSENING>
-    struct Executor<PA, DPPType::Transform, THREAD_COARSENING> {
+    template <enum DPPType DPP, bool THREAD_COARSENING>
+    struct Executor<ParArch::CPU, DPP, THREAD_COARSENING> {
+        FK_STATIC_STRUCT(Executor)
     private:
+        using Child = Executor<ParArch::CPU, DPP, THREAD_COARSENING>;
+        using Parent = BaseExecutor<Child>;
+        template <typename... IOps>
+        FK_HOST_FUSE void executeOperations_helper(Stream_<ParArch::CPU>& stream, const IOps&... iOps) {
+            constexpr bool THREAD_FUSION = THREAD_COARSENING;
+            constexpr ParArch PA = ParArch::CPU;
+            const auto tDetails = TransformDPP<PA, void>::template build_details<THREAD_FUSION>(iOps...);
+            using TDPPDetails = std::decay_t<decltype(tDetails)>;
+            if constexpr (TDPPDetails::TFI::ENABLED) {
+                if (!tDetails.threadDivisible) {
+                    TransformDPP<PA, TDPPDetails, false>::exec(tDetails, iOps...);
+                } else {
+                    TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
+                }
+            } else {
+                TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
+            }
+        }
+    public:
+        FK_HOST_FUSE ParArch parArch() {
+            return ParArch::CPU;
+        }
+        DECLARE_EXECUTOR_PARENT_IMPL
+    };
 #if defined(__NVCC__) || defined(__HIP__)
+    template <enum DPPType DPP, bool THREAD_COARSENING>
+    struct Executor<ParArch::GPU_NVIDIA, DPP, THREAD_COARSENING> {
+        FK_STATIC_STRUCT(Executor)
+    private:
+        using Child = Executor<ParArch::GPU_NVIDIA, DPP, THREAD_COARSENING>;
+        using Parent = BaseExecutor<Child>;
+        struct ComputeBestSolutionBase {
+            FK_HOST_FUSE uint computeDiscardedThreads(const uint width, const uint height, const uint blockDimx, const uint blockDimy) {
+                const uint modX = width % blockDimx;
+                const uint modY = height % blockDimy;
+                const uint th_disabled_in_X = modX == 0 ? 0 : blockDimx - modX;
+                const uint th_disabled_in_Y = modY == 0 ? 0 : blockDimy - modY;
+                return (th_disabled_in_X * (modY == 0 ? height : (height + blockDimy)) + th_disabled_in_Y * width);
+            }
+        };
+
+        template <uint bxS_t, uint byS_t>
+        struct computeBestSolution {};
+
+        template <uint bxS_t>
+        struct computeBestSolution<bxS_t, 0> final : public ComputeBestSolutionBase {
+            FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
+                const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[0][bxS_t]);
+                if (minDiscardedThreads > currentDiscardedThreads) {
+                    minDiscardedThreads = currentDiscardedThreads;
+                    bxS = bxS_t;
+                    byS = 0;
+                    if (minDiscardedThreads == 0) return;
+                }
+                computeBestSolution<bxS_t, 1>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+            }
+        };
+
+        template <uint bxS_t>
+        struct computeBestSolution<bxS_t, 1> final : public ComputeBestSolutionBase {
+            FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
+                const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[bxS_t], blockDimY[1][bxS_t]);
+                if (minDiscardedThreads > currentDiscardedThreads) {
+                    minDiscardedThreads = currentDiscardedThreads;
+                    bxS = bxS_t;
+                    byS = 1;
+                    if constexpr (bxS_t == 3) return;
+                    if (minDiscardedThreads == 0) return;
+                }
+                computeBestSolution<bxS_t + 1, 0>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+            }
+        };
+
+        template <>
+        struct computeBestSolution<3, 1> final : public ComputeBestSolutionBase {
+            FK_HOST_FUSE void exec(const uint width, const uint height, uint& bxS, uint& byS, uint& minDiscardedThreads, const uint(&blockDimX)[4], const uint(&blockDimY)[2][4]) {
+                const uint currentDiscardedThreads = computeDiscardedThreads(width, height, blockDimX[3], blockDimY[1][3]);
+                if (minDiscardedThreads > currentDiscardedThreads) {
+                    minDiscardedThreads = currentDiscardedThreads;
+                    bxS = 3;
+                    byS = 1;
+                }
+            }
+        };
+
         FK_HOST_FUSE CtxDim3 getDefaultBlockSize(const uint& width, const uint& height) {
             constexpr uint blockDimX[4] = { 32, 64, 128, 256 };  // Possible block sizes in the x axis
             constexpr uint blockDimY[2][4] = { { 8,  4,   2,   1},
@@ -123,9 +240,8 @@ namespace fk {
 
             return CtxDim3(blockDimX[bxS], blockDimY[byS][bxS]);
         }
-
         template <typename... IOps>
-        FK_HOST_FUSE void executeOperations_helper(const Stream_<ParArch::GPU_NVIDIA>& stream_, const IOps&... iOps) {
+        FK_HOST_FUSE void executeOperations_helper(Stream_<ParArch::GPU_NVIDIA>& stream_, const IOps&... iOps) {
             const cudaStream_t stream = stream_.getCUDAStream();
             constexpr bool THREAD_FUSION = THREAD_COARSENING;
             constexpr ParArch PA = ParArch::GPU_NVIDIA;
@@ -140,7 +256,7 @@ namespace fk {
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
                 if (!tDetails.threadDivisible) {
-                    launchTransformDPP_Kernel<PA,false> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    launchTransformDPP_Kernel<PA, false> << <grid, block, 0, stream >> > (tDetails, iOps...);
                     gpuErrchk(cudaGetLastError());
                 } else {
                     launchTransformDPP_Kernel<PA, true> << <grid, block, 0, stream >> > (tDetails, iOps...);
@@ -157,91 +273,38 @@ namespace fk {
                 const dim3 grid{ static_cast<uint>(ceil(activeThreads.x / static_cast<float>(block.x))),
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
-                launchTransformDPP_Kernel<PA, true><<<grid, block, 0, stream>>>(tDetails, iOps...);
+                launchTransformDPP_Kernel<PA, true> << <grid, block, 0, stream >> > (tDetails, iOps...);
                 gpuErrchk(cudaGetLastError());
             }
         }
-#endif
-        template <typename... IOps>
-        FK_HOST_FUSE void executeOperations_helper(const Stream_<ParArch::CPU>& stream, const IOps&... iOps) {
-            constexpr bool THREAD_FUSION = THREAD_COARSENING;
-            constexpr ParArch PA = ParArch::CPU;
-            const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
-            using TDPPDetails = std::decay_t<decltype(tDetails)>;
-            if constexpr (TDPPDetails::TFI::ENABLED) {
-                if (!tDetails.threadDivisible) {
-                    TransformDPP<PA, TDPPDetails, false>::exec(tDetails, iOps...);
-                } else {
-                    TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
-                }
-            } else {
-                TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
-            }
-        }
     public:
-        template <typename Stream_t, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Stream_t& stream, const IOps&... iOps) {
-            executeOperations_helper(stream, iOps...);
+        FK_HOST_FUSE ParArch parArch() {
+            return ParArch::GPU_NVIDIA;
         }
-
-        template <typename Stream_t, typename I, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Stream_t& stream,
-                                            const IOps&... iOps) {
-            executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
-        }
-
-        template <typename Stream_t, typename I, typename O, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
-                                            const Stream_t& stream, const IOps&... iOps) {
-            executeOperations_helper(stream,
-                PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
-        }
-
-        template <typename Stream_t, typename I, size_t BATCH, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
-                                            const Stream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
-            executeOperations_helper(stream, batchReadIOp, iOps...);
-        }
-
-        template <typename Stream_t, typename I, size_t BATCH, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
-                                            const Stream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
-            executeOperations_helper(stream, batchReadIOp, iOps...);
-        }
-
-        template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
-                                            const Tensor<O>& output, const Stream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
-            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
-            executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
-        }
-
-        template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
-                                            const Stream_t& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
-            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
-            executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
-        }
+        DECLARE_EXECUTOR_PARENT_IMPL
     };
+#endif
 
+#undef DECLARE_EXECUTOR_PARENT_IMPL
     template <enum ParArch PA, enum ND D, typename T>
-    inline constexpr void setTo(const T& value, Ptr<D, T>& outputPtr, const Stream_<PA>& stream) {
+    inline void setTo(const T& value, Ptr<D, T>& outputPtr, Stream_<PA>& stream) {
         RawPtr<D, T> output = outputPtr.ptr();
 #if defined(__NVCC__) || defined(__HIP__)
-        if (outputPtr.getMemType() == MemType::Device || outputPtr.getMemType() == MemType::DeviceAndPinned) {
-            Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
-            if (outputPtr.getMemType() == MemType::DeviceAndPinned) {
-                Executor<ParArch::CPU, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr.ptrPinned()));
+        if constexpr (PA == ParArch::GPU_NVIDIA) {
+            if (outputPtr.getMemType() == MemType::Device || outputPtr.getMemType() == MemType::DeviceAndPinned) {
+                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+                if (outputPtr.getMemType() == MemType::DeviceAndPinned) {
+                    Stream_<ParArch::CPU> cpuStream;
+                    Executor<ParArch::CPU, DPPType::Transform>::executeOperations(cpuStream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr.ptrPinned()));
+                }
+            } else {
+                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
             }
         } else {
-            Executor<ParArch::CPU, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+            Executor<PA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
         }
 #else
-        Executor<ParArch::CPU, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+        Executor<PA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr));
 #endif
     }
 

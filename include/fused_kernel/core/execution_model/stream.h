@@ -25,24 +25,18 @@
 
 namespace fk {
 
-    template <enum ParArch PA>
     class BaseStream {
     public:
         virtual ~BaseStream() = default;
         virtual void sync() = 0;
-        constexpr inline enum ParArch getParArch() const {
-            return PA;
-        };
-        static constexpr inline enum ParArch parArch() {
-            return PA;
-        }
     };
 
-#if defined(__NVCC__) || defined(__HIP__)
-    template <enum ParArch PA = ParArch::GPU_NVIDIA>
+    template <enum ParArch PA>
     class Stream_;
+
+#if defined(__NVCC__) || defined(__HIP__)
     template <>
-    class Stream_<ParArch::GPU_NVIDIA> final : public BaseStream<ParArch::GPU_NVIDIA> {
+    class Stream_<ParArch::GPU_NVIDIA> final : public BaseStream {
         cudaStream_t m_stream;
         bool m_isMine{ false };
     public:
@@ -67,21 +61,30 @@ namespace fk {
         inline void sync() final {
             gpuErrchk(cudaStreamSynchronize(m_stream));
         }
+        constexpr inline enum ParArch getParArch() const {
+            return ParArch::GPU_NVIDIA;
+        };
+        static constexpr inline enum ParArch parArch() {
+            return ParArch::GPU_NVIDIA;
+        }
     };
-#else
-    template <enum ParArch PA = ParArch::CPU>
-    class Stream_;
 #endif
 
     template <>
-    class Stream_<ParArch::CPU> final : public BaseStream<ParArch::CPU> {
+    class Stream_<ParArch::CPU> final : public BaseStream {
     public:
         Stream_<ParArch::CPU>() {}
         ~Stream_<ParArch::CPU>() {}
         inline void sync() final {}
+        constexpr inline enum ParArch getParArch() const {
+            return ParArch::CPU;
+        };
+        static constexpr inline enum ParArch parArch() {
+            return ParArch::CPU;
+        }
     };
 
-    using Stream = Stream_<>;
+    using Stream = Stream_<defaultParArch>;
 } // namespace fk
 
 #endif

@@ -19,40 +19,26 @@
 
 namespace fk {
 
-#if defined(__NVCC__) || defined(__HIP__)
     template <bool THREAD_FUSSION, typename... Args>
-    inline void executeOperations(const Args&... args) {
-        using Executor_t = Executor<ParArch::GPU_NVIDIA, DPPType::Transform, THREAD_FUSSION>;
+    inline void executeOperations(Args&... args) {
+        using Executor_t = Executor<defaultParArch, DPPType::Transform, THREAD_FUSSION>;
         Executor_t::executeOperations(args...);
     }
 
     template <typename... Args>
-    inline void executeOperations(const Args&... args) {
-        using Executor_t = Executor<ParArch::GPU_NVIDIA, DPPType::Transform>;
+    inline void executeOperations(Args&... args) {
+        using Executor_t = Executor<defaultParArch, DPPType::Transform>;
         Executor_t::executeOperations(args...);
     }
-#else
-    template <bool THREAD_FUSSION, typename... Args>
-    inline void executeOperations(const Args&... args) {
-        using Executor_t = Executor<ParArch::CPU, DPPType::Transform, THREAD_FUSSION>;
-        Executor_t::executeOperations(args...);
-    }
-
-    template <typename... Args>
-    inline void executeOperations(const Args&... args) {
-        using Executor_t = Executor<ParArch::CPU, DPPType::Transform>;
-        Executor_t::executeOperations(args...);
-    }
-#endif
 
     template <enum ParArch PA, enum DPPType DPPT, typename... Args>
-    inline void executeOperations(const Args&... args) {
+    inline void executeOperations(Args&... args) {
         using Executor_t = Executor<PA, DPPT>;
         Executor_t::executeOperations(args...);
     }
 
     template <enum ParArch PA, enum DPPType DPPT, bool THREAD_FUSSION, typename... Args>
-    inline void executeOperations(const Args&... args) {
+    inline void executeOperations(Args&... args) {
         using Executor_t = Executor<PA, DPPT, THREAD_FUSSION>;
         Executor_t::executeOperations(args...);
     }

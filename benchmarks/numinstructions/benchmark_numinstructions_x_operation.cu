@@ -19,6 +19,7 @@
 #include <fused_kernel/fused_kernel.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/algorithms/basic_ops/static_loop.h>
+#include <fused_kernel/core/execution_model/executors.h>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of instructions per Operation" };
 
@@ -49,10 +50,10 @@ __global__ void init_values(const T val, fk::RawPtr<fk::_1D, T> pointer_to_init)
 }
 
 template <int Idx>
-inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float>& inputFirst,
-                                                   const fk::Ptr1D<float>& inputSecond,
-                                                   const fk::Ptr1D<float>& outputFirst, 
-                                                   const fk::Ptr1D<float>& outputSecond) {
+inline bool testNumInstPerOp(fk::Stream& stream, fk::Ptr1D<float>& inputFirst,
+                                                 fk::Ptr1D<float>& inputSecond,
+                                                 fk::Ptr1D<float>& outputFirst,
+                                                 fk::Ptr1D<float>& outputSecond) {
     // Hack to make the benchmark macros work
     constexpr auto BATCH = variableDimensionValues[Idx];
     // End of hack
@@ -61,17 +62,15 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float>& input
 
     constexpr bool exactDivision = (TOTAL_INSTRUCTIONS % variableDimensionValues[Idx]) == 0;
 
-    const dim3 block(256);
-    const dim3 grid(ceil(NUM_ELEMENTS / (float)block.x));
-    init_values<<<grid, block, 0, stream>>>(init_val_input, inputFirst.ptr());
-    init_values<<<grid, block, 0, stream>>>(init_val_input, inputSecond.ptr());
-    init_values<<<grid, block, 0, stream>>>(init_val_output, outputFirst.ptr());
-    init_values<<<grid, block, 0, stream>>>(init_val_output, outputSecond.ptr());
+    fk::setTo(init_val_input, inputFirst, stream);
+    fk::setTo(init_val_input, inputSecond, stream);
+    fk::setTo(init_val_output, outputFirst, stream);
+    fk::setTo(init_val_output, outputSecond, stream);
 
     const auto readDF = fk::PerThreadRead<fk::_1D, float>::build(inputFirst);
     const auto readDF2 = fk::PerThreadRead<fk::_1D, float>::build(inputSecond);
-    const auto writeDF = fk::PerThreadWrite<fk::_1D, float>::build({ outputFirst.ptr() });
-    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float>::build({ outputSecond.ptr() });
+    const auto writeDF = fk::PerThreadWrite<fk::_1D, float>::build(outputFirst);
+    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float>::build(outputSecond);
 
     if constexpr (exactDivision) {
         // Wramming up the GPU
@@ -111,22 +110,21 @@ inline bool testNumInstPerOp(cudaStream_t& stream, const fk::Ptr1D<float>& input
 
 template <int... Idx>
 bool testNumInstPerOp_helper(const std::integer_sequence<int, Idx...>&,
-                             cudaStream_t& stream,
-                             const fk::Ptr1D<float>& inputFirst,
-                             const fk::Ptr1D<float>& inputSecond,
-                             const fk::Ptr1D<float>& outputFirst,
-                             const fk::Ptr1D<float>& outputSecond) {
+                             fk::Stream& stream,
+                             fk::Ptr1D<float>& inputFirst,
+                             fk::Ptr1D<float>& inputSecond,
+                             fk::Ptr1D<float>& outputFirst,
+                             fk::Ptr1D<float>& outputSecond) {
     return (testNumInstPerOp<Idx>(stream, inputFirst, inputSecond, outputFirst, outputSecond) && ...);
 }
 
 int launch() {
-    cudaStream_t stream;
-    gpuErrchk(cudaStreamCreate(&stream));
+    fk::Stream stream;
 
-    const fk::Ptr1D<float> inputFirst(NUM_ELEMENTS);
-    const fk::Ptr1D<float> outputFirst(NUM_ELEMENTS);
-    const fk::Ptr1D<float> inputSecond(NUM_ELEMENTS);
-    const fk::Ptr1D<float> outputSecond(NUM_ELEMENTS);
+    fk::Ptr1D<float> inputFirst(NUM_ELEMENTS);
+    fk::Ptr1D<float> outputFirst(NUM_ELEMENTS);
+    fk::Ptr1D<float> inputSecond(NUM_ELEMENTS);
+    fk::Ptr1D<float> outputSecond(NUM_ELEMENTS);
     
     const bool result =
         testNumInstPerOp_helper(std::make_integer_sequence<int, NUM_EXPERIMENTS>{},
@@ -136,8 +134,7 @@ int launch() {
             outputFirst,
             outputSecond);
 
-
-    gpuErrchk(cudaStreamSynchronize(stream));
+    stream.sync();
 
     return result ? 0 : -1;
 }

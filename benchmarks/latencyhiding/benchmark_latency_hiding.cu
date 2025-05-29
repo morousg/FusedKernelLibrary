@@ -41,7 +41,7 @@ __global__ void init_values(const T val, fk::RawPtr<fk::_1D, T> pointer_to_init)
 
 template <typename InputType, typename OutputType, size_t NumOps, typename IOp>
 struct VerticalFusion {
-    static inline void execute(const fk::Ptr1D<InputType>& input, const cudaStream_t& stream,
+    static inline void execute(const fk::Ptr1D<InputType>& input, fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream,
                                const fk::Ptr1D<OutputType>& output, const IOp& dFunc) {
         const fk::ActiveThreads activeThreads{ output.ptr().dims.width };
         fk::Read<fk::PerThreadRead<fk::_1D, InputType>> readDF{ {input.ptr()} };
@@ -54,16 +54,16 @@ struct VerticalFusion {
 };
 
 template <int VARIABLE_DIMENSION>
-inline int testLatencyHiding(const fk::Stream& stream) {
+inline int testLatencyHiding(fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream) {
 
-    const fk::Ptr1D<float> input(NUM_ELEMENTS);
-    const fk::Ptr1D<float> output(NUM_ELEMENTS);
+    const fk::Ptr1D<float> input(NUM_ELEMENTS, 0, fk::MemType::Device);
+    const fk::Ptr1D<float> output(NUM_ELEMENTS, 0, fk::MemType::Device);
 
     constexpr float init_val{ 1 };
 
     dim3 block(256);
     dim3 grid(ceil(NUM_ELEMENTS / (float)block.x));
-    init_values<<<grid, block, 0, stream>>>(init_val, input.ptr());
+    init_values<<<grid, block, 0, stream.getCUDAStream()>>>(init_val, input.ptr());
 
     using IOp = fk::Binary<fk::Mul<float>>;
     IOp df{ fk::make_set<float>(2) };
@@ -81,7 +81,7 @@ inline int testLatencyHiding(const fk::Stream& stream) {
 }
 
 template <int... Idx>
-inline int testLatencyHidingHelper(const fk::Stream& stream, const std::integer_sequence<int, Idx...>& seq) {
+inline int testLatencyHidingHelper(fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream, const std::integer_sequence<int, Idx...>& seq) {
     const bool result = ((testLatencyHiding<variableDimensionValues[Idx]>(stream) == 0) && ...);
     if (result) {
         return 0;
@@ -91,7 +91,7 @@ inline int testLatencyHidingHelper(const fk::Stream& stream, const std::integer_
 }
 
 int launch() {
-    fk::Stream stream;
+    fk::Stream_<fk::ParArch::GPU_NVIDIA> stream;
 
     const int result = testLatencyHidingHelper(stream, std::make_integer_sequence<int, variableDimensionValues.size()>{});
 

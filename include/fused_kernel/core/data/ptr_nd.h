@@ -691,21 +691,21 @@ namespace fk {
             }
         }
 
-        inline void upload(const Stream& stream) {
+        inline void upload(Stream& stream) {
             if (type == MemType::DeviceAndPinned) {
                 constexpr cudaMemcpyKind kind = cudaMemcpyHostToDevice;
                 copy(ptr_pinned, ptr_a, kind, stream);
             }
         }
-        inline void download(const Stream& stream) {
+        inline void download(Stream& stream) {
             if (type == MemType::DeviceAndPinned) {
                 constexpr cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
                 copy(ptr_a, ptr_pinned, kind, stream);
             }
         }
 #else
-        inline void upload(const Stream& stream) {}
-        inline void download(const Stream& stream) {}
+        inline void upload(Stream& stream) {}
+        inline void download(Stream& stream) {}
 #endif
 
         inline T at(const Point& p) const {

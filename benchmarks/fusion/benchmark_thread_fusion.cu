@@ -52,9 +52,6 @@ bool testThreadFusionSameTypeIO(fk::Stream& stream) {
         fk::Ptr2D<T> d_output_cvGS(NUM_ELEMS_Y, NUM_ELEMS_X);
         fk::Ptr2D<T> d_output_cvGS_ThreadFusion(NUM_ELEMS_Y, NUM_ELEMS_X);
 
-        fk::Ptr2D<T> h_cvGSResults(NUM_ELEMS_Y, NUM_ELEMS_X, 0, fk::MemType::HostPinned);
-        fk::Ptr2D<T> h_cvGSResults_ThreadFusion(NUM_ELEMS_Y, NUM_ELEMS_X, 0, fk::MemType::HostPinned);
-
         START_FIRST_BENCHMARK
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, T>::build(d_input);
@@ -68,12 +65,12 @@ bool testThreadFusionSameTypeIO(fk::Stream& stream) {
         STOP_SECOND_BENCHMARK
 
         // Verify results
-        d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
-        d_output_cvGS.download(h_cvGSResults, stream);
+        d_output_cvGS_ThreadFusion.download(stream);
+        d_output_cvGS.download(stream);
 
         stream.sync();
 
-        passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
+        passed = compareAndCheck(d_output_cvGS_ThreadFusion, d_output_cvGS);
     } catch (const std::exception& e) {
         error_s << e.what();
         passed = false;
@@ -95,7 +92,7 @@ bool testThreadFusionSameTypeIO(fk::Stream& stream) {
 }
 
 template <typename I, typename O, size_t RESOLUTION>
-bool testThreadFusionDifferentTypeIO(const fk::Stream& stream) {
+bool testThreadFusionDifferentTypeIO(fk::Stream& stream) {
     std::stringstream error_s;
     bool passed = true;
     bool exception = false;
@@ -113,9 +110,6 @@ bool testThreadFusionDifferentTypeIO(const fk::Stream& stream) {
         fk::Ptr2D<O> d_output_cvGS(NUM_ELEMS_X, NUM_ELEMS_Y);
         fk::Ptr2D<O> d_output_cvGS_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y);
 
-        fk::Ptr2D<O> h_cvGSResults(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
-        fk::Ptr2D<O> h_cvGSResults_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
-
         START_FIRST_BENCHMARK
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
@@ -129,12 +123,12 @@ bool testThreadFusionDifferentTypeIO(const fk::Stream& stream) {
         STOP_SECOND_BENCHMARK
 
         // Verify results
-        d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
-        d_output_cvGS.download(h_cvGSResults, stream);
+        d_output_cvGS_ThreadFusion.download(stream);
+        d_output_cvGS.download(stream);
 
-        gpuErrchk(cudaStreamSynchronize(stream));
+        stream.sync();
 
-        passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
+        passed = compareAndCheck(d_output_cvGS_ThreadFusion, d_output_cvGS);
     } catch (const std::exception& e) {
         error_s << e.what();
         passed = false;
@@ -156,7 +150,7 @@ bool testThreadFusionDifferentTypeIO(const fk::Stream& stream) {
 }
 
 template <typename I, typename T, typename O, enum fk::ColorConversionCodes CODE, size_t RESOLUTION>
-bool testThreadFusionDifferentTypeAndChannelIO(const fk::Stream& stream) {
+bool testThreadFusionDifferentTypeAndChannelIO(fk::Stream& stream) {
     std::stringstream error_s;
     bool passed = true;
     bool exception = false;
@@ -191,12 +185,12 @@ bool testThreadFusionDifferentTypeAndChannelIO(const fk::Stream& stream) {
         STOP_SECOND_BENCHMARK
 
         // Verify results
-        d_output_cvGS_ThreadFusion.download(h_cvGSResults_ThreadFusion, stream);
-        d_output_cvGS.download(h_cvGSResults, stream);
+        d_output_cvGS_ThreadFusion.download(stream);
+        d_output_cvGS.download(stream);
 
         stream.sync();
 
-        passed = compareAndCheck(h_cvGSResults_ThreadFusion, h_cvGSResults);
+        passed = compareAndCheck(d_output_cvGS_ThreadFusion, d_output_cvGS);
     } catch (const std::exception& e) {
         error_s << e.what();
         passed = false;

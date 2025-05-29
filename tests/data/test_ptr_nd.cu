@@ -40,7 +40,7 @@ PtrToTest& test_return_by_reference(PtrToTest& somePtr) {
     return somePtr;
 }
 
-void test_upload(const Stream& stream) {
+void test_upload(Stream& stream) {
     // Device pointers
     Ptr1D<uchar3> test1D(1333);
     Ptr2D<uchar3> test2D(1333, 444);
@@ -70,7 +70,7 @@ void test_upload(const Stream& stream) {
     // test2D_h.upload(test3D);
 }
 
-void test_download(const Stream& stream) {
+void test_download(Stream& stream) {
     // Device pointers
     Ptr1D<uchar3> test1D(1333);
     Ptr2D<uchar3> test2D(1333, 444);
