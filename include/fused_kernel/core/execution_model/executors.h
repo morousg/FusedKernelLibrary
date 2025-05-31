@@ -99,35 +99,35 @@ namespace fk {
 
 #define DECLARE_EXECUTOR_PARENT_IMPL \
 friend class BaseExecutor<Child>; \
-template <typename Stream_t, typename... IOps> \
-FK_HOST_FUSE void executeOperations(Stream_t& stream, const IOps&... iOps) { \
+template <enum ParArch PA, typename... IOps> \
+FK_HOST_FUSE void executeOperations(Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(stream, iOps...); \
 } \
-template <typename Stream_t, typename I, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_t& stream, const IOps&... iOps) { \
+template <enum ParArch PA, typename I, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, stream, iOps...); \
 } \
-template <typename Stream_t, typename I, typename O, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, Stream_t& stream, const IOps&... iOps) { \
+template <enum ParArch PA, typename I, typename O, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, output, stream, iOps...); \
 } \
-template <typename Stream_t, typename I, size_t BATCH, typename... IOps> \
+template <enum ParArch PA, typename I, size_t BATCH, typename... IOps> \
 FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue, \
-                                    Stream_t& stream, const IOps&... iOps) { \
+                                    Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, activeBatch, defaultValue, stream, iOps...); \
 } \
-template <typename Stream_t, typename I, size_t BATCH, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, Stream_t& stream, const IOps&... iOps) { \
+template <enum ParArch PA, typename I, size_t BATCH, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, stream, iOps...); \
 } \
-template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps> \
+template <enum ParArch PA, typename I, typename O, size_t Batch, typename... IOps> \
 FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue, \
-                                    const Tensor<O>& output, Stream_t& stream, const IOps&... iOps) { \
+                                    const Tensor<O>& output, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, activeBatch, defaultValue, output, stream, iOps...); \
 } \
-template <typename Stream_t, typename I, typename O, size_t Batch, typename... IOps> \
+template <enum ParArch PA, typename I, typename O, size_t Batch, typename... IOps> \
 FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output, \
-                                    Stream_t& stream, const IOps&... iOps) { \
+                                    Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, output, stream, iOps...); \
 }
 

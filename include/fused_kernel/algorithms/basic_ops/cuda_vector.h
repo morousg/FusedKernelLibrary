@@ -75,10 +75,12 @@ namespace fk {
 
     template <typename T, typename Operation>
     struct VectorReduce {
-        using Parent = UnaryOperation<T, VBase<T>, VectorReduce<T, Operation>>;
+        using Parent = UnaryOperation<T, typename Operation::OutputType, VectorReduce<T, Operation>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             if constexpr (std::is_same_v<typename Operation::InstanceType, UnaryType>) {
+                using T1 = get_type_t<0, typename Operation::InputType>;
+                using T2 = get_type_t<1, typename Operation::InputType>;
                 if constexpr (cn<T> == 1) {
                     if constexpr (validCUDAVec<T>) {
                         return input.x;
@@ -86,11 +88,11 @@ namespace fk {
                         return input;
                     }
                 } else if constexpr (cn<T> == 2) {
-                    return Operation::exec({ input.x, input.y });
+                    return Operation::exec({ static_cast<T1>(input.x), static_cast<T2>(input.y) });
                 } else if constexpr (cn<T> == 3) {
-                    return Operation::exec({ Operation::exec({ input.x, input.y }), input.z });
+                    return Operation::exec({ static_cast<T1>(Operation::exec({ static_cast<T1>(input.x), static_cast<T2>(input.y) })), static_cast<T2>(input.z) });
                 } else if constexpr (cn<T> == 4) {
-                    return Operation::exec({ Operation::exec({ Operation::exec({ input.x, input.y }), input.z }), input.w });
+                    return Operation::exec({ static_cast<T1>(Operation::exec({ static_cast<T1>(Operation::exec({ static_cast<T1>(input.x), static_cast<T2>(input.y) })), static_cast<T2>(input.z) })), static_cast<T2>(input.w) });
                 }
             } else if constexpr (std::is_same_v<typename Operation::InstanceType, BinaryType>) {
                 if constexpr (cn<T> == 1) {
@@ -134,8 +136,8 @@ namespace fk {
 
     template <typename T>
     struct VectorAnd {
-        static_assert(std::is_same_v<VBase<T>, bool>, "VectorAnd only works with boolean vectors");
-        using Parent = UnaryOperation<T, VBase<T>, VectorAnd<T>>;
+        //static_assert(std::is_same_v<VBase<T>, bool>, "VectorAnd only works with boolean vectors");
+        using Parent = UnaryOperation<T, bool, VectorAnd<T>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             return VectorReduce<T, Equal<bool, bool>>::exec(input);

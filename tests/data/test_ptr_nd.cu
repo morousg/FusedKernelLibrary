@@ -107,8 +107,8 @@ int launch() {
     bool h_correct{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            const bool3 boolVect = *PtrAccessor<_2D>::cr_point(Point(x, y), test0.ptr()) == make_<uchar3>(1, 2, 3);
-            h_correct &= VectorAnd<bool3>::exec(boolVect);
+            const Bool3 boolVect = *PtrAccessor<_2D>::cr_point(Point(x, y), test0.ptr()) == make_<uchar3>(1, 2, 3);
+            h_correct &= VectorAnd<Bool3>::exec(boolVect);
         }
     }
 
@@ -139,8 +139,8 @@ int launch() {
     bool h_correct2{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            const bool3 boolVect = test7.at(Point(x, y)) == make_<uchar3>(3, 6, 10);
-            h_correct2 &= VectorAnd<bool3>::exec(boolVect);
+            const Bool3 boolVect = test7.at(Point(x, y)) == make_<uchar3>(3, 6, 10);
+            h_correct2 &= VectorAnd<Bool3>::exec(boolVect);
         }
     }
 

@@ -44,10 +44,10 @@ namespace fk {
     template <typename T>
     union Array<T, 1> {
         enum { size = 1 };
+        T at[size];
         struct {
             T x;
         };
-        T at[size];
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             at[0] = initValue;
         }
@@ -68,10 +68,10 @@ namespace fk {
     template <typename T>
     union Array<T, 2> {
         enum { size = 2 };
+        T at[size];
         struct {
             T x, y;
         };
-        T at[size];
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -97,10 +97,10 @@ namespace fk {
     template <typename T>
     union Array<T, 3> {
         enum { size = 3 };
+        T at[size];
         struct {
             T x, y, z;
         };
-        T at[size];
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -126,10 +126,10 @@ namespace fk {
     template <typename T>
     union Array<T, 4> {
         enum { size = 4 };
+        T at[size];
         struct {
             T x, y, z, w;
         };
-        T at[size];
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;

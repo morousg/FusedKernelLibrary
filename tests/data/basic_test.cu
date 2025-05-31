@@ -56,19 +56,28 @@ bool testPtr_2D() {
         fk::executeOperations(stream, readFull, opFinal_2DBig);
     }
 
+    output.download(stream);
+    outputBig.download(stream);
+
     stream.sync();
 
     for (int y = 0; y < output.dims().height; ++y) {
         for (int x = 0; x < output.dims().width; ++x) {
-            const fk::VectorType_t<bool, fk::cn<T>> result = output.at({ x, y }) != fk::make_set<T>(2);
+            const auto result = output.at({ x, y }) != fk::make_set<T>(2);
             if (fk::vecAnd(result)) {
-                std::cout << "Error in output at (" << x << ", " << y << "): " << output.at({ x, y }) << std::endl;
+                if constexpr (fk::cn<T> == 1 && !std::is_aggregate_v<T>) {
+                    std::cout << "Error in output at (" << x << ", " << y << "): " << static_cast<int>(output.at({ x, y })) << std::endl;
+                } else {
+                    std::cout << "Error in output at (" << x << ", " << y << "): ";
+                    for (size_t i = 0; i < fk::cn<T>; ++i) {
+                        std::cout << static_cast<int>(fk::getFKVector(output.at({ x, y })).at[i]) << " ";
+                    }
+                    std::cout << std::endl;
+                }
                 return false;
             }
         }
     }
-
-    // TODO: use some values and check results correctness
 
     return true;
 }
