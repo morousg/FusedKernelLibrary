@@ -71,4 +71,11 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: ctest --build-config ${{ matrix.build_type }} --output-junit test_results.xml
+    - name: JUnit Report Action
+      uses: mikepenz/action-junit-report@v5
+      if: success() || failure() # always run even if the previous step fails
+      with:
+        report_paths: '**/build/test_results.xml'
+        include_passed: true
+        detailed_summary: true
