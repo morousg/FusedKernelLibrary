@@ -58,7 +58,7 @@ namespace fk { // namespace FusedKernel
     template <bool THREAD_FUSION, typename... IOps>
     using TransformDPPDetails = TransformDPPDetails_<void, THREAD_FUSION, IOps...>;
 
-    template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
+    template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true, typename Enabler = void>
     struct TransformDPP; // Forward declaration
 
     template <typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
@@ -187,9 +187,30 @@ namespace fk { // namespace FusedKernel
         }
     };
 
+    template <enum ParArch PA, typename DPPDetails>
+    struct TransformDPP<PA, DPPDetails, true, std::enable_if_t<std::is_same_v<DPPDetails, void>, void>> {
+        template <bool THREAD_FUSION, typename FirstIOp, typename... IOps>
+        FK_HOST_FUSE auto build_details(const FirstIOp& firstIOp, const IOps&... iOps) {
+            using Details = TransformDPPDetails<THREAD_FUSION, FirstIOp, IOps...>;
+            using TFI = typename Details::TFI;
+
+            if constexpr (TFI::ENABLED) {
+                const ActiveThreads initAT = firstIOp.getActiveThreads();
+                const ActiveThreads gridActiveThreads(static_cast<uint>(ceil(initAT.x / static_cast<float>(TFI::elems_per_thread))),
+                    initAT.y, initAT.z);
+                const bool threadDivisible = isThreadDivisible<TFI::ENABLED>(TFI::elems_per_thread, firstIOp, iOps...);
+                const Details details{ gridActiveThreads, threadDivisible };
+
+                return details;
+            } else {
+                return Details{};
+            }
+        }
+    };
+
 #if defined(__NVCC__) || defined(__HIP__)
     template <typename DPPDetails, bool THREAD_DIVISIBLE>
-    struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE> {
+    struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
     private:
         using Parent = TransformDPPBase<DPPDetails, THREAD_DIVISIBLE>;
         using Details = DPPDetails;
@@ -216,31 +237,10 @@ namespace fk { // namespace FusedKernel
             }
         }
     };
-
-    template <>
-    struct TransformDPP<ParArch::GPU_NVIDIA, void, true> {
-        template <bool THREAD_FUSION, typename FirstIOp, typename... IOps>
-        FK_HOST_FUSE auto build_details(const FirstIOp& firstIOp, const IOps&... iOps) {
-            using Details = TransformDPPDetails<THREAD_FUSION, FirstIOp, IOps...>;
-            using TFI = typename Details::TFI;
-
-            if constexpr (TFI::ENABLED) {
-                const ActiveThreads initAT = firstIOp.getActiveThreads();
-                const ActiveThreads gridActiveThreads(static_cast<uint>(ceil(initAT.x / static_cast<float>(TFI::elems_per_thread))),
-                                                      initAT.y, initAT.z);
-                const bool threadDivisible = isThreadDivisible<TFI::ENABLED>(TFI::elems_per_thread, firstIOp, iOps...);
-                const Details details{ gridActiveThreads, threadDivisible };
-
-                return details;
-            } else {
-                return Details{};
-            }
-        }
-    };
 #endif // defined(__NVCC__) || defined(__HIPCC__)
 
     template <typename DPPDetails, bool THREAD_DIVISIBLE>
-    struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE> {
+    struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
     private:
         using Parent = TransformDPPBase<DPPDetails, THREAD_DIVISIBLE>;
         using Details = DPPDetails;
@@ -263,27 +263,6 @@ namespace fk { // namespace FusedKernel
                         Parent::execute_thread(thread, activeThreads, iOps...);
                     }
                 }
-            }
-        }
-    };
-
-    template <>
-    struct TransformDPP<ParArch::CPU, void, true> {
-        template <bool THREAD_FUSION, typename FirstIOp, typename... IOps>
-        FK_HOST_FUSE auto build_details(const FirstIOp& firstIOp, const IOps&... iOps) {
-            using Details = TransformDPPDetails<THREAD_FUSION, FirstIOp, IOps...>;
-            using TFI = typename Details::TFI;
-
-            if constexpr (TFI::ENABLED) {
-                const ActiveThreads initAT = firstIOp.getActiveThreads();
-                const ActiveThreads gridActiveThreads(static_cast<uint>(ceil(initAT.x / static_cast<float>(TFI::elems_per_thread))),
-                    initAT.y, initAT.z);
-                const bool threadDivisible = isThreadDivisible<TFI::ENABLED>(TFI::elems_per_thread, firstIOp, iOps...);
-                const Details details{ gridActiveThreads, threadDivisible };
-
-                return details;
-            } else {
-                return Details{};
             }
         }
     };
