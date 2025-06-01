@@ -59,19 +59,20 @@ namespace fk { // namespace FusedKernel
     using TransformDPPDetails = TransformDPPDetails_<void, THREAD_FUSION, IOps...>;
 
     template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
-    struct TransformDPP;
+    struct TransformDPP; // Forward declaration
 
-#if defined(__NVCC__) || defined(__HIP__)
-    template <typename DPPDetails, bool THREAD_DIVISIBLE>
-    struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE> {
+    template <typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
+    struct TransformDPPBase {
+        friend struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE>; // Allow TransformDPP to access private members
+        friend struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE>; // Allow TransformDPPBase to access private members
     private:
         using Details = DPPDetails;
 
         template <typename T, typename IOp, typename... IOpTypes>
-        FK_DEVICE_FUSE auto operate(const Point& thread, const T& i_data, const IOp& iOp, const IOpTypes&... iOpInstances) {
+        FK_HOST_DEVICE_FUSE auto operate(const Point& thread, const T& i_data, const IOp& iOp, const IOpTypes&... iOpInstances) {
             if constexpr (IOp::template is<WriteType>) {
                 return i_data;
-            // MidWriteOperation with continuations, based on FusedOperation
+                // MidWriteOperation with continuations, based on FusedOperation
             } else if constexpr (IOp::template is<MidWriteType> && isMidWriteType<typename IOp::Operation>) {
                 return IOp::Operation::exec(thread, i_data, iOp);
             } else if constexpr (IOp::template is<MidWriteType> && !isMidWriteType<typename IOp::Operation>) {
@@ -83,18 +84,18 @@ namespace fk { // namespace FusedKernel
         }
 
         template <uint IDX, typename TFI, typename InputType, typename... IOpTypes>
-        FK_DEVICE_FUSE auto operate_idx(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
+        FK_HOST_DEVICE_FUSE auto operate_idx(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
             return operate(thread, TFI::template get<IDX>(input), instantiableOperationInstances...);
         }
 
         template <typename TFI, typename InputType, uint... IDX, typename... IOpTypes>
-        FK_DEVICE_FUSE auto operate_thread_fusion_impl(std::integer_sequence<uint, IDX...> idx, const Point& thread,
-                                                        const InputType& input, const IOpTypes&... instantiableOperationInstances) {
+        FK_HOST_DEVICE_FUSE auto operate_thread_fusion_impl(std::integer_sequence<uint, IDX...> idx, const Point& thread,
+            const InputType& input, const IOpTypes&... instantiableOperationInstances) {
             return TFI::make(operate_idx<IDX, TFI>(thread, input, instantiableOperationInstances...)...);
         }
 
         template <typename TFI, typename InputType, typename... IOpTypes>
-        FK_DEVICE_FUSE auto operate_thread_fusion(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
+        FK_HOST_DEVICE_FUSE auto operate_thread_fusion(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
             if constexpr (TFI::elems_per_thread == 1) {
                 return operate(thread, input, instantiableOperationInstances...);
             } else {
@@ -103,7 +104,7 @@ namespace fk { // namespace FusedKernel
         }
         // We pass TFI as a template parameter because sometimes we need to disable the TF
         template <typename TFI, typename ReadIOp>
-        FK_DEVICE_FUSE auto read(const Point& thread, const ReadIOp& readDF) {
+        FK_HOST_DEVICE_FUSE auto read(const Point& thread, const ReadIOp& readDF) {
             if constexpr (TFI::ENABLED) {
                 static_assert(isAnyReadType<ReadIOp>, "ReadIOp is not ReadType or ReadBackType");
                 return ReadIOp::Operation::template exec<TFI::elems_per_thread>(thread, readDF);
@@ -113,7 +114,7 @@ namespace fk { // namespace FusedKernel
         }
 
         template <typename TFI, typename ReadIOp, typename... IOps>
-        FK_DEVICE_FUSE 
+        FK_HOST_DEVICE_FUSE
         void execute_instantiable_operations_helper(const Point& thread, const ReadIOp& readDF,
                                                     const IOps&... iOps) {
             using ReadOperation = typename ReadIOp::Operation;
@@ -141,13 +142,40 @@ namespace fk { // namespace FusedKernel
         }
 
         template <typename TFI, typename... IOps>
-        FK_DEVICE_FUSE
-        void execute_instantiable_operations(const Point& thread,
-                                             const IOps&... iOps){
+        FK_HOST_DEVICE_FUSE void execute_instantiable_operations(const Point& thread, const IOps&... iOps) {
             execute_instantiable_operations_helper<TFI>(thread, iOps...);
         }
 
-        public:
+        template <typename... IOps>
+        FK_HOST_DEVICE_FUSE void execute_thread(const Point& thread, const ActiveThreads& activeThreads, const IOps&... iOps) {
+            using TFI = typename Details::TFI;
+            if constexpr (!TFI::ENABLED) {
+                execute_instantiable_operations<TFI>(thread, iOps...);
+            } else {
+                if constexpr (THREAD_DIVISIBLE) {
+                    execute_instantiable_operations<TFI>(thread, iOps...);
+                } else {
+                    const bool iamlastActiveThread = thread.x == activeThreads.x - 1;
+                    if (!iamlastActiveThread) {
+                        execute_instantiable_operations<TFI>(thread, iOps...);
+                    } else if (iamlastActiveThread) {
+                        const int initialX = thread.x * TFI::elems_per_thread;
+                        using ReadOp = typename FirstType_t<IOps...>::Operation;
+                        const int finalX = ReadOp::num_elems_x(thread, get<0>(iOps...));
+                        int currentX = initialX;
+                        while (currentX < finalX) {
+                            const Point currentThread{ currentX , thread.y, thread.z };
+                            using ReadIT = typename FirstType_t<IOps...>::Operation::ReadDataType;
+                            using WriteOT = typename LastType_t<IOps...>::Operation::WriteDataType;
+                            using DisabledTFI = ThreadFusionInfo<ReadIT, WriteOT, false>;
+                            execute_instantiable_operations<DisabledTFI>(currentThread, iOps...);
+                            currentX++;
+                        }
+                    }
+                }
+            }
+        }
+
         template <typename FirstIOp>
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const Details& details,
                                                            const FirstIOp& iOp) {
@@ -156,6 +184,20 @@ namespace fk { // namespace FusedKernel
             } else {
                 return FirstIOp::Operation::getActiveThreads(iOp);
             }
+        }
+    };
+
+#if defined(__NVCC__) || defined(__HIP__)
+    template <typename DPPDetails, bool THREAD_DIVISIBLE>
+    struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE> {
+    private:
+        using Parent = TransformDPPBase<DPPDetails, THREAD_DIVISIBLE>;
+        using Details = DPPDetails;
+    public:
+        template <typename FirstIOp>
+        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const Details& details,
+                                                           const FirstIOp& iOp) {
+            return Parent::getActiveThreads(details, iOp);
         }
 
         template <typename... IOps>
@@ -167,36 +209,10 @@ namespace fk { // namespace FusedKernel
             const int z = g.group_index().z; // So far we only consider the option of using the z dimension to specify n (x*y) thread planes
             const Point thread{ x, y, z };
 
-            using TFI = typename Details::TFI;
-
             const ActiveThreads activeThreads = getActiveThreads(details, get<0>(iOps...));
 
             if (x < activeThreads.x && y < activeThreads.y) {
-                if constexpr (!TFI::ENABLED) {
-                    execute_instantiable_operations<TFI>(thread, iOps...);
-                } else {
-                    if constexpr (THREAD_DIVISIBLE) {
-                        execute_instantiable_operations<TFI>(thread, iOps...);
-                    } else {
-                        const bool iamlastActiveThread = x == activeThreads.x - 1;
-                        if (!iamlastActiveThread) {
-                            execute_instantiable_operations<TFI>(thread, iOps...);
-                        } else if (iamlastActiveThread) {
-                            const int initialX = x * TFI::elems_per_thread;
-                            using ReadOp = typename FirstType_t<IOps...>::Operation;
-                            const int finalX = ReadOp::num_elems_x(thread, get<0>(iOps...));
-                            int currentX = initialX;
-                            while (currentX < finalX) {
-                                const Point currentThread{ currentX , thread.y, thread.z };
-                                using ReadIT = typename FirstType_t<IOps...>::Operation::ReadDataType;
-                                using WriteOT = typename LastType_t<IOps...>::Operation::WriteDataType;
-                                using DisabledTFI = ThreadFusionInfo<ReadIT, WriteOT, false>;
-                                execute_instantiable_operations<DisabledTFI>(currentThread, iOps...);
-                                currentX++;
-                            }
-                        }
-                    }
-                }
+                Parent::execute_thread(thread, activeThreads, iOps...);
             }
         }
     };
@@ -226,97 +242,13 @@ namespace fk { // namespace FusedKernel
     template <typename DPPDetails, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE> {
     private:
+        using Parent = TransformDPPBase<DPPDetails, THREAD_DIVISIBLE>;
         using Details = DPPDetails;
-
-        template <typename T, typename IOp, typename... IOpTypes>
-        FK_HOST_FUSE auto operate(const Point& thread, const T& i_data, const IOp& iOp, const IOpTypes&... iOpInstances) {
-            if constexpr (IOp::template is<WriteType>) {
-                return i_data;
-                // MidWriteOperation with continuations, based on FusedOperation
-            } else if constexpr (IOp::template is<MidWriteType> && isMidWriteType<typename IOp::Operation>) {
-                return IOp::Operation::exec(thread, i_data, iOp);
-            } else if constexpr (IOp::template is<MidWriteType> && !isMidWriteType<typename IOp::Operation>) {
-                IOp::Operation::exec(thread, i_data, iOp);
-                return i_data;
-            } else {
-                return operate(thread, compute(i_data, iOp), iOpInstances...);
-            }
-        }
-
-        template <uint IDX, typename TFI, typename InputType, typename... IOpTypes>
-        FK_HOST_FUSE auto operate_idx(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
-            return operate(thread, TFI::template get<IDX>(input), instantiableOperationInstances...);
-        }
-
-        template <typename TFI, typename InputType, uint... IDX, typename... IOpTypes>
-        FK_HOST_FUSE auto operate_thread_fusion_impl(std::integer_sequence<uint, IDX...> idx, const Point& thread,
-            const InputType& input, const IOpTypes&... instantiableOperationInstances) {
-            return TFI::make(operate_idx<IDX, TFI>(thread, input, instantiableOperationInstances...)...);
-        }
-
-        template <typename TFI, typename InputType, typename... IOpTypes>
-        FK_HOST_FUSE auto operate_thread_fusion(const Point& thread, const InputType& input, const IOpTypes&... instantiableOperationInstances) {
-            if constexpr (TFI::elems_per_thread == 1) {
-                return operate(thread, input, instantiableOperationInstances...);
-            } else {
-                return operate_thread_fusion_impl<TFI>(std::make_integer_sequence<uint, TFI::elems_per_thread>(), thread, input, instantiableOperationInstances...);
-            }
-        }
-        // We pass TFI as a template parameter because sometimes we need to disable the TF
-        template <typename TFI, typename ReadIOp>
-        FK_HOST_FUSE auto read(const Point& thread, const ReadIOp& readDF) {
-            if constexpr (TFI::ENABLED) {
-                static_assert(isAnyReadType<ReadIOp>, "ReadIOp is not ReadType or ReadBackType");
-                return ReadIOp::Operation::template exec<TFI::elems_per_thread>(thread, readDF);
-            } else {
-                return ReadIOp::Operation::exec(thread, readDF);
-            }
-        }
-
-        template <typename TFI, typename ReadIOp, typename... IOps>
-        FK_HOST_FUSE
-            void execute_instantiable_operations_helper(const Point& thread, const ReadIOp& readDF,
-                const IOps&... iOps) {
-            using ReadOperation = typename ReadIOp::Operation;
-            using WriteOperation = typename LastType_t<IOps...>::Operation;
-
-            const auto writeDF = ppLast(iOps...);
-
-            if constexpr (TFI::ENABLED) {
-                const auto tempI = read<TFI, ReadIOp>(thread, readDF);
-                if constexpr (sizeof...(iOps) > 1) {
-                    const auto tempO = operate_thread_fusion<TFI>(thread, tempI, iOps...);
-                    WriteOperation::template exec<TFI::elems_per_thread>(thread, tempO, writeDF);
-                } else {
-                    WriteOperation::template exec<TFI::elems_per_thread>(thread, tempI, writeDF);
-                }
-            } else {
-                const auto tempI = read<TFI, ReadIOp>(thread, readDF);
-                if constexpr (sizeof...(iOps) > 1) {
-                    const auto tempO = operate(thread, tempI, iOps...);
-                    WriteOperation::exec(thread, tempO, writeDF);
-                } else {
-                    WriteOperation::exec(thread, tempI, writeDF);
-                }
-            }
-        }
-
-        template <typename TFI, typename... IOps>
-        FK_HOST_FUSE
-            void execute_instantiable_operations(const Point& thread,
-                const IOps&... iOps) {
-            execute_instantiable_operations_helper<TFI>(thread, iOps...);
-        }
-
     public:
         template <typename FirstIOp>
         FK_HOST_FUSE ActiveThreads getActiveThreads(const Details& details,
-            const FirstIOp& iOp) {
-            if constexpr (Details::TFI::ENABLED) {
-                return details.activeThreads;
-            } else {
-                return FirstIOp::Operation::getActiveThreads(iOp);
-            }
+                                                    const FirstIOp& iOp) {
+            return Parent::getActiveThreads(details, iOp);
         }
 
         template <typename... IOps>
@@ -328,32 +260,7 @@ namespace fk { // namespace FusedKernel
                 for (int y = 0; y < activeThreads.y; ++y) {
                     for (int x = 0; x < activeThreads.x; ++x) {
                         const Point thread{ x, y, z };
-                        if constexpr (!TFI::ENABLED) {
-                            execute_instantiable_operations<TFI>(thread, iOps...);
-                        } else {
-                            if constexpr (THREAD_DIVISIBLE) {
-                                execute_instantiable_operations<TFI>(thread, iOps...);
-                            } else {
-                                const bool iamlastActiveThread = x == activeThreads.x - 1;
-                                if (!iamlastActiveThread) {
-                                    execute_instantiable_operations<TFI>(thread, iOps...);
-                                } else if (iamlastActiveThread) {
-                                    const int initialX = x * TFI::elems_per_thread;
-                                    using ReadOp = typename FirstType_t<IOps...>::Operation;
-                                    const int finalX = ReadOp::num_elems_x(thread, get<0>(iOps...));
-                                    int currentX = initialX;
-                                    while (currentX < finalX) {
-                                        const Point currentThread{ currentX , thread.y, thread.z };
-                                        using ReadIT = typename FirstType_t<IOps...>::Operation::ReadDataType;
-                                        using WriteOT = typename LastType_t<IOps...>::Operation::WriteDataType;
-                                        using DisabledTFI = ThreadFusionInfo<ReadIT, WriteOT, false>;
-                                        execute_instantiable_operations<DisabledTFI>(currentThread, iOps...);
-                                        currentX++;
-                                    }
-                                }
-                            }
-                        }
-
+                        Parent::execute_thread(thread, activeThreads, iOps...);
                     }
                 }
             }
