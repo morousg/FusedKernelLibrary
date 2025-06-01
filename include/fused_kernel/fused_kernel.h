@@ -19,27 +19,21 @@
 
 namespace fk {
 
-    template <bool THREAD_FUSSION, typename... Args>
+    template <enum TF TFEN, typename... Args>
     inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<defaultParArch, DPPType::Transform, THREAD_FUSSION>;
+        using Executor_t = Executor<TransformDPP<defaultParArch, TFEN>>;
         Executor_t::executeOperations(args...);
     }
 
     template <typename... Args>
     inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<defaultParArch, DPPType::Transform>;
+        using Executor_t = Executor<TransformDPP<defaultParArch>>;
         Executor_t::executeOperations(args...);
     }
 
-    template <enum ParArch PA, enum DPPType DPPT, typename... Args>
+    template <typename DPPType, typename... Args>
     inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<PA, DPPT>;
-        Executor_t::executeOperations(args...);
-    }
-
-    template <enum ParArch PA, enum DPPType DPPT, bool THREAD_FUSSION, typename... Args>
-    inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<PA, DPPT, THREAD_FUSSION>;
+        using Executor_t = Executor<DPPType>;
         Executor_t::executeOperations(args...);
     }
 

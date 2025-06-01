@@ -41,14 +41,6 @@ constexpr float add_val{ 1.f };
 constexpr auto singleOp = fk::Add<float>::build(add_val);
 constexpr auto allInstr = fk::StaticLoop<typename decltype(singleOp)::Operation, TOTAL_INSTRUCTIONS>::build(add_val);
 
-template <typename T>
-__global__ void init_values(const T val, fk::RawPtr<fk::_1D, T> pointer_to_init) {
-    const int x = threadIdx.x + (blockDim.x * blockIdx.x);
-    if (x < pointer_to_init.dims.width) {
-        *fk::PtrAccessor<fk::_1D>::point(fk::Point(x), pointer_to_init) = val;
-    }
-}
-
 template <int Idx>
 inline bool testNumInstPerOp(fk::Stream& stream, fk::Ptr1D<float>& inputFirst,
                                                  fk::Ptr1D<float>& inputSecond,
@@ -74,34 +66,34 @@ inline bool testNumInstPerOp(fk::Stream& stream, fk::Ptr1D<float>& inputFirst,
 
     if constexpr (exactDivision) {
         // Wramming up the GPU
-        fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
-        fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
+        fk::executeOperations<fk::TF::DISABLED>(stream, readDF, manyInst, writeDF);
+        fk::executeOperations<fk::TF::DISABLED>(stream, readDF, allInstr, writeDF);
         START_FIRST_BENCHMARK
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
             for (int i = 0; i < TOTAL_INSTRUCTIONS / variableDimensionValues[Idx]; ++i) {
-                fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
+                fk::executeOperations<fk::TF::DISABLED>(stream, readDF, manyInst, writeDF);
             }
         STOP_FIRST_START_SECOND_BENCHMARK
-            fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
+            fk::executeOperations<fk::TF::DISABLED>(stream, readDF, allInstr, writeDF);
         STOP_SECOND_BENCHMARK
     } else {
         constexpr int remaining = TOTAL_INSTRUCTIONS % variableDimensionValues[Idx];
         constexpr auto lastOp = fk::StaticLoop<typename decltype(singleOp)::Operation, remaining>::build(add_val);
         // Wramming up the GPU
-        fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
-        fk::executeOperations<false>(stream, readDF, lastOp, writeDF);
-        fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
+        fk::executeOperations<fk::TF::DISABLED>(stream, readDF, manyInst, writeDF);
+        fk::executeOperations<fk::TF::DISABLED>(stream, readDF, lastOp, writeDF);
+        fk::executeOperations<fk::TF::DISABLED>(stream, readDF, allInstr, writeDF);
         START_FIRST_BENCHMARK
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
             for (int i = 0; i < TOTAL_INSTRUCTIONS / variableDimensionValues[Idx]; ++i) {
-                fk::executeOperations<false>(stream, readDF, manyInst, writeDF);
+                fk::executeOperations<fk::TF::DISABLED>(stream, readDF, manyInst, writeDF);
             }
             // Executing the remaining instructions to ger to TOTAL_INSTRUCTIONS
-            fk::executeOperations<false>(stream, readDF, lastOp, writeDF);
+            fk::executeOperations<fk::TF::DISABLED>(stream, readDF, lastOp, writeDF);
         STOP_FIRST_START_SECOND_BENCHMARK
-            fk::executeOperations<false>(stream, readDF, allInstr, writeDF);
+            fk::executeOperations<fk::TF::DISABLED>(stream, readDF, allInstr, writeDF);
         STOP_SECOND_BENCHMARK
     }
 

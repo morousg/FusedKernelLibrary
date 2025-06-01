@@ -58,13 +58,13 @@ namespace fk { // namespace FusedKernel
     template <bool THREAD_FUSION, typename... IOps>
     using TransformDPPDetails = TransformDPPDetails_<void, THREAD_FUSION, IOps...>;
 
-    template <enum ParArch PA, typename DPPDetails = void, bool THREAD_DIVISIBLE = true, typename Enabler = void>
+    template <enum ParArch PA, enum TF TFEN = TF::DISABLED, typename DPPDetails = void, bool THREAD_DIVISIBLE = true, typename Enabler = void>
     struct TransformDPP; // Forward declaration
 
-    template <typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
+    template <enum TF TFEN = TF::DISABLED, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>
     struct TransformDPPBase {
-        friend struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE>; // Allow TransformDPP to access private members
-        friend struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE>; // Allow TransformDPPBase to access private members
+        friend struct TransformDPP<ParArch::GPU_NVIDIA, TFEN, DPPDetails, THREAD_DIVISIBLE>; // Allow TransformDPP to access private members
+        friend struct TransformDPP<ParArch::CPU, TFEN, DPPDetails, THREAD_DIVISIBLE>; // Allow TransformDPPBase to access private members
     private:
         using Details = DPPDetails;
 
@@ -187,11 +187,12 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-    template <enum ParArch PA, typename DPPDetails>
-    struct TransformDPP<PA, DPPDetails, true, std::enable_if_t<std::is_same_v<DPPDetails, void>, void>> {
-        template <bool THREAD_FUSION, typename FirstIOp, typename... IOps>
+    template <enum ParArch PA, enum TF TFEN>
+    struct TransformDPP<PA, TFEN, void, true, void> {
+        static constexpr ParArch PAR_ARCH = PA;
+        template <typename FirstIOp, typename... IOps>
         FK_HOST_FUSE auto build_details(const FirstIOp& firstIOp, const IOps&... iOps) {
-            using Details = TransformDPPDetails<THREAD_FUSION, FirstIOp, IOps...>;
+            using Details = TransformDPPDetails<static_cast<bool>(TFEN), FirstIOp, IOps...>;
             using TFI = typename Details::TFI;
 
             if constexpr (TFI::ENABLED) {
@@ -209,12 +210,13 @@ namespace fk { // namespace FusedKernel
     };
 
 #if defined(__NVCC__) || defined(__HIP__)
-    template <typename DPPDetails, bool THREAD_DIVISIBLE>
-    struct TransformDPP<ParArch::GPU_NVIDIA, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
+    template <typename DPPDetails, enum TF TFEN, bool THREAD_DIVISIBLE>
+    struct TransformDPP<ParArch::GPU_NVIDIA, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
     private:
-        using Parent = TransformDPPBase<DPPDetails, THREAD_DIVISIBLE>;
+        using Parent = TransformDPPBase<TFEN, DPPDetails, THREAD_DIVISIBLE>;
         using Details = DPPDetails;
     public:
+        static constexpr ParArch PAR_ARCH = ParArch::GPU_NVIDIA;
         template <typename FirstIOp>
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const Details& details,
                                                            const FirstIOp& iOp) {
@@ -239,12 +241,13 @@ namespace fk { // namespace FusedKernel
     };
 #endif // defined(__NVCC__) || defined(__HIPCC__)
 
-    template <typename DPPDetails, bool THREAD_DIVISIBLE>
-    struct TransformDPP<ParArch::CPU, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
+    template <enum TF TFEN, typename DPPDetails, bool THREAD_DIVISIBLE>
+    struct TransformDPP<ParArch::CPU, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
     private:
-        using Parent = TransformDPPBase<DPPDetails, THREAD_DIVISIBLE>;
+        using Parent = TransformDPPBase<TFEN, DPPDetails, THREAD_DIVISIBLE>;
         using Details = DPPDetails;
     public:
+        static constexpr ParArch PAR_ARCH = ParArch::CPU;
         template <typename FirstIOp>
         FK_HOST_FUSE ActiveThreads getActiveThreads(const Details& details,
                                                     const FirstIOp& iOp) {
@@ -269,45 +272,20 @@ namespace fk { // namespace FusedKernel
 
     template <enum ParArch PA, typename SequenceSelector>
     struct DivergentBatchTransformDPP;
-#if defined(__NVCC__) || defined(__HIP__)
+
     template <typename SequenceSelector>
-    struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
+    struct DivergentBatchTransformDPPBase {
+        friend struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector>; // Allow DivergentBatchTransformDPP to access private members
+        friend struct DivergentBatchTransformDPP<ParArch::CPU, SequenceSelector>; // Allow DivergentBatchTransformDPPBase to access private members
     private:
         template <typename... IOps>
-        FK_DEVICE_FUSE void launchTransformDPP(const IOps&... iOps) {
+        FK_HOST_DEVICE_FUSE void launchTransformDPP(const IOps&... iOps) {
             using Details = TransformDPPDetails<false, IOps...>;
-            TransformDPP<ParArch::GPU_NVIDIA, Details, true>::exec(Details{}, iOps...);
+            TransformDPP<ParArch::GPU_NVIDIA, TF::DISABLED, Details, true>::exec(Details{}, iOps...);
         }
 
         template <int OpSequenceNumber, typename... IOps, typename... IOpSequenceTypes>
-        FK_DEVICE_FUSE void divergent_operate(const uint& z, const InstantiableOperationSequence<IOps...>& iOpSequence,
-                                              const IOpSequenceTypes&... iOpSequences) {
-            if (OpSequenceNumber == SequenceSelector::at(z)) {
-                apply(launchTransformDPP<IOps...>, iOpSequence.instantiableOperations);
-            } else if constexpr (sizeof...(iOpSequences) > 0) {
-                divergent_operate<OpSequenceNumber + 1>(z, iOpSequences...);
-            }
-        }
-    public:
-        template <typename... IOpSequenceTypes>
-        FK_DEVICE_FUSE void exec(const IOpSequenceTypes&... iOpSequences) {
-            const cg::thread_block g = cg::this_thread_block();
-            const uint z = g.group_index().z;
-            divergent_operate<1>(z, iOpSequences...);
-        }
-    };
-#endif // defined(__NVCC__) || defined(__HIPCC__)
-    template <typename SequenceSelector>
-    struct DivergentBatchTransformDPP<ParArch::CPU, SequenceSelector> {
-    private:
-        template <typename... IOps>
-        FK_HOST_FUSE void launchTransformDPP(const IOps&... iOps) {
-            using Details = TransformDPPDetails<false, IOps...>;
-            TransformDPP<ParArch::CPU, Details, true>::exec(Details{}, iOps...);
-        }
-
-        template <int OpSequenceNumber, typename... IOps, typename... IOpSequenceTypes>
-        FK_DEVICE_FUSE void divergent_operate(const uint& z, const InstantiableOperationSequence<IOps...>& iOpSequence,
+        FK_HOST_DEVICE_FUSE void divergent_operate(const uint& z, const InstantiableOperationSequence<IOps...>& iOpSequence,
             const IOpSequenceTypes&... iOpSequences) {
             if (OpSequenceNumber == SequenceSelector::at(z)) {
                 apply(launchTransformDPP<IOps...>, iOpSequence.instantiableOperations);
@@ -315,26 +293,36 @@ namespace fk { // namespace FusedKernel
                 divergent_operate<OpSequenceNumber + 1>(z, iOpSequences...);
             }
         }
+    };
+
+#if defined(__NVCC__) || defined(__HIP__)
+    template <typename SequenceSelector>
+    struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
+    private:
+        using Parent = DivergentBatchTransformDPPBase<SequenceSelector>;
     public:
+        static constexpr ParArch PAR_ARCH = ParArch::GPU_NVIDIA;
+        template <typename... IOpSequenceTypes>
+        FK_DEVICE_FUSE void exec(const IOpSequenceTypes&... iOpSequences) {
+            const cg::thread_block g = cg::this_thread_block();
+            const uint z = g.group_index().z;
+            Parent::template divergent_operate<1>(z, iOpSequences...);
+        }
+    };
+#endif // defined(__NVCC__) || defined(__HIPCC__)
+    template <typename SequenceSelector>
+    struct DivergentBatchTransformDPP<ParArch::CPU, SequenceSelector> {
+    private:
+        using Parent = DivergentBatchTransformDPPBase<SequenceSelector>;
+    public:
+        static constexpr ParArch PAR_ARCH = ParArch::CPU;
         template <typename... IOpSequenceTypes>
         FK_DEVICE_FUSE void exec(const uint& num_planes, const IOpSequenceTypes&... iOpSequences) {
             for (uint z = 0; z < num_planes; ++z) {
-                divergent_operate<1>(z, iOpSequences...);
+                Parent::template divergent_operate<1>(z, iOpSequences...);
             }
         }
     };
-#if defined(__NVCC__) || defined(__HIP__)
-    template <enum ParArch PA, typename SequenceSelector, typename... IOpSequences>
-    __global__ void launchDivergentBatchTransformDPP_Kernel(const __grid_constant__ IOpSequences... iOpSequences) {
-        DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);
-    }
-
-    template <enum ParArch PA, bool THREAD_DIVISIBLE, typename TDPPDetails, typename... IOps>
-    __global__ void launchTransformDPP_Kernel(const __grid_constant__ TDPPDetails tDPPDetails,
-                                              const __grid_constant__ IOps... operations) {
-        TransformDPP<PA, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
-    }
-#endif // defined(__NVCC__) || defined(__HIPCC__)
 } // namespace fk
 
 #endif

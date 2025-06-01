@@ -24,14 +24,6 @@
 
 namespace fk {
 
-    enum class DPPType {
-        Transform,
-        Reduce,
-        MMAD,
-        Convolution3D,
-        None
-    };
-
 #if defined(__NVCC__) || defined(__HIP__)
     struct CtxDim3 {
         uint x;
@@ -131,33 +123,32 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
     Parent::executeOperations(input, output, stream, iOps...); \
 }
 
-    template <enum ParArch PA, enum DPPType DPP, bool THREAD_COARSENING = false>
+    template <typename DataParallelPattern>
     struct Executor {
         FK_STATIC_STRUCT(Executor)
-        static_assert(PA == ParArch::GPU_NVIDIA || PA == ParArch::CPU, "Only CUDA and CPU are supported for now");
-        static_assert(DPP == DPPType::Transform, "Only Transform is supported for now");
+        static_assert(DataParallelPattern::PAR_ARCH == ParArch::GPU_NVIDIA ||
+                      DataParallelPattern::PAR_ARCH == ParArch::CPU, "Only CUDA and CPU are supported for now");
     };
 
-    template <enum DPPType DPP, bool THREAD_COARSENING>
-    struct Executor<ParArch::CPU, DPP, THREAD_COARSENING> {
+    template <enum TF TFEN>
+    struct Executor<TransformDPP<ParArch::CPU, TFEN, void>> {
         FK_STATIC_STRUCT(Executor)
     private:
-        using Child = Executor<ParArch::CPU, DPP, THREAD_COARSENING>;
+        using Child = Executor<TransformDPP<ParArch::CPU, TFEN>>;
         using Parent = BaseExecutor<Child>;
         template <typename... IOps>
         FK_HOST_FUSE void executeOperations_helper(Stream_<ParArch::CPU>& stream, const IOps&... iOps) {
-            constexpr bool THREAD_FUSION = THREAD_COARSENING;
             constexpr ParArch PA = ParArch::CPU;
-            const auto tDetails = TransformDPP<PA, void>::template build_details<THREAD_FUSION>(iOps...);
+            const auto tDetails = TransformDPP<PA, TFEN>::build_details(iOps...);
             using TDPPDetails = std::decay_t<decltype(tDetails)>;
             if constexpr (TDPPDetails::TFI::ENABLED) {
                 if (!tDetails.threadDivisible) {
-                    TransformDPP<PA, TDPPDetails, false>::exec(tDetails, iOps...);
+                    TransformDPP<PA, TFEN, TDPPDetails, false>::exec(tDetails, iOps...);
                 } else {
-                    TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
+                    TransformDPP<PA, TFEN, TDPPDetails, true>::exec(tDetails, iOps...);
                 }
             } else {
-                TransformDPP<PA, TDPPDetails, true>::exec(tDetails, iOps...);
+                TransformDPP<PA, TFEN, TDPPDetails, true>::exec(tDetails, iOps...);
             }
         }
     public:
@@ -167,11 +158,21 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
         DECLARE_EXECUTOR_PARENT_IMPL
     };
 #if defined(__NVCC__) || defined(__HIP__)
-    template <enum DPPType DPP, bool THREAD_COARSENING>
-    struct Executor<ParArch::GPU_NVIDIA, DPP, THREAD_COARSENING> {
+    template <enum ParArch PA, typename SequenceSelector, typename... IOpSequences>
+    __global__ void launchDivergentBatchTransformDPP_Kernel(const __grid_constant__ IOpSequences... iOpSequences) {
+        DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);
+    }
+
+    template <enum ParArch PA, enum TF TFEN, bool THREAD_DIVISIBLE, typename TDPPDetails, typename... IOps>
+    __global__ void launchTransformDPP_Kernel(const __grid_constant__ TDPPDetails tDPPDetails,
+                                              const __grid_constant__ IOps... operations) {
+        TransformDPP<PA, TFEN, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
+    }
+    template <enum TF TFEN>
+    struct Executor<TransformDPP<ParArch::GPU_NVIDIA, TFEN>> {
         FK_STATIC_STRUCT(Executor)
     private:
-        using Child = Executor<ParArch::GPU_NVIDIA, DPP, THREAD_COARSENING>;
+        using Child = Executor<TransformDPP<ParArch::GPU_NVIDIA, TFEN>>;
         using Parent = BaseExecutor<Child>;
         struct ComputeBestSolutionBase {
             FK_HOST_FUSE uint computeDiscardedThreads(const uint width, const uint height, const uint blockDimx, const uint blockDimy) {
@@ -243,9 +244,8 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
         template <typename... IOps>
         FK_HOST_FUSE void executeOperations_helper(Stream_<ParArch::GPU_NVIDIA>& stream_, const IOps&... iOps) {
             const cudaStream_t stream = stream_.getCUDAStream();
-            constexpr bool THREAD_FUSION = THREAD_COARSENING;
             constexpr ParArch PA = ParArch::GPU_NVIDIA;
-            const auto tDetails = TransformDPP<PA, void>::build_details<THREAD_FUSION>(iOps...);
+            const auto tDetails = TransformDPP<PA, TFEN>::build_details(iOps...);
             if constexpr (decltype(tDetails)::TFI::ENABLED) {
                 const ActiveThreads activeThreads = tDetails.activeThreads;
 
@@ -256,10 +256,10 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
                 if (!tDetails.threadDivisible) {
-                    launchTransformDPP_Kernel<PA, false> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    launchTransformDPP_Kernel<PA, TFEN, false><<<grid, block, 0, stream>>>(tDetails, iOps...);
                     gpuErrchk(cudaGetLastError());
                 } else {
-                    launchTransformDPP_Kernel<PA, true> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                    launchTransformDPP_Kernel<PA, TFEN, true><<<grid, block, 0, stream>>>(tDetails, iOps...);
                     gpuErrchk(cudaGetLastError());
                 }
             } else {
@@ -273,7 +273,7 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
                 const dim3 grid{ static_cast<uint>(ceil(activeThreads.x / static_cast<float>(block.x))),
                                  static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
                                  activeThreads.z };
-                launchTransformDPP_Kernel<PA, true> << <grid, block, 0, stream >> > (tDetails, iOps...);
+                launchTransformDPP_Kernel<PA, TFEN, true><<<grid, block, 0, stream>>>(tDetails, iOps...);
                 gpuErrchk(cudaGetLastError());
             }
         }
@@ -292,19 +292,19 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
 #if defined(__NVCC__) || defined(__HIP__)
         if constexpr (PA == ParArch::GPU_NVIDIA) {
             if (outputPtr.getMemType() == MemType::Device || outputPtr.getMemType() == MemType::DeviceAndPinned) {
-                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+                Executor<TransformDPP<ParArch::GPU_NVIDIA>>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
                 if (outputPtr.getMemType() == MemType::DeviceAndPinned) {
                     Stream_<ParArch::CPU> cpuStream;
-                    Executor<ParArch::CPU, DPPType::Transform>::executeOperations(cpuStream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr.ptrPinned()));
+                    Executor<TransformDPP<ParArch::CPU>>::executeOperations(cpuStream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr.ptrPinned()));
                 }
             } else {
-                Executor<ParArch::GPU_NVIDIA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+                Executor<TransformDPP<ParArch::GPU_NVIDIA>>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
             }
         } else {
-            Executor<PA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
+            Executor<TransformDPP<PA>>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(output));
         }
 #else
-        Executor<PA, DPPType::Transform>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr));
+        Executor<TransformDPP<PA>>::executeOperations(stream, ReadSet<T>::build(value, outputPtr.dims()), PerThreadWrite<D, T>::build(outputPtr));
 #endif
     }
 

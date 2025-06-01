@@ -56,12 +56,12 @@ bool testThreadFusionSameTypeIO(fk::Stream& stream) {
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, T>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS);
-        fk::executeOperations(stream, read, write);
+        fk::executeOperations<fk::TF::DISABLED>(stream, read, write);
         STOP_FIRST_START_SECOND_BENCHMARK
         // fusion version
         const auto readTF = fk::PerThreadRead<fk::_2D, T>::build(d_input);
         const auto writeTF = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS_ThreadFusion);
-        fk::executeOperations<true>(stream, readTF, writeTF);
+        fk::executeOperations<fk::TF::ENABLED>(stream, readTF, writeTF);
         STOP_SECOND_BENCHMARK
 
         // Verify results
@@ -114,12 +114,12 @@ bool testThreadFusionDifferentTypeIO(fk::Stream& stream) {
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
-        fk::executeOperations(stream, read, fk::SaturateCast<I, O>::build(), write);
+        fk::executeOperations<fk::TF::DISABLED>(stream, read, fk::SaturateCast<I, O>::build(), write);
         STOP_FIRST_START_SECOND_BENCHMARK
         // fusion version
         const auto readTF = fk::PerThreadRead<fk::_2D, I>::build(d_input);
         const auto writeTF = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS_ThreadFusion);
-        fk::executeOperations<true>(stream, readTF, fk::SaturateCast<I, O>::build(), writeTF);
+        fk::executeOperations<fk::TF::ENABLED>(stream, readTF, fk::SaturateCast<I, O>::build(), writeTF);
         STOP_SECOND_BENCHMARK
 
         // Verify results
@@ -176,12 +176,12 @@ bool testThreadFusionDifferentTypeAndChannelIO(fk::Stream& stream) {
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
-        fk::executeOperations(stream, read, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), write);
+        fk::executeOperations<fk::TF::DISABLED>(stream, read, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), write);
         STOP_FIRST_START_SECOND_BENCHMARK
         // fusion version
         const auto readTF = fk::PerThreadRead<fk::_2D, I>::build(d_input);
         const auto writeTF = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS_ThreadFusion);
-        fk::executeOperations<true>(stream, readTF, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), writeTF);
+        fk::executeOperations<fk::TF::ENABLED>(stream, readTF, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), writeTF);
         STOP_SECOND_BENCHMARK
 
         // Verify results

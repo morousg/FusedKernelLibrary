@@ -16,7 +16,7 @@
 #define FK_CIRCULAR_TENSOR
 
 #include <fused_kernel/core/data/ptr_nd.h>
-#include <fused_kernel/core/execution_model/data_parallel_patterns.h>
+#include <fused_kernel/core/execution_model/executors.h>
 #include <fused_kernel/core/execution_model/memory_operations.h>
 
 namespace fk {
@@ -97,19 +97,19 @@ namespace fk {
             Read<CircularTensorRead<CTReadDirection_v<CT_ORDER>, TensorTPack<StoreT>, BATCH>>>;
 
     public:
-        __host__ inline constexpr CircularTensor() {};
+        FK_HOST_CNST CircularTensor() {};
 
-        __host__ inline constexpr CircularTensor(const uint& width_, const uint& height_, const int& deviceID_ = 0) :
+        FK_HOST_CNST CircularTensor(const uint& width_, const uint& height_, const int& deviceID_ = 0) :
             ParentType(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_),
             m_tempTensor(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_) {};
 
-        __host__ inline constexpr void Alloc(const uint& width_, const uint& height_, const int& deviceID_ = 0) {
+        FK_HOST_CNST void Alloc(const uint& width_, const uint& height_, const int& deviceID_ = 0) {
             this->allocTensor(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_);
             m_tempTensor.allocTensor(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_);
         }
 
         template <typename... IOpTypes>
-        __host__ inline constexpr void update(const cudaStream_t& stream,
+        FK_HOST_CNST void update(const cudaStream_t& stream,
             const IOpTypes&... instantiableOperationInstances) {
             const auto writeInstantiableOperation = ppLast(instantiableOperationInstances...);
             using writeDFType = std::decay_t<decltype(writeInstantiableOperation)>;

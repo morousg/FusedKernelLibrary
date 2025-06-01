@@ -97,7 +97,7 @@ int launch() {
     // Execute the operations in a single kernel
     // At compile time, the types are used to define the kernel code
     // At runtime, the kernel is executed with the provided parameters
-    executeOperations<ParArch::CPU, DPPType::Transform>(stream_cpu, mySender_cpu, myReceiver_cpu);
+    executeOperations<TransformDPP<ParArch::CPU>>(stream_cpu, mySender_cpu, myReceiver_cpu);
 
     return 0;
 }
