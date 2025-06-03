@@ -29,8 +29,7 @@ check_language(HIP)
 if (CMAKE_HIP_COMPILER)
     enable_language(HIP)    
 else()
-    #message(STATUS "HIP compiler not found, HIP support will be disabled.")
-    return()
+    message(STATUS "HIP compiler not found, HIP support will be disabled.")
 endif()
 
 include (cmake/discover_tests.cmake)
@@ -41,14 +40,11 @@ option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
 add_subdirectory(include)
 add_subdirectory(lib)
 
-
-
 if (${BUILD_UTEST})
     enable_testing()  
     add_subdirectory(tests)
     add_subdirectory(cpu_tests)    
 endif()
-
 
 if (${ENABLE_BENCHMARK})
     enable_testing()

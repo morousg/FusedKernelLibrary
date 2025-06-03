@@ -6,7 +6,7 @@ endif()
 function (discover_tests DIR)    
     file(
         GLOB_RECURSE
-        CUDA_SOURCES
+        TEST_SOURCES
         CONFIGURE_DEPENDS
         "${DIR}/*.cpp"
         "${DIR}/*.cu"
@@ -15,38 +15,42 @@ function (discover_tests DIR)
         "${DIR}/*.hpp"
     )
      
-    foreach(cuda_source ${CUDA_SOURCES})
-		get_filename_component(cuda_target ${cuda_source} NAME_WE)           
-		add_executable(${cuda_target} ${cuda_source} )
-		target_sources(${cuda_target} PRIVATE ${LAUNCH_SOURCES})            
+    foreach(test_source ${TEST_SOURCES})
+		get_filename_component(TARGET_NAME ${test_source} NAME_WE)           
+		add_executable(${TARGET_NAME} ${test_source} )
+		target_sources(${TARGET_NAME} PRIVATE ${LAUNCH_SOURCES})            
 		
 		if(${ENABLE_BENCHMARK})
-			target_compile_definitions(${cuda_target} PRIVATE ENABLE_BENCHMARK)
+			target_compile_definitions(${TARGET_NAME} PRIVATE ENABLE_BENCHMARK)
 		endif()
 		
 		cmake_path(SET path2 "${DIR}")
 		cmake_path(GET path2 FILENAME DIR_NAME)       
-		set_property(TARGET ${cuda_target} PROPERTY FOLDER tests/${DIR_NAME})
-		add_cuda_to_target(${cuda_target} "")
+		set_property(TARGET ${TARGET_NAME} PROPERTY FOLDER tests/${DIR_NAME})
+		if (${CMAKE_CUDA_COMPILER})
+			add_cuda_to_target(${TARGET_NAME} "")
+			set_target_cuda_arch_flags(${TARGET_NAME})
 			
-		if(${ENABLE_DEBUG})
-			add_cuda_debug_support_to_target(${cuda_target})
-		endif()
+			if(${ENABLE_DEBUG})
+				add_cuda_debug_support_to_target(${TARGET_NAME})
+			endif()
 
-		if(${ENABLE_NVTX})
-			add_nvtx_support_to_target(${cuda_target})
+			if(${ENABLE_NVTX})
+				add_nvtx_support_to_target(${TARGET_NAME})
+			endif()
+		target_link_libraries(${TARGET_NAME} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 
 		endif()
-
-		set_target_properties(${cuda_target} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
-		target_include_directories(${cuda_target} PRIVATE "${CMAKE_SOURCE_DIR}")        
-		target_link_libraries(${cuda_target} PRIVATE FKL::FKL)
+		#todo: add hip support
+		set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
+		target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")        
+		target_link_libraries(${TARGET_NAME} PRIVATE FKL::FKL)
         if (MSVC)
-            target_compile_options(${cuda_target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
+            target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
         endif()
-		set_target_cuda_arch_flags(${cuda_target})
-		add_optimization_flags(${cuda_target})
-		add_test(NAME  ${cuda_target} COMMAND ${cuda_target})
-		target_link_libraries(${cuda_target} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 
+		
+		add_optimization_flags(${TARGET_NAME})
+		add_test(NAME  ${TARGET_NAME} COMMAND ${TARGET_NAME})
+		
     endforeach()
 endfunction()
 
