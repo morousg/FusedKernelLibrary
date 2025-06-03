@@ -61,7 +61,7 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
             d_output_cv[crop_i].Alloc(cropSize);
         }
 
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
             fk::executeOperations(crops[crop_i], stream,
                 fk::SaturateCast<InputType, OutputType>::build(),
@@ -161,7 +161,7 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
         const auto write_array = fk::PerThreadWrite<fk::_2D, OutputType>::build_batch(d_output_cv);
         const auto write = fk::TensorWrite<OutputType>::build(d_tensor_output);
 
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
             fk::executeOperations(stream, read_array[crop_i], saturate,
                                    mul, sub, div, write_array[crop_i]);

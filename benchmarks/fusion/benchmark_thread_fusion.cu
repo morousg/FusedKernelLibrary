@@ -52,7 +52,7 @@ bool testThreadFusionSameTypeIO(fk::Stream& stream) {
         fk::Ptr2D<T> d_output_cvGS(NUM_ELEMS_Y, NUM_ELEMS_X);
         fk::Ptr2D<T> d_output_cvGS_ThreadFusion(NUM_ELEMS_Y, NUM_ELEMS_X);
 
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, T>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS);
@@ -110,7 +110,7 @@ bool testThreadFusionDifferentTypeIO(fk::Stream& stream) {
         fk::Ptr2D<O> d_output_cvGS(NUM_ELEMS_X, NUM_ELEMS_Y);
         fk::Ptr2D<O> d_output_cvGS_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y);
 
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
@@ -172,7 +172,7 @@ bool testThreadFusionDifferentTypeAndChannelIO(fk::Stream& stream) {
         fk::Ptr2D<O> h_cvGSResults_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
 
         // In this case it's not OpenCV, it's cvGPUSpeedup without thread fusion
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
         const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
         const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);

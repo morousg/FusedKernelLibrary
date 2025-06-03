@@ -68,7 +68,7 @@ inline bool testNumInstPerOp(fk::Stream& stream, fk::Ptr1D<float>& inputFirst,
         // Wramming up the GPU
         fk::executeOperations<fk::TF::DISABLED>(stream, readDF, manyInst, writeDF);
         fk::executeOperations<fk::TF::DISABLED>(stream, readDF, allInstr, writeDF);
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
             for (int i = 0; i < TOTAL_INSTRUCTIONS / variableDimensionValues[Idx]; ++i) {
@@ -84,7 +84,7 @@ inline bool testNumInstPerOp(fk::Stream& stream, fk::Ptr1D<float>& inputFirst,
         fk::executeOperations<fk::TF::DISABLED>(stream, readDF, manyInst, writeDF);
         fk::executeOperations<fk::TF::DISABLED>(stream, readDF, lastOp, writeDF);
         fk::executeOperations<fk::TF::DISABLED>(stream, readDF, allInstr, writeDF);
-        START_FIRST_BENCHMARK
+        START_FIRST_BENCHMARK(fk::defaultParArch)
             // Executing as many kernels as Operations made of variableDimensionValues[Idx] number of instructions,
             // for a total number of instructions equal to TOTAL_INSTRUCTIONS
             for (int i = 0; i < TOTAL_INSTRUCTIONS / variableDimensionValues[Idx]; ++i) {
