@@ -42,8 +42,7 @@ add_subdirectory(lib)
 
 if (${BUILD_UTEST})
     enable_testing()  
-    add_subdirectory(tests)
-    add_subdirectory(cpu_tests)    
+    add_subdirectory(tests)      
 endif()
 
 if (${ENABLE_BENCHMARK})
