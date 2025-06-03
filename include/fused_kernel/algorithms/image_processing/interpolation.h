@@ -28,12 +28,12 @@ namespace fk {
         T _1x1;
     };
 
-    enum InterpolationType {
+    enum class InterpolationType {
         INTER_LINEAR = 1,
         NONE = 17
     };
 
-    template <InterpolationType INTER_T>
+    template <enum InterpolationType INTER_T>
     struct InterpolationParameters {};
 
     template <>
@@ -41,17 +41,17 @@ namespace fk {
         Size src_size;
     };
 
-    template <InterpolationType INTER_T, typename BackFunction_ = void>
+    template <enum InterpolationType INTER_T, typename BackFunction_ = void>
     struct Interpolate {};
 
     template <typename BackFunction_>
-    struct Interpolate<INTER_LINEAR, BackFunction_> {
+    struct Interpolate<InterpolationType::INTER_LINEAR, BackFunction_> {
     private:
         using ReadOutputType = typename BackFunction_::Operation::OutputType;
     public:
         using Parent = TernaryOperation<float2, InterpolationParameters<InterpolationType::INTER_LINEAR>,
                                         BackFunction_, VectorType_t<float, cn<ReadOutputType>>,
-                                        Interpolate<INTER_LINEAR, BackFunction_>>;
+                                        Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>>;
         DECLARE_TERNARY_PARENT
 
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params, const BackFunction& back_function) {
@@ -95,8 +95,8 @@ namespace fk {
     template <InterpolationType INTER_T>
     struct Interpolate<INTER_T, void> {
         template <typename RealBackFunction>
-        static constexpr __host__ __forceinline__
-            auto build(const OperationData<Interpolate<INTER_LINEAR, RealBackFunction>>& opData) {
+        FK_HOST_DEVICE_FUSE
+            auto build(const OperationData<Interpolate<InterpolationType::INTER_LINEAR, RealBackFunction>>& opData) {
             return Interpolate<INTER_T, RealBackFunction>::build(opData);
         }
     };

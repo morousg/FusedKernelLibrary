@@ -56,7 +56,7 @@ int launch() {
     // crops it, resizes it, and applies arithmetic operations
     const auto mySender = PerThreadRead<_2D, uchar3>::build(inputImage)
         .then(Crop<>::build(crops))
-        .then(Resize<INTER_LINEAR, PRESERVE_AR>::build(outputSize, backgroundColor))
+        .then(Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR>::build(outputSize, backgroundColor))
         .then(Mul<float3>::build(mulValue))
         .then(Sub<float3>::build(subValue))
         .then(Div<float3>::build(divValue))
@@ -86,7 +86,7 @@ int launch() {
     // crops it, resizes it, and applies arithmetic operations
     const auto mySender_cpu = PerThreadRead<_2D, uchar3>::build(cpu_inputImage)
         .then(Crop<>::build(crops))
-        .then(Resize<INTER_LINEAR, PRESERVE_AR>::build(outputSize, backgroundColor))
+        .then(Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR>::build(outputSize, backgroundColor))
         .then(Mul<float3>::build(mulValue))
         .then(Sub<float3>::build(subValue))
         .then(Div<float3>::build(divValue))
@@ -98,6 +98,7 @@ int launch() {
     // At compile time, the types are used to define the kernel code
     // At runtime, the kernel is executed with the provided parameters
     executeOperations<TransformDPP<ParArch::CPU>>(stream_cpu, mySender_cpu, myReceiver_cpu);
+    stream_cpu.sync();
 
     return 0;
 }

@@ -89,8 +89,8 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
         stream.sync();
 
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            fk::Ptr2D<OutputType> cvRes = d_output_cv[crop_i];
-            fk::Ptr2D<OutputType> cvGSRes = d_tensor_output.getPlane(crop_i);
+            const fk::Ptr2D<OutputType> cvRes = d_output_cv[crop_i];
+            const fk::Ptr2D<OutputType> cvGSRes = d_tensor_output.getPlane(crop_i);
             bool passedThisTime = compareAndCheck(cvRes, cvGSRes);
             if (!passedThisTime) { std::cout << "Failed on crop idx=" << crop_i << std::endl; }
             passed &= passedThisTime;

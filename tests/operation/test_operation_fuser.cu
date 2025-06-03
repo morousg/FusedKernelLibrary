@@ -21,7 +21,7 @@ using namespace fk;
 
 using ComplexType =
 Read<FusedOperation_<void,
-    Resize<INTER_LINEAR, PRESERVE_AR,
+    Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR,
     ReadBack<Crop<Read<PerThreadRead<_2D, uchar3>>>>>,
     Mul<float3, float3, float3>>>;
 

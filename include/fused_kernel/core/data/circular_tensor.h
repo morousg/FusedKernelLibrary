@@ -99,18 +99,18 @@ namespace fk {
     public:
         FK_HOST_CNST CircularTensor() {};
 
-        FK_HOST_CNST CircularTensor(const uint& width_, const uint& height_, const int& deviceID_ = 0) :
-            ParentType(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_),
-            m_tempTensor(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_) {};
+        FK_HOST_CNST CircularTensor(const uint& width_, const uint& height_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
+            ParentType(width_, height_, BATCH, COLOR_PLANES, type_, deviceID_),
+            m_tempTensor(width_, height_, BATCH, COLOR_PLANES, type_, deviceID_) {};
 
-        FK_HOST_CNST void Alloc(const uint& width_, const uint& height_, const int& deviceID_ = 0) {
-            this->allocTensor(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_);
-            m_tempTensor.allocTensor(width_, height_, BATCH, COLOR_PLANES, MemType::Device, deviceID_);
+        FK_HOST_CNST void Alloc(const uint& width_, const uint& height_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
+            this->allocTensor(width_, height_, BATCH, COLOR_PLANES, type_, deviceID_);
+            m_tempTensor.allocTensor(width_, height_, BATCH, COLOR_PLANES, type_, deviceID_);
         }
 
         template <typename... IOpTypes>
-        FK_HOST_CNST void update(const cudaStream_t& stream,
-            const IOpTypes&... instantiableOperationInstances) {
+        FK_HOST_CNST void update(const Stream& stream,
+                                 const IOpTypes&... instantiableOperationInstances) {
             const auto writeInstantiableOperation = ppLast(instantiableOperationInstances...);
             using writeDFType = std::decay_t<decltype(writeInstantiableOperation)>;
             using writeOpType = typename writeDFType::Operation;
@@ -133,13 +133,23 @@ namespace fk {
 
             const auto copyOps = buildOperationSequence(nonUpdateRead, writeInstantiableOperation);
 
-            const dim3 block(std::min(static_cast<int>(this->ptr_a.dims.width), 32),
+            /*const dim3 block(std::min(static_cast<int>(this->ptr_a.dims.width), 32),
                              std::min(static_cast<int>(this->ptr_a.dims.height), 8));
             const dim3 grid((uint)ceil((float)this->ptr_a.dims.width / static_cast<float>(block.x)),
                             (uint)ceil((float)this->ptr_a.dims.height / static_cast<float>(block.y)),
                             BATCH);
 
-            launchDivergentBatchTransformDPP_Kernel<fk::ParArch::GPU_NVIDIA, SequenceSelectorType<CT_ORDER, BATCH>><<<grid, block, 0, stream>>>(updateOps, copyOps);
+            launchDivergentBatchTransformDPP_Kernel<ParArch::GPU_NVIDIA, SequenceSelectorType<CT_ORDER, BATCH>><<<grid, block, 0, stream>>>(updateOps, copyOps);*/
+
+            if (this->type == MemType::Device || this->type == MemType::DeviceAndPinned) {
+#if defined(__NVCC__) || defined(__HIP__)
+                Executor<DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelectorType<CT_ORDER, BATCH>>>::executeOperations(stream, updateOps, copyOps);
+#else
+                throw std::runtime_error("CircularTensor operations on Device memory only supported in nvcc or hipcc compilation.");
+#endif
+            } else {
+                Executor<DivergentBatchTransformDPP<ParArch::CPU, SequenceSelectorType<CT_ORDER, BATCH>>>::executeOperations(stream, updateOps, copyOps);
+            }
 
             m_nextUpdateIdx = (m_nextUpdateIdx + 1) % BATCH;
             gpuErrchk(cudaGetLastError());

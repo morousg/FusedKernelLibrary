@@ -38,7 +38,7 @@ int launch() {
 
     constexpr auto batchCropResize = 
         readIOp.then(Crop<>::build(rects))
-               .then(Resize<INTER_LINEAR>::build(Size(100, 100)));
+               .then(Resize<InterpolationType::INTER_LINEAR>::build(Size(100, 100)));
 
     static_assert(batchCropResize.getActiveThreads().x == 100);
     static_assert(batchCropResize.getActiveThreads().y == 100);
