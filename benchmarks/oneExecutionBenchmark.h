@@ -12,23 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#ifndef FK_BENCHMARKS_ONE_EXECUTION_H
+#define FK_BENCHMARKS_ONE_EXECUTION_H
+
 #include <sstream>
 #include <fstream>
-#include <iostream>
-#include <unordered_map>
 
-std::unordered_map<std::string, std::stringstream> benchmarkResultsText;
-std::unordered_map<std::string, std::ofstream> currentFile;
-// Select the path where to write the benchmark files
-const std::string path{ "" };
-
-constexpr int ITERS = 100;
-
-struct BenchmarkResultsNumbers {
-    float fkElapsedTimeMax;
-    float fkElapsedTimeMin;
-    float fkElapsedTimeAcum;
-};
+#include <benchmarks/fkBenchmarksCommon.h>
 
 template <size_t ITERATIONS>
 float computeVariance(const float& mean, const std::array<float, ITERATIONS>& times) {
@@ -41,7 +31,7 @@ float computeVariance(const float& mean, const std::array<float, ITERATIONS>& ti
 }
 
 template <int VARIABLE_DIMENSION, int ITERATIONS, int NUM_BATCH_VALUES, const std::array<size_t, NUM_BATCH_VALUES>& variableDimanesionValues>
-inline void processExecution(const BenchmarkResultsNumbers& resF,
+inline void processExecution(const BenchmarkResultsNumbersOne& resF,
                              const std::string& functionName,
                              const std::array<float, ITERS>& fkElapsedTime,
                              const std::string& variableDimension) {
@@ -76,10 +66,7 @@ inline void processExecution(const BenchmarkResultsNumbers& resF,
 #define START_FK_BENCHMARK \
 std::cout << "Executing " << __func__ << " fusing " << VARIABLE_DIMENSION << " operations. " << std::endl; \
 cudaEvent_t start, stop; \
-BenchmarkResultsNumbers resF; \
-resF.fkElapsedTimeMax = fk::minValue<float>; \
-resF.fkElapsedTimeMin = fk::maxValue<float>; \
-resF.fkElapsedTimeAcum = 0.f; \
+BenchmarkResultsNumbersOne resF; \
 gpuErrchk(cudaEventCreate(&start)); \
 gpuErrchk(cudaEventCreate(&stop)); \
 std::array<float, ITERS> fkElapsedTime; \
@@ -100,5 +87,6 @@ processExecution<VARIABLE_DIMENSION, ITERS, variableDimensionValues.size(), vari
 for (auto&& [_, file] : currentFile) { \
     file.close(); \
 }
- 
+
+#endif // FK_BENCHMARKS_ONE_EXECUTION_H
  

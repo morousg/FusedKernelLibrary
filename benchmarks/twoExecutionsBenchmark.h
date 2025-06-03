@@ -12,30 +12,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <unordered_map>
-#include <iostream>
+#ifndef FK_BENCHMARKS_TWO_EXECUTIONS_H
+#define FK_BENCHMARKS_TWO_EXECUTIONS_H
+
 #include <sstream>
 #include <fstream>
-#include <array>
-#include <chrono>
-#include <fused_kernel/core/execution_model/parallel_architectures.h>
 
-std::unordered_map<std::string, std::stringstream> benchmarkResultsText;
-std::unordered_map<std::string, std::ofstream> currentFile;
-// Select the path where to write the benchmark files
-const std::string path{ "" };
+#include <benchmarks/fkBenchmarksCommon.h>
 
-constexpr int ITERS = 100;
 bool warmup{false};
-
-struct BenchmarkResultsNumbers {
-    float firstElapsedTimeMax{ fk::minValue<float> };
-    float firstElapsedTimeMin{ fk::maxValue<float> };
-    float firstElapsedTimeAcum{ 0.f };
-    float secondElapsedTimeMax{ fk::minValue<float> };
-    float secondElapsedTimeMin{ fk::maxValue<float> };
-    float secondElapsedTimeAcum{ 0.f };
-};
 
 template <size_t ITERATIONS> float computeVariance(const float &mean, const std::array<float, ITERATIONS> &times) {
   float sumOfDiff = 0.f;
@@ -47,7 +32,7 @@ template <size_t ITERATIONS> float computeVariance(const float &mean, const std:
 }
 
 template <int BATCH, int ITERATIONS, int NUM_BATCH_VALUES, const std::array<size_t, NUM_BATCH_VALUES> &batchValues>
-inline void processExecution(const BenchmarkResultsNumbers &resF, const std::string &functionName,
+inline void processExecution(const BenchmarkResultsNumbersTwo& resF, const std::string &functionName,
                              const std::string& firstLabel, const std::string& secondLabel,
                              const std::array<float, ITERS> &firstElapsedTime,
                              const std::array<float, ITERS> &secondElapsedTime, const std::string &variableDimension) {
@@ -97,112 +82,11 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   }
 }
 
-class TimeMarkerInterface {
-    virtual void startFirst() = 0;
-    virtual void stopFirstStartSecond(BenchmarkResultsNumbers& resF, const int& idx) = 0;
-    virtual void stopSecond(BenchmarkResultsNumbers& resF, const int& idx) = 0;
-    virtual std::array<float, ITERS> getFirstElapsedTime() const = 0;
-    virtual std::array<float, ITERS> getSecondElapsedTime() const = 0;
-};
-
-template <enum fk::ParArch PA = fk::defaultParArch>
-class TimeMarker;
-
-template <>
-class TimeMarker<fk::ParArch::CPU> final : public TimeMarkerInterface {
-    std::array<float, ITERS> firstElapsedTime;
-    std::array<float, ITERS> secondElapsedTime;
-    std::chrono::time_point<std::chrono::high_resolution_clock> start, stop;
-public:
-    TimeMarker(fk::Stream stream) {
-        firstElapsedTime.fill(0.f);
-        secondElapsedTime.fill(0.f);
-    }
-
-    ~TimeMarker() = default;
-
-    void startFirst() final {
-        start = std::chrono::high_resolution_clock::now();
-    };
-
-    void stopFirstStartSecond(BenchmarkResultsNumbers& resF, const int& idx) final {
-        stop = std::chrono::high_resolution_clock::now();
-        firstElapsedTime[idx] = std::chrono::duration<float, std::milli>(stop - start).count();
-        resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMax;
-        resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMin;
-        resF.firstElapsedTimeAcum += firstElapsedTime[idx];
-        start = std::chrono::high_resolution_clock::now();
-    }
-
-    void stopSecond(BenchmarkResultsNumbers& resF, const int& idx) final {
-        stop = std::chrono::high_resolution_clock::now();
-        secondElapsedTime[idx] = std::chrono::duration<float, std::milli>(stop - start).count();
-        resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;
-        resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;
-        resF.secondElapsedTimeAcum += secondElapsedTime[idx];
-    };
-    std::array<float, ITERS> getFirstElapsedTime() const final {
-        return firstElapsedTime;
-    };
-    std::array<float, ITERS> getSecondElapsedTime() const final {
-        return secondElapsedTime;
-    };
-};
-
-#if defined(__CUDACC__) || defined(__HIP__)
-template <>
-class TimeMarker<fk::ParArch::GPU_NVIDIA> final : public TimeMarkerInterface {
-    cudaEvent_t start, stop;
-    cudaStream_t stream;
-    std::array<float, ITERS> firstElapsedTime;
-    std::array<float, ITERS> secondElapsedTime;
-public:
-    TimeMarker(fk::Stream stream_) : stream(stream_) {
-        gpuErrchk(cudaEventCreate(&start));
-        gpuErrchk(cudaEventCreate(&stop));
-        firstElapsedTime.fill(0.f);
-        secondElapsedTime.fill(0.f);
-    }
-
-    ~TimeMarker() {
-        gpuErrchk(cudaEventDestroy(start));
-        gpuErrchk(cudaEventDestroy(stop));
-    }
-
-    void startFirst() final {
-        gpuErrchk(cudaEventRecord(start, stream));
-    };
-    void stopFirstStartSecond(BenchmarkResultsNumbers& resF, const int& idx) final {
-        gpuErrchk(cudaEventRecord(stop, stream));
-        gpuErrchk(cudaEventSynchronize(stop));
-        gpuErrchk(cudaEventElapsedTime(&firstElapsedTime[idx], start, stop));
-        resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMax;
-        resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMin;
-        resF.firstElapsedTimeAcum += firstElapsedTime[idx];
-        gpuErrchk(cudaEventRecord(start, stream));
-    }
-    void stopSecond(BenchmarkResultsNumbers& resF, const int& idx) final {
-        gpuErrchk(cudaEventRecord(stop, stream));
-        gpuErrchk(cudaEventSynchronize(stop));
-        gpuErrchk(cudaEventElapsedTime(&secondElapsedTime[idx], start, stop));
-        resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;
-        resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;
-        resF.secondElapsedTimeAcum += secondElapsedTime[idx];
-    };
-    std::array<float, ITERS> getFirstElapsedTime() const final {
-        return firstElapsedTime;
-    };
-    std::array<float, ITERS> getSecondElapsedTime() const final {
-        return secondElapsedTime;
-    };
-};
-#endif
-
 #define START_FIRST_BENCHMARK(ARCH)                                                                                            \
   std::cout << "Executing " << __func__ << " using " << BATCH << " " << VARIABLE_DIMENSION_NAME << " " << (BATCH - FIRST_VALUE) / INCREMENT \
             << "/" << NUM_EXPERIMENTS << std::endl;                                                                    \
-  BenchmarkResultsNumbers resF;                                                                                        \
-  TimeMarker<ARCH> marker(stream);                                                                             \
+  BenchmarkResultsNumbersTwo resF;                                                                                        \
+  TimeMarkerTwo<ARCH> marker(stream);                                                                             \
   for (int idx = 0; idx <ITERS; ++idx) {                                                                                    \
     marker.startFirst();
 
@@ -221,4 +105,5 @@ processExecution<BATCH, ITERS, variableDimensionValues.size(), variableDimension
   for (auto &&[_, file] : currentFile) {                                                                               \
     file.close();                                                                                                      \
   }
- 
+
+#endif // FK_BENCHMARKS_TWO_EXECUTIONS_H
