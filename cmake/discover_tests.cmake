@@ -16,31 +16,38 @@ function(add_cuda_to_test TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 
 endfunction()
 
-function (add_generated_test TARGET_NAME EXTENSION)
-                
-        set(TEST_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.${EXTENSION}") #use the same name as the target	)			
-        configure_file(${test_source} ${TEST_GENERATED_SOURCE} @ONLY) #replace variables in the test source file                
-        add_executable(${TARGET_NAME} ${TEST_GENERATED_SOURCE} )
-        target_sources(${TARGET_NAME} PRIVATE ${LAUNCH_SOURCES})            
+function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
+                       
+        set(TEST_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${EXTENSION}/launcher.${EXTENSION}") #use the same name as the target	)			
+       
+        configure_file(${CMAKE_SOURCE_DIR}/tests/launcher.in ${TEST_GENERATED_SOURCE} @ONLY) #replace variables in the test source file                 
+        set (TARGET_NAME_EXT "${TARGET_NAME}_${EXTENSION}")
+        #message(STATUS "Adding test: ${TARGET_NAME_EXT} from ${TEST_GENERATED_SOURCE} and ${TEST_SOURCE}")
+        add_executable(${TARGET_NAME_EXT} "${TEST_GENERATED_SOURCE};${TEST_SOURCE}" )
+        target_sources(${TARGET_NAME_EXT} PRIVATE ${LAUNCH_SOURCES})            
         
         if(${ENABLE_BENCHMARK})
-            target_compile_definitions(${TARGET_NAME} PRIVATE ENABLE_BENCHMARK)
+            target_compile_definitions(${TARGET_NAME_EXT} PRIVATE ENABLE_BENCHMARK)
         endif()
         
-        cmake_path(SET path2 "${DIR}")
-        cmake_path(GET path2 FILENAME DIR_NAME)       
-      
+         
         #todo: add hip support
-        set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
-        target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")        
-        target_link_libraries(${TARGET_NAME} PRIVATE FKL::FKL)
+        set_target_properties(${TARGET_NAME_EXT} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
+        target_include_directories(${TARGET_NAME_EXT} PRIVATE "${CMAKE_SOURCE_DIR}")        
+        target_include_directories(${TARGET_NAME_EXT} PRIVATE "${DIR}")      
+        target_link_libraries(${TARGET_NAME_EXT} PRIVATE FKL::FKL)
         if (MSVC)
-            target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
+            target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
         endif()
         
-        add_optimization_flags(${TARGET_NAME})
+        add_optimization_flags(${TARGET_NAME_EXT})
         
-        add_test(NAME  ${TARGET_NAME} COMMAND ${TARGET_NAME})                 
+        add_test(NAME  ${TARGET_NAME_EXT} COMMAND ${TARGET_NAME_EXT})    
+        cmake_path(SET path2 "${DIR}")
+		cmake_path(GET path2 FILENAME DIR_NAME)       
+		set_property(TARGET ${cuda_target} PROPERTY FOLDER tests/${DIR_NAME})
+        set_property(TARGET "${TARGET_NAME_EXT}" PROPERTY FOLDER "tests/${EXTENSION}/${DIR_NAME}")    
+        
 endfunction()
 
 function (discover_tests DIR)    
@@ -48,18 +55,30 @@ function (discover_tests DIR)
         GLOB_RECURSE
         TEST_SOURCES
         CONFIGURE_DEPENDS
-        "${DIR}/*.in"        
+        "${DIR}/*.h"        
     )
      
     foreach(test_source ${TEST_SOURCES})
+         
         get_filename_component(TARGET_NAME ${test_source} NAME_WE)   
-        add_generated_test("${TARGET_NAME}_cpu" "cpp")
-        set_property(TARGET "${TARGET_NAME}_cpu" PROPERTY FOLDER "tests/cpu/${DIR_NAME}")
-        if (CMAKE_CUDA_COMPILER)
-            add_generated_test("${TARGET_NAME}_cuda" "cu")
-            add_cuda_to_test("${TARGET_NAME}_cuda")
-            set_property(TARGET "${TARGET_NAME}_cuda" PROPERTY FOLDER "tests/cuda/${DIR_NAME}")
+        cmake_path(GET test_source  PARENT_PATH  DIR_NAME) #get the directory name of the test source fileç
+        string(FIND ${DIR_NAME} "cudabug"  POS)
+        if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"                        
+            add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")
         endif()
+        if (CMAKE_CUDA_COMPILER)
+            add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_NAME}")
+            add_cuda_to_test("${TARGET_NAME}_cu")            
+        endif()
+        
+        if (CMAKE_HIP_COMPILER)
+            if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"                        
+                add_generated_test("${TARGET_NAME}"  "${test_source}_hip" "hip"  "${DIR_NAME}")
+            #add_hip_to_test("${TARGET_NAME}_hip") #todo: add hip support     
+            endif()
+            
+        endif()        
+      
     endforeach()
 endfunction()
  

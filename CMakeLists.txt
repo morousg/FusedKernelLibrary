@@ -25,12 +25,22 @@ else()
     message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
 endif()
 
+
 check_language(HIP)
-if (CMAKE_HIP_COMPILER)
+if(CMAKE_HIP_COMPILER)
+    list(APPEND CMAKE_PREFIX_PATH
+        "$ENV{HIP_PATH}/lib/cmake"
+        "$ENV{HIP_PATH}/../lib/cmake" # hopefully catches all extra HIP dependencies
+    )
+
+    find_package(HIP CONFIG)
+
+    message(STATUS "Found HIP: " ${HIP_VERSION})
     enable_language(HIP)    
 else()
     message(STATUS "HIP compiler not found, HIP support will be disabled.")
 endif()
+ 
 
 include (cmake/discover_tests.cmake)
 
