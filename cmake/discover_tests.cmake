@@ -8,16 +8,20 @@ function (discover_tests DIR)
         GLOB_RECURSE
         TEST_SOURCES
         CONFIGURE_DEPENDS
-        "${DIR}/*.cpp"
-        "${DIR}/*.cu"
-        "${DIR}/*.cuh"
-        "${DIR}/*.h"
-        "${DIR}/*.hpp"
+        "${DIR}/*.in"        
     )
      
     foreach(test_source ${TEST_SOURCES})
 		get_filename_component(TARGET_NAME ${test_source} NAME_WE)           
-		add_executable(${TARGET_NAME} ${test_source} )
+		if (CMAKE_CUDA_COMPILER)
+			set(TEST_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cu") #use the same name as the target	)			
+		else()
+			set(TEST_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp") #use the same name as the target	)			
+		endif()
+		
+		configure_file(${test_source} ${TEST_GENERATED_SOURCE} @ONLY) #replace variables in the test source file
+		
+		add_executable(${TARGET_NAME} ${TEST_GENERATED_SOURCE} )
 		target_sources(${TARGET_NAME} PRIVATE ${LAUNCH_SOURCES})            
 		
 		if(${ENABLE_BENCHMARK})
