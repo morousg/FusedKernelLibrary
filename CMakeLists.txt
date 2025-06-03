@@ -9,15 +9,30 @@ include (cmake/cmake_init.cmake)
 include (cmake/doxygen.cmake)
 include (cmake/targets/virtualfolders.cmake)
 include (cmake/deploy/deploy_dependencies.cmake)
-include (cmake/libs/cuda/archs.cmake)
+
 include (cmake/archflags.cmake)
 include (cmake/generators/version_header.cmake)
-project(FusedKernelLibrary VERSION ${PROJECT_VERSION} LANGUAGES CXX CUDA 
+project(FusedKernelLibrary VERSION ${PROJECT_VERSION} LANGUAGES CXX  
 DESCRIPTION "Implementation of a methodology that allows all sorts of user defined GPU kernel fusion, for non CUDA programmers." 
 HOMEPAGE_URL "https://github.com/morousg/FusedKernelLibrary" )
 
-include (cmake/libs/cuda/cuda.cmake)
-include (cmake/cuda_init.cmake)
+#cuda is optional, but if it is found, it will be used
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+    include(cmake/cuda_init.cmake)
+else()
+    message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
+endif()
+
+check_language(HIP)
+if (CMAKE_HIP_COMPILER)
+    enable_language(HIP)    
+else()
+    #message(STATUS "HIP compiler not found, HIP support will be disabled.")
+    return()
+endif()
+
 include (cmake/discover_tests.cmake)
 
 option (BUILD_UTEST "build standard unit tests" ON)

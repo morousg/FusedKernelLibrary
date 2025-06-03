@@ -3,9 +3,6 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
     set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake")
 endif()
  
-# cuda version and compiler detection
-include(cmake/cuda_init.cmake)
-
 #
 if(CMAKE_GENERATOR MATCHES "Ninja")
     set(OUT_DIR "${CMAKE_BINARY_DIR}/bin/")
