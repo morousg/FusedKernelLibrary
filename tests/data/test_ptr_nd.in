@@ -54,14 +54,14 @@ void test_upload(Stream& stream) {
     Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
 
     // Must work
-    test1D_h.uploadTo(test1D, stream);
-    test2D_h.uploadTo(test2D, stream);
-    test3D_h.uploadTo(test3D, stream);
-    testTensor_h.uploadTo(testTensor, stream);
+    test1D_h.upload(stream);
+    test2D_h.upload(stream);
+    test3D_h.upload(stream);
+    testTensor_h.upload( stream);
 
     // Must not work
     try {
-        test1D.uploadTo(test1D_h);
+        test1D.upload(stream);
     } catch (const std::exception& e) {
         std::cout << "Expected exception: " << e.what() << std::endl;
     }
@@ -84,14 +84,14 @@ void test_download(Stream& stream) {
     Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
 
     // Must work
-    test1D.downloadTo(test1D_h, stream);
-    test2D.downloadTo(test2D_h, stream);
-    test3D.downloadTo(test3D_h, stream);
-    testTensor.downloadTo(testTensor_h, stream);
+    test1D.download(stream);
+    test2D.download(stream);
+    test3D.download(stream);
+    testTensor.download(stream);
 
     // Must not work
     try {
-        test1D_h.downloadTo(test1D);
+        test1D_h.download(stream);
     } catch (const std::exception& e) {
         std::cout << "Expected exception: " << e.what() << std::endl;
     }
