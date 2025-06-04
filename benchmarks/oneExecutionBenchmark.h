@@ -65,23 +65,15 @@ inline void processExecution(const BenchmarkResultsNumbersOne& resF,
   
 #define START_FK_BENCHMARK \
 std::cout << "Executing " << __func__ << " fusing " << VARIABLE_DIMENSION << " operations. " << std::endl; \
-cudaEvent_t start, stop; \
 BenchmarkResultsNumbersOne resF; \
-gpuErrchk(cudaEventCreate(&start)); \
-gpuErrchk(cudaEventCreate(&stop)); \
-std::array<float, ITERS> fkElapsedTime; \
+TimeMarkerOne<> marker(stream); \
 for (int i = 0; i < ITERS; i++) { \
-gpuErrchk(cudaEventRecord(start, stream));
+    marker.start();
  
 #define STOP_FK_BENCHMARK \
-gpuErrchk(cudaEventRecord(stop, stream)); \
-gpuErrchk(cudaEventSynchronize(stop)); \
-gpuErrchk(cudaEventElapsedTime(&fkElapsedTime[i], start, stop)); \
-resF.fkElapsedTimeMax = resF.fkElapsedTimeMax < fkElapsedTime[i] ? fkElapsedTime[i] : resF.fkElapsedTimeMax; \
-resF.fkElapsedTimeMin = resF.fkElapsedTimeMin > fkElapsedTime[i] ? fkElapsedTime[i] : resF.fkElapsedTimeMin; \
-resF.fkElapsedTimeAcum += fkElapsedTime[i]; \
+    marker.stop(resF, i); \
 } \
-processExecution<VARIABLE_DIMENSION, ITERS, variableDimensionValues.size(), variableDimensionValues>(resF, __func__, fkElapsedTime, VARIABLE_DIMENSION_NAME);
+processExecution<VARIABLE_DIMENSION, ITERS, variableDimensionValues.size(), variableDimensionValues>(resF, __func__, marker.getElapsedTime(), VARIABLE_DIMENSION_NAME);
  
 #define CLOSE_BENCHMARK \
 for (auto&& [_, file] : currentFile) { \

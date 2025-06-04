@@ -64,6 +64,72 @@ struct BenchmarkResultsNumbersOne {
     float fkElapsedTimeAcum{ 0.f };
 };
 
+class TimeMarkerInterfaceOne {
+    virtual void start() = 0;
+    virtual void stop(BenchmarkResultsNumbersOne& resF, const int& idx) = 0;
+    virtual std::array<float, ITERS> getElapsedTime() const = 0;
+};
+
+template <enum fk::ParArch PA = fk::defaultParArch>
+class TimeMarkerOne;
+
+template <>
+class TimeMarkerOne<fk::ParArch::CPU> final : public TimeMarkerInterfaceOne {
+    std::array<float, ITERS> m_elapsedTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_start, m_stop;
+public:
+    TimeMarkerOne(fk::Stream stream) {
+        m_elapsedTime.fill(0.f);
+    }
+    ~TimeMarkerOne() = default;
+    void start() final {
+        m_start = std::chrono::high_resolution_clock::now();
+    }
+    void stop(BenchmarkResultsNumbersOne& resF, const int& idx) final {
+        m_stop = std::chrono::high_resolution_clock::now();
+        m_elapsedTime[idx] = std::chrono::duration<float, std::milli>(m_stop - m_start).count();
+        resF.fkElapsedTimeMax = resF.fkElapsedTimeMax < m_elapsedTime[idx] ? m_elapsedTime[idx] : resF.fkElapsedTimeMax;
+        resF.fkElapsedTimeMin = resF.fkElapsedTimeMin > m_elapsedTime[idx] ? m_elapsedTime[idx] : resF.fkElapsedTimeMin;
+        resF.fkElapsedTimeAcum += m_elapsedTime[idx];
+    };
+    std::array<float, ITERS> getElapsedTime() const final {
+        return m_elapsedTime;
+    }
+};
+
+#if defined(__CUDACC__) || defined(__HIP__)
+template <>
+class TimeMarkerOne<fk::ParArch::GPU_NVIDIA> final : public TimeMarkerInterfaceOne {
+    cudaEvent_t m_start, m_stop;
+    cudaStream_t m_stream;
+    std::array<float, ITERS> m_elapsedTime;
+public:
+    TimeMarkerOne(fk::Stream stream) : m_stream(stream) {
+        gpuErrchk(cudaEventCreate(&m_start));
+        gpuErrchk(cudaEventCreate(&m_stop));
+        m_elapsedTime.fill(0.f);
+    }
+    ~TimeMarkerOne() {
+        gpuErrchk(cudaEventDestroy(m_start));
+        gpuErrchk(cudaEventDestroy(m_stop));
+    }
+    void start() final {
+        gpuErrchk(cudaEventRecord(m_start, m_stream));
+    }
+    void stop(BenchmarkResultsNumbersOne& resF, const int& idx) final {
+        gpuErrchk(cudaEventRecord(m_stop, m_stream));
+        gpuErrchk(cudaEventSynchronize(m_stop));
+        gpuErrchk(cudaEventElapsedTime(&m_elapsedTime[idx], m_start, m_stop));
+        resF.fkElapsedTimeMax = resF.fkElapsedTimeMax < m_elapsedTime[idx] ? m_elapsedTime[idx] : resF.fkElapsedTimeMax;
+        resF.fkElapsedTimeMin = resF.fkElapsedTimeMin > m_elapsedTime[idx] ? m_elapsedTime[idx] : resF.fkElapsedTimeMin;
+        resF.fkElapsedTimeAcum += m_elapsedTime[idx];
+    }
+    std::array<float, ITERS> getElapsedTime() const final {
+        return m_elapsedTime;
+    }
+};
+#endif // defined(__CUDACC__) || defined(__HIP__)
+
 struct BenchmarkResultsNumbersTwo {
     float firstElapsedTimeMax{ fk::minValue<float> };
     float firstElapsedTimeMin{ fk::maxValue<float> };
@@ -86,90 +152,90 @@ class TimeMarkerTwo;
 
 template <>
 class TimeMarkerTwo<fk::ParArch::CPU> final : public TimeMarkerInterfaceTwo {
-    std::array<float, ITERS> firstElapsedTime;
-    std::array<float, ITERS> secondElapsedTime;
-    std::chrono::time_point<std::chrono::high_resolution_clock> start, stop;
+    std::array<float, ITERS> m_firstElapsedTime;
+    std::array<float, ITERS> m_secondElapsedTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_start, m_stop;
 public:
     TimeMarkerTwo(fk::Stream stream) {
-        firstElapsedTime.fill(0.f);
-        secondElapsedTime.fill(0.f);
+        m_firstElapsedTime.fill(0.f);
+        m_secondElapsedTime.fill(0.f);
     }
 
     ~TimeMarkerTwo() = default;
 
     void startFirst() final {
-        start = std::chrono::high_resolution_clock::now();
+        m_start = std::chrono::high_resolution_clock::now();
     };
 
     void stopFirstStartSecond(BenchmarkResultsNumbersTwo& resF, const int& idx) final {
-        stop = std::chrono::high_resolution_clock::now();
-        firstElapsedTime[idx] = std::chrono::duration<float, std::milli>(stop - start).count();
-        resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMax;
-        resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMin;
-        resF.firstElapsedTimeAcum += firstElapsedTime[idx];
-        start = std::chrono::high_resolution_clock::now();
+        m_stop = std::chrono::high_resolution_clock::now();
+        m_firstElapsedTime[idx] = std::chrono::duration<float, std::milli>(m_stop - m_start).count();
+        resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < m_firstElapsedTime[idx] ? m_firstElapsedTime[idx] : resF.firstElapsedTimeMax;
+        resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > m_firstElapsedTime[idx] ? m_firstElapsedTime[idx] : resF.firstElapsedTimeMin;
+        resF.firstElapsedTimeAcum += m_firstElapsedTime[idx];
+        m_start = std::chrono::high_resolution_clock::now();
     }
 
     void stopSecond(BenchmarkResultsNumbersTwo& resF, const int& idx) final {
-        stop = std::chrono::high_resolution_clock::now();
-        secondElapsedTime[idx] = std::chrono::duration<float, std::milli>(stop - start).count();
-        resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;
-        resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;
-        resF.secondElapsedTimeAcum += secondElapsedTime[idx];
+        m_stop = std::chrono::high_resolution_clock::now();
+        m_secondElapsedTime[idx] = std::chrono::duration<float, std::milli>(m_stop - m_start).count();
+        resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < m_secondElapsedTime[idx] ? m_secondElapsedTime[idx] : resF.secondElapsedTimeMax;
+        resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > m_secondElapsedTime[idx] ? m_secondElapsedTime[idx] : resF.secondElapsedTimeMin;
+        resF.secondElapsedTimeAcum += m_secondElapsedTime[idx];
     };
     std::array<float, ITERS> getFirstElapsedTime() const final {
-        return firstElapsedTime;
+        return m_firstElapsedTime;
     };
     std::array<float, ITERS> getSecondElapsedTime() const final {
-        return secondElapsedTime;
+        return m_secondElapsedTime;
     };
 };
 
 #if defined(__CUDACC__) || defined(__HIP__)
 template <>
 class TimeMarkerTwo<fk::ParArch::GPU_NVIDIA> final : public TimeMarkerInterfaceTwo {
-    cudaEvent_t start, stop;
-    cudaStream_t stream;
-    std::array<float, ITERS> firstElapsedTime;
-    std::array<float, ITERS> secondElapsedTime;
+    cudaEvent_t m_start, m_stop;
+    cudaStream_t m_stream;
+    std::array<float, ITERS> m_firstElapsedTime;
+    std::array<float, ITERS> m_secondElapsedTime;
 public:
-    TimeMarkerTwo(fk::Stream stream_) : stream(stream_) {
-        gpuErrchk(cudaEventCreate(&start));
-        gpuErrchk(cudaEventCreate(&stop));
-        firstElapsedTime.fill(0.f);
-        secondElapsedTime.fill(0.f);
+    TimeMarkerTwo(fk::Stream stream) : m_stream(stream) {
+        gpuErrchk(cudaEventCreate(&m_start));
+        gpuErrchk(cudaEventCreate(&m_stop));
+        m_firstElapsedTime.fill(0.f);
+        m_secondElapsedTime.fill(0.f);
     }
 
     ~TimeMarkerTwo() {
-        gpuErrchk(cudaEventDestroy(start));
-        gpuErrchk(cudaEventDestroy(stop));
+        gpuErrchk(cudaEventDestroy(m_start));
+        gpuErrchk(cudaEventDestroy(m_stop));
     }
 
     void startFirst() final {
-        gpuErrchk(cudaEventRecord(start, stream));
+        gpuErrchk(cudaEventRecord(m_start, m_stream));
     };
     void stopFirstStartSecond(BenchmarkResultsNumbersTwo& resF, const int& idx) final {
-        gpuErrchk(cudaEventRecord(stop, stream));
-        gpuErrchk(cudaEventSynchronize(stop));
-        gpuErrchk(cudaEventElapsedTime(&firstElapsedTime[idx], start, stop));
-        resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMax;
-        resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMin;
-        resF.firstElapsedTimeAcum += firstElapsedTime[idx];
-        gpuErrchk(cudaEventRecord(start, stream));
+        gpuErrchk(cudaEventRecord(m_stop, m_stream));
+        gpuErrchk(cudaEventSynchronize(m_stop));
+        gpuErrchk(cudaEventElapsedTime(&m_firstElapsedTime[idx], m_start, m_stop));
+        resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < m_firstElapsedTime[idx] ? m_firstElapsedTime[idx] : resF.firstElapsedTimeMax;
+        resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > m_firstElapsedTime[idx] ? m_firstElapsedTime[idx] : resF.firstElapsedTimeMin;
+        resF.firstElapsedTimeAcum += m_firstElapsedTime[idx];
+        gpuErrchk(cudaEventRecord(m_start, m_stream));
     }
     void stopSecond(BenchmarkResultsNumbersTwo& resF, const int& idx) final {
-        gpuErrchk(cudaEventRecord(stop, stream));
-        gpuErrchk(cudaEventSynchronize(stop));
-        gpuErrchk(cudaEventElapsedTime(&secondElapsedTime[idx], start, stop));
-        resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;
-        resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;
-        resF.secondElapsedTimeAcum += secondElapsedTime[idx];
+        gpuErrchk(cudaEventRecord(m_stop, m_stream));
+        gpuErrchk(cudaEventSynchronize(m_stop));
+        gpuErrchk(cudaEventElapsedTime(&m_secondElapsedTime[idx], m_start, m_stop));
+        resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < m_secondElapsedTime[idx] ? m_secondElapsedTime[idx] : resF.secondElapsedTimeMax;
+        resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > m_secondElapsedTime[idx] ? m_secondElapsedTime[idx] : resF.secondElapsedTimeMin;
+        resF.secondElapsedTimeAcum += m_secondElapsedTime[idx];
     };
     std::array<float, ITERS> getFirstElapsedTime() const final {
-        return firstElapsedTime;
+        return m_firstElapsedTime;
     };
     std::array<float, ITERS> getSecondElapsedTime() const final {
-        return secondElapsedTime;
+        return m_secondElapsedTime;
     };
 };
 #endif 
