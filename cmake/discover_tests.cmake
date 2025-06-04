@@ -31,7 +31,7 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
         endif()
         
          
-        #todo: add hip support
+        
         set_target_properties(${TARGET_NAME_EXT} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
         target_include_directories(${TARGET_NAME_EXT} PRIVATE "${CMAKE_SOURCE_DIR}")        
         target_include_directories(${TARGET_NAME_EXT} PRIVATE "${DIR}")      
@@ -66,18 +66,11 @@ function (discover_tests DIR)
         if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"                        
             add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")
         endif()
-        if (CMAKE_CUDA_COMPILER)
+        if (CMAKE_CUDA_COMPILER AND FKL_ENABLE_CUDA)
             add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_NAME}")
             add_cuda_to_test("${TARGET_NAME}_cu")            
         endif()
-        
-        if (CMAKE_HIP_COMPILER)
-            if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"                        
-                add_generated_test("${TARGET_NAME}"  "${test_source}_hip" "hip"  "${DIR_NAME}")
-            #add_hip_to_test("${TARGET_NAME}_hip") #todo: add hip support     
-            endif()
-            
-        endif()        
+         
       
     endforeach()
 endfunction()

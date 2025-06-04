@@ -62,7 +62,7 @@ function (discover_benchmark DIR)
         get_filename_component(TARGET_NAME ${benchmark_source} NAME_WE)    
 		cmake_path(GET benchmark_source  PARENT_PATH  DIR_NAME) #get the directory name of the test source file
         add_generated_benchmark("${TARGET_NAME}" "${benchmark_source}" "cpp" "${DIR_NAME}")
-		if (CMAKE_CUDA_COMPILER)
+		if (CMAKE_CUDA_COMPILER AND FKL_ENABLE_CUDA)
             add_generated_benchmark("${TARGET_NAME}"  "${benchmark_source}" "cu"  "${DIR_NAME}")
             add_cuda_to_benchmark("${TARGET_NAME}_cu")            
         endif()

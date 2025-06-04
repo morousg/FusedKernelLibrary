@@ -20,27 +20,13 @@ HOMEPAGE_URL "https://github.com/morousg/FusedKernelLibrary" )
 include(CheckLanguage)
 check_language(CUDA)
 if (CMAKE_CUDA_COMPILER)
-    include(cmake/cuda_init.cmake)
+    option (FKL_ENABLE_CUDA "Enable CUDA support" ON)
+    if (${FKL_ENABLE_CUDA})
+        include(cmake/cuda_init.cmake)
+    endif()
 else()
     message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
 endif()
-
-
-check_language(HIP)
-if(CMAKE_HIP_COMPILER)
-    list(APPEND CMAKE_PREFIX_PATH
-        "$ENV{HIP_PATH}/lib/cmake"
-        "$ENV{HIP_PATH}/../lib/cmake" # hopefully catches all extra HIP dependencies
-    )
-
-    find_package(HIP CONFIG)
-
-    message(STATUS "Found HIP: " ${HIP_VERSION})
-    enable_language(HIP)    
-else()
-    message(STATUS "HIP compiler not found, HIP support will be disabled.")
-endif()
- 
 
 include (cmake/discover_tests.cmake)
 
