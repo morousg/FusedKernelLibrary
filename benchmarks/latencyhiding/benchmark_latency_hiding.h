@@ -17,9 +17,10 @@
 #include <benchmarks/oneExecutionBenchmark.h>
  
 #include <fused_kernel/fused_kernel.h>
+#include <fused_kernel/core/execution_model/executors.h>
+#include <fused_kernel/core/execution_model/stream.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/algorithms/basic_ops/static_loop.h>
-#include <fused_kernel/core/execution_model/stream.h>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 
@@ -31,17 +32,9 @@ constexpr std::array<size_t, NUM_EXPERIMENTS> variableDimensionValues = arrayInd
 
 constexpr int NUM_ELEMENTS = 3840 * 2160 * 8;
 
-template <typename T>
-__global__ void init_values(const T val, fk::RawPtr<fk::_1D, T> pointer_to_init) {
-    const int x = threadIdx.x + (blockDim.x * blockIdx.x);
-    if (x < pointer_to_init.dims.width) {
-        *fk::PtrAccessor<fk::_1D>::point(fk::Point(x), pointer_to_init) = val;
-    }
-}
-
 template <typename InputType, typename OutputType, size_t NumOps, typename IOp>
 struct VerticalFusion {
-    static inline void execute(const fk::Ptr1D<InputType>& input, fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream,
+    static inline void execute(const fk::Ptr1D<InputType>& input, fk::Stream& stream,
                                const fk::Ptr1D<OutputType>& output, const IOp& dFunc) {
         const fk::ActiveThreads activeThreads{ output.ptr().dims.width };
         fk::Read<fk::PerThreadRead<fk::_1D, InputType>> readDF{ {input.ptr()} };
@@ -54,16 +47,14 @@ struct VerticalFusion {
 };
 
 template <int VARIABLE_DIMENSION>
-inline int testLatencyHiding(fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream) {
+inline int testLatencyHiding(fk::Stream& stream) {
 
-    const fk::Ptr1D<float> input(NUM_ELEMENTS, 0, fk::MemType::Device);
-    const fk::Ptr1D<float> output(NUM_ELEMENTS, 0, fk::MemType::Device);
+    fk::Ptr1D<float> input(NUM_ELEMENTS, 0, fk::MemType::Device);
+    fk::Ptr1D<float> output(NUM_ELEMENTS, 0, fk::MemType::Device);
 
     constexpr float init_val{ 1 };
 
-    dim3 block(256);
-    dim3 grid(ceil(NUM_ELEMENTS / (float)block.x));
-    init_values<<<grid, block, 0, stream.getCUDAStream()>>>(init_val, input.ptr());
+    fk::setTo(init_val, input, stream);
 
     using IOp = fk::Binary<fk::Mul<float>>;
     IOp df{ fk::make_set<float>(2) };
@@ -81,7 +72,7 @@ inline int testLatencyHiding(fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream) {
 }
 
 template <int... Idx>
-inline int testLatencyHidingHelper(fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream, const std::integer_sequence<int, Idx...>& seq) {
+inline int testLatencyHidingHelper(fk::Stream& stream, const std::integer_sequence<int, Idx...>& seq) {
     const bool result = ((testLatencyHiding<variableDimensionValues[Idx]>(stream) == 0) && ...);
     if (result) {
         return 0;
@@ -91,7 +82,7 @@ inline int testLatencyHidingHelper(fk::Stream_<fk::ParArch::GPU_NVIDIA>& stream,
 }
 
 int launch() {
-    fk::Stream_<fk::ParArch::GPU_NVIDIA> stream;
+    fk::Stream stream;
 
     const int result = testLatencyHidingHelper(stream, std::make_integer_sequence<int, variableDimensionValues.size()>{});
 
