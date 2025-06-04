@@ -16,6 +16,7 @@
 #define FK_STREAM
 
 #include <fused_kernel/core/execution_model/parallel_architectures.h>
+#include <fused_kernel/core/data/ref_class.h>
 
 #if defined(__NVCC__)
 #include <fused_kernel/core/utils/utils.h>
@@ -25,9 +26,22 @@
 
 namespace fk {
 
-    class BaseStream {
+    class BaseStream : public Ref {
     public:
+        BaseStream() : Ref() {};
+        BaseStream(const BaseStream& other) : Ref(other) {}
         virtual ~BaseStream() = default;
+
+        BaseStream(BaseStream&&) = delete;
+        BaseStream& operator=(BaseStream&&) = delete;
+
+        BaseStream& operator=(const BaseStream& other) {
+            if (this != &other) {
+                Ref::operator=(other);
+            }
+            return *this;
+        }
+
         virtual void sync() = 0;
     };
 
@@ -39,19 +53,44 @@ namespace fk {
     class Stream_<ParArch::GPU_NVIDIA> final : public BaseStream {
         cudaStream_t m_stream;
         bool m_isMine{ false };
+
+        inline void initFromOther(const Stream_<ParArch::GPU_NVIDIA>& other) {
+            m_stream = other.m_stream;
+            m_isMine = other.m_isMine;
+        }
+
     public:
-        Stream_<ParArch::GPU_NVIDIA>() {
+        Stream_() : BaseStream() {
             gpuErrchk(cudaStreamCreate(&m_stream));
             m_isMine = true;
         }
-        // Intentionally not set as explicit, to allow implicit conversion from cudaStream_t
+        Stream_(const Stream_<ParArch::GPU_NVIDIA>& other) : BaseStream(other) {
+            initFromOther(other);
+        }
         explicit Stream_<ParArch::GPU_NVIDIA>(const cudaStream_t& stream) : m_stream(stream) {}
-        ~Stream_<ParArch::GPU_NVIDIA>() final {
-            if (m_stream != 0 && m_isMine) {
+
+        cudaStream_t operator()() const {
+            return m_stream;
+        }
+
+        Stream_<ParArch::GPU_NVIDIA>& operator=(const Stream_<ParArch::GPU_NVIDIA>& other) {
+            if (this != &other) {
+                BaseStream::operator=(other);
+                initFromOther(other);
+            }
+            return *this;
+        }
+
+        Stream_(Stream_<ParArch::GPU_NVIDIA>&&) = delete;
+        Stream_<ParArch::GPU_NVIDIA>& operator=(Stream_<ParArch::GPU_NVIDIA>&&) = delete;
+
+        ~Stream_() {
+            if ( this->getRefCount() == 0 && m_stream != 0 && m_isMine) {
                 sync();
                 gpuErrchk(cudaStreamDestroy(m_stream));
             }
         }
+
         operator cudaStream_t() const {
             return m_stream;
         }
@@ -73,8 +112,8 @@ namespace fk {
     template <>
     class Stream_<ParArch::CPU> final : public BaseStream {
     public:
-        Stream_<ParArch::CPU>() {}
-        ~Stream_<ParArch::CPU>() {}
+        Stream_<ParArch::CPU>() : BaseStream() {}
+        ~Stream_<ParArch::CPU>() = default;
         inline void sync() final {}
         constexpr inline enum ParArch getParArch() const {
             return ParArch::CPU;
