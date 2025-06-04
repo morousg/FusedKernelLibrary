@@ -17,11 +17,12 @@ DESCRIPTION "Implementation of a methodology that allows all sorts of user defin
 HOMEPAGE_URL "https://github.com/morousg/FusedKernelLibrary" )
 
 #cuda is optional, but if it is found, it will be used
+option(ENABLE_CPU "Enable CPU support" ON)
 include(CheckLanguage)
 check_language(CUDA)
 if (CMAKE_CUDA_COMPILER)
-    option (FKL_ENABLE_CUDA "Enable CUDA support" ON)
-    if (${FKL_ENABLE_CUDA})
+    option (ENABLE_CUDA "Enable CUDA support" ON)
+    if (${ENABLE_CUDA})
         include(cmake/cuda_init.cmake)
     endif()
 else()

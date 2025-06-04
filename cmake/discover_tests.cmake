@@ -63,10 +63,12 @@ function (discover_tests DIR)
         get_filename_component(TARGET_NAME ${test_source} NAME_WE)   
         cmake_path(GET test_source  PARENT_PATH  DIR_NAME) #get the directory name of the test source file
         string(FIND ${DIR_NAME} "cudabug"  POS)
-        if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"                        
-            add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")
+        if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"    
+            if (${ENABLE_CPU})                    
+                add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")
+            endif()
         endif()
-        if (CMAKE_CUDA_COMPILER AND FKL_ENABLE_CUDA)
+        if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
             add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_NAME}")
             add_cuda_to_test("${TARGET_NAME}_cu")            
         endif()
