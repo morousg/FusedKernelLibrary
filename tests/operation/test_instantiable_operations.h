@@ -249,7 +249,7 @@ int launch() {
     static_assert(someReadOpAlt.getActiveThreads().y == 32, "Wrong height");
     static_assert(someReadOpAlt.getActiveThreads().z == 1, "Wrong depth");
 
-    executeOperations(stream, someReadOpAlt, PerThreadWrite<_2D, uint3>::build(outputAlt));
+    executeOperations<fk::TransformDPP<>>(stream, someReadOpAlt, PerThreadWrite<_2D, uint3>::build(outputAlt));
 
     outputAlt.download(stream);
     stream.sync();

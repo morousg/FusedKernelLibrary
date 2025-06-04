@@ -42,7 +42,7 @@ struct VerticalFusion {
         Loop loop;
         loop.params = dFunc.params;
 
-        fk::executeOperations<fk::TF::DISABLED>(stream, readDF, loop, fk::Write<fk::PerThreadWrite<fk::_1D, OutputType>>{ {output.ptr()} });
+        fk::executeOperations<fk::TransformDPP<>>(stream, readDF, loop, fk::Write<fk::PerThreadWrite<fk::_1D, OutputType>>{ {output.ptr()} });
     }
 };
 

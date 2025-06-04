@@ -19,24 +19,39 @@
 
 namespace fk {
 
-    template <enum TF TFEN, typename... Args>
-    inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<TransformDPP<defaultParArch, TFEN>>;
-        Executor_t::executeOperations(args...);
-    }
-
-    template <typename... Args>
-    inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<TransformDPP<defaultParArch>>;
-        Executor_t::executeOperations(args...);
-    }
-
     template <typename DPPType, typename... Args>
-    inline void executeOperations(Args&... args) {
-        using Executor_t = Executor<DPPType>;
-        Executor_t::executeOperations(args...);
+    inline void executeOperations(Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(stream, args...);
     }
-
+    template <typename DPPType, typename I, typename... Args>
+    inline void executeOperations(const Ptr2D<I>& input, Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(input, stream, args...);
+    }
+    template <typename DPPType, typename I, typename O, typename... Args>
+    inline void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
+                                  Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(input, output, stream, args...);
+    }
+    template <typename DPPType, typename I, size_t BATCH, typename... Args>
+    inline void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
+                                  Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(input, activeBatch, defaultValue, stream, args...);
+    }
+    template <typename DPPType, typename I, size_t BATCH, typename... Args>
+    inline void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
+                                  Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(input, stream, args...);
+    }
+    template <typename DPPType, typename I, typename O, size_t BATCH, typename... Args>
+    inline void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
+                                  const Tensor<O>& output, Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(input, activeBatch, defaultValue, output, stream, args...);
+    }
+    template <typename DPPType, typename I, typename O, size_t BATCH, typename... Args>
+    inline void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const Tensor<O>& output,
+                                  Stream_<DPPType::PAR_ARCH>& stream, const Args&... args) {
+        Executor<DPPType>::executeOperations(input, output, stream, args...);
+    }
 } // namespace fk
 
 #endif

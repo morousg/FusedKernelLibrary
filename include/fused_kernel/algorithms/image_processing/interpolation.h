@@ -15,6 +15,8 @@
 #ifndef FK_INTERPOLATION
 #define FK_INTERPOLATION
 
+#include <cmath>
+
 #include <fused_kernel/algorithms/basic_ops/logical.h>
 #include <fused_kernel/core/data/size.h>
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>

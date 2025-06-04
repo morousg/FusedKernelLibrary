@@ -256,7 +256,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE T type(const Numbers&... pack) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: make::type<invalid_type>()");
             if constexpr (std::is_union_v<T>) {
-                return T{ {static_cast<std::decay_t<decltype(T::at[0])>>(pack)... } };
+                return T{ static_cast<std::decay_t<decltype(T::at[0])>>(pack)...  };
             } else if constexpr (std::is_class_v<T>) {
                 return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
             } else {
@@ -271,9 +271,8 @@ namespace fk {
     FK_HOST_DEVICE_CNST T make_(const Numbers&... pack) {
         if constexpr (std::is_aggregate_v<T>) {
             return make::type<T>(pack...);
-        }
-        else {
-            static_assert(sizeof...(pack) == 1, "Something wrong in make_");
+        } else {
+            static_assert(sizeof...(pack) == 1, "make_ can only be used to create fk vector types");
             return first(pack...);
         }
     }

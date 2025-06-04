@@ -58,7 +58,7 @@ namespace fk { // namespace FusedKernel
     template <bool THREAD_FUSION, typename... IOps>
     using TransformDPPDetails = TransformDPPDetails_<void, THREAD_FUSION, IOps...>;
 
-    template <enum ParArch PA, enum TF TFEN = TF::DISABLED, typename DPPDetails = void, bool THREAD_DIVISIBLE = true, typename Enabler = void>
+    template <enum ParArch PA = defaultParArch, enum TF TFEN = TF::DISABLED, typename DPPDetails = void, bool THREAD_DIVISIBLE = true, typename Enabler = void>
     struct TransformDPP; // Forward declaration
 
     template <enum TF TFEN = TF::DISABLED, typename DPPDetails = void, bool THREAD_DIVISIBLE = true>

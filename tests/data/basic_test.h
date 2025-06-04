@@ -52,8 +52,8 @@ bool testPtr_2D() {
     fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::_2D, T>> opFinal_2DBig = { {outputBig} };
 
     for (int i=0; i<100; i++) {
-        fk::executeOperations(stream, readCrop, opFinal_2D);
-        fk::executeOperations(stream, readFull, opFinal_2DBig);
+        fk::executeOperations<fk::TransformDPP<>>(stream, readCrop, opFinal_2D);
+        fk::executeOperations<fk::TransformDPP<>>(stream, readFull, opFinal_2DBig);
     }
 
     output.download(stream);
@@ -104,7 +104,7 @@ int launch() {
     //fusedDF.params.next.instance.params; // Should not compile
     static_assert(std::is_same_v<decltype(fusedDF.params.next.next.instance.params), uint>, "Unexpected type for params");
 
-    fk::executeOperations(stream, fusedDF, write);
+    fk::executeOperations<fk::TransformDPP<>>(stream, fusedDF, write);
     stream.sync();
 
     fk::OperationTuple<fk::PerThreadRead<fk::_2D, uchar>, fk::SaturateCast<uchar, uint>, fk::PerThreadWrite<fk::_2D, uint>> myTup{};

@@ -63,15 +63,16 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
 
         START_FIRST_BENCHMARK(fk::defaultParArch)
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            fk::executeOperations(crops[crop_i], stream,
+            const auto writeOp = fk::PerThreadWrite<fk::_2D, OutputType>::build(d_output_cv[crop_i]); 
+            fk::executeOperations<fk::TransformDPP<>>(crops[crop_i], stream,
                 fk::SaturateCast<InputType, OutputType>::build(),
                 fk::Mul<OutputType>::build(val_alpha),
                 fk::Sub<OutputType>::build(val_sub),
                 fk::Div<OutputType>::build(val_div),
-                fk::PerThreadWrite<fk::_2D, OutputType>::build(d_output_cv[crop_i]));
+                writeOp);
         }
         STOP_FIRST_START_SECOND_BENCHMARK
-        fk::executeOperations(crops, stream,
+        fk::executeOperations<fk::TransformDPP<>>(crops, stream,
             fk::SaturateCast<InputType, OutputType>::build(),
             fk::Mul<OutputType>::build(val_alpha),
             fk::Sub<OutputType>::build(val_sub),
@@ -163,11 +164,11 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
 
         START_FIRST_BENCHMARK(fk::defaultParArch)
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            fk::executeOperations(stream, read_array[crop_i], saturate,
+            fk::executeOperations<fk::TransformDPP<>>(stream, read_array[crop_i], saturate,
                                    mul, sub, div, write_array[crop_i]);
         }
         STOP_FIRST_START_SECOND_BENCHMARK
-            fk::executeOperations(stream, read, saturate, mul, sub, div, write);
+            fk::executeOperations<fk::TransformDPP<>>(stream, read, saturate, mul, sub, div, write);
         STOP_SECOND_BENCHMARK
 
         d_tensor_output.download(stream);

@@ -68,7 +68,7 @@ int launch() {
     // Execute the operations in a single kernel
     // At compile time, the types are used to define the kernel code
     // At runtime, the kernel is executed with the provided parameters
-    executeOperations(stream, mySender, myReceiver);
+    executeOperations<fk::TransformDPP<>>(stream, mySender, myReceiver);
     stream.sync();
 
     // Use the Tensor for inference

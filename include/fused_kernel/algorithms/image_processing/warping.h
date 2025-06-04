@@ -76,7 +76,7 @@ namespace fk {
             const Size sourceSize(BackFunction::Operation::num_elems_x(thread, back_function),
                                   BackFunction::Operation::num_elems_y(thread, back_function));
             if ((coord.x >= 0.f && coord.x < sourceSize.width) && (coord.y >= 0.f && coord.y < sourceSize.height)) {
-                return Interpolate<INTER_LINEAR, BackIOp>::exec(coord, {sourceSize}, back_function);
+                return Interpolate<InterpolationType::INTER_LINEAR, BackIOp>::exec(coord, {sourceSize}, back_function);
             } else {
                 return make_set<OutputType>(0.f);
             }
