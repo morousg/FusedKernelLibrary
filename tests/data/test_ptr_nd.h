@@ -40,12 +40,13 @@ PtrToTest& test_return_by_reference(PtrToTest& somePtr) {
     return somePtr;
 }
 
-void test_upload(Stream& stream) {
+void test_uploadTo(Stream& stream) {
+#if defined(__NVCC__) || defined(__HIP__)
     // Device pointers
-    Ptr1D<uchar3> test1D(1333);
-    Ptr2D<uchar3> test2D(1333, 444);
-    Ptr3D<uchar3> test3D(1333, 444, 22);
-    Tensor<uchar3> testTensor(1333, 444, 22);
+    Ptr1D<uchar3> test1D(1333, 0, MemType::Device);
+    Ptr2D<uchar3> test2D(1333, 444, 0, MemType::Device);
+    Ptr3D<uchar3> test3D(1333, 444, 22, 1, 0, MemType::Device);
+    Tensor<uchar3> testTensor(1333, 444, 22, 1, MemType::Device);
 
     // Host Pinned Pointers
     Ptr1D<uchar3> test1D_h(1333, 0, MemType::HostPinned);
@@ -54,20 +55,71 @@ void test_upload(Stream& stream) {
     Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
 
     // Must work
-    test1D_h.upload(stream);
-    test2D_h.upload(stream);
-    test3D_h.upload(stream);
-    testTensor_h.upload( stream);
+    test1D_h.uploadTo(test1D, stream);
+    test2D_h.uploadTo(test2D, stream);
+    test3D_h.uploadTo(test3D, stream);
+    testTensor_h.uploadTo(testTensor, stream);
+
+    stream.sync();
 
     // Must not work
     try {
-        test1D.upload(stream);
-    } catch (const std::exception& e) {
+        test1D.uploadTo(test1D_h, stream);
+    }
+    catch (const std::exception& e) {
         std::cout << "Expected exception: " << e.what() << std::endl;
     }
 
     // Compile time error
-    // test2D_h.upload(test3D);
+    // test2D_h.uploadTo(test3D);
+#endif
+}
+
+void test_downloadTo(Stream& stream) {
+#if defined(__NVCC__) || defined(__HIP__)
+    // Device pointers
+    Ptr1D<uchar3> test1D(1333, 0, MemType::Device);
+    Ptr2D<uchar3> test2D(1333, 444, 0, MemType::Device);
+    Ptr3D<uchar3> test3D(1333, 444, 22, 1, 0, MemType::Device);
+    Tensor<uchar3> testTensor(1333, 444, 22, 1, MemType::Device);
+
+    // Host Pinned Pointers
+    Ptr1D<uchar3> test1D_h(1333, 0, MemType::HostPinned);
+    Ptr2D<uchar3> test2D_h(1333, 444, 0, MemType::HostPinned);
+    Ptr3D<uchar3> test3D_h(1333, 444, 22, 1, 0, MemType::HostPinned);
+    Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
+
+    // Must work
+    test1D.downloadTo(test1D_h, stream);
+    test2D.downloadTo(test2D_h, stream);
+    test3D.downloadTo(test3D_h, stream);
+    testTensor.downloadTo(testTensor_h, stream);
+
+    stream.sync();
+
+    // Must not work
+    try {
+        test1D_h.downloadTo(test1D, stream);
+    } catch (const std::exception& e) {
+        std::cout << "Expected exception: " << e.what() << std::endl;
+    }
+#endif
+}
+
+void test_upload(Stream& stream) {
+    // Device pointers
+    Ptr1D<uchar3> test1D(1333);
+    Ptr2D<uchar3> test2D(1333, 444);
+    Ptr3D<uchar3> test3D(1333, 444, 22);
+    Tensor<uchar3> testTensor(1333, 444, 22);
+
+    // Must work
+    test1D.upload(stream);
+    test2D.upload(stream);
+    test3D.upload(stream);
+    testTensor.upload(stream);
+
+    stream.sync();
 }
 
 void test_download(Stream& stream) {
@@ -77,37 +129,26 @@ void test_download(Stream& stream) {
     Ptr3D<uchar3> test3D(1333, 444, 22);
     Tensor<uchar3> testTensor(1333, 444, 22);
 
-    // Host Pinned Pointers
-    Ptr1D<uchar3> test1D_h(1333, 0, MemType::HostPinned);
-    Ptr2D<uchar3> test2D_h(1333, 444, 0, MemType::HostPinned);
-    Ptr3D<uchar3> test3D_h(1333, 444, 22, 1, 0, MemType::HostPinned);
-    Tensor<uchar3> testTensor_h(1333, 444, 22, 1, MemType::HostPinned);
-
     // Must work
     test1D.download(stream);
     test2D.download(stream);
     test3D.download(stream);
     testTensor.download(stream);
 
-    // Must not work
-    try {
-        test1D_h.download(stream);
-    } catch (const std::exception& e) {
-        std::cout << "Expected exception: " << e.what() << std::endl;
-    }
+    stream.sync();
 }
 
 int launch() {
 
     Stream stream;
 
-    PtrToTest test0(WIDTH, HEIGHT, 0, MemType::HostPinned);
+    PtrToTest test0(WIDTH, HEIGHT);
     setTo(make_<uchar3>(1, 2, 3), test0, stream);
     stream.sync();
     bool h_correct{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            const Bool3 boolVect = *PtrAccessor<_2D>::cr_point(Point(x, y), test0.ptr()) == make_<uchar3>(1, 2, 3);
+            const Bool3 boolVect = *PtrAccessor<_2D>::cr_point(Point(x, y), test0.ptrPinned()) == make_<uchar3>(1, 2, 3);
             h_correct &= VectorAnd<Bool3>::exec(boolVect);
         }
     }
@@ -144,6 +185,8 @@ int launch() {
         }
     }
 
+    test_uploadTo(stream);
+    test_downloadTo(stream);
     test_upload(stream);
     test_download(stream);
 
