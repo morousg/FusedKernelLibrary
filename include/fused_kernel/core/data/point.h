@@ -16,7 +16,7 @@
 #define FK_POINT
 
 #include <fused_kernel/core/utils/utils.h>
-#include <fused_kernel/core/data/ptr_nd.h>
+#include <fused_kernel/core/data/nd.h>
 
 namespace fk {
     template <typename T, enum ND D>

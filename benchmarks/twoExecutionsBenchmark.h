@@ -12,28 +12,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include <unordered_map>
-#include <iostream>
+#ifndef FK_BENCHMARKS_TWO_EXECUTIONS_H
+#define FK_BENCHMARKS_TWO_EXECUTIONS_H
+
 #include <sstream>
 #include <fstream>
-#include <array>
 
-std::unordered_map<std::string, std::stringstream> benchmarkResultsText;
-std::unordered_map<std::string, std::ofstream> currentFile;
-// Select the path where to write the benchmark files
-const std::string path{ "" };
+#include <benchmarks/fkBenchmarksCommon.h>
 
-constexpr int ITERS = 100;
 bool warmup{false};
-
-struct BenchmarkResultsNumbers {
-  float firstElapsedTimeMax;
-  float firstElapsedTimeMin;
-  float firstElapsedTimeAcum;
-  float secondElapsedTimeMax;
-  float secondElapsedTimeMin;
-  float secondElapsedTimeAcum;
-};
 
 template <size_t ITERATIONS> float computeVariance(const float &mean, const std::array<float, ITERATIONS> &times) {
   float sumOfDiff = 0.f;
@@ -45,7 +32,7 @@ template <size_t ITERATIONS> float computeVariance(const float &mean, const std:
 }
 
 template <int BATCH, int ITERATIONS, int NUM_BATCH_VALUES, const std::array<size_t, NUM_BATCH_VALUES> &batchValues>
-inline void processExecution(const BenchmarkResultsNumbers &resF, const std::string &functionName,
+inline void processExecution(const BenchmarkResultsNumbersTwo& resF, const std::string &functionName,
                              const std::string& firstLabel, const std::string& secondLabel,
                              const std::array<float, ITERS> &firstElapsedTime,
                              const std::array<float, ITERS> &secondElapsedTime, const std::string &variableDimension) {
@@ -95,48 +82,28 @@ inline void processExecution(const BenchmarkResultsNumbers &resF, const std::str
   }
 }
 
-#define START_FIRST_BENCHMARK                                                                                            \
+#define START_FIRST_BENCHMARK(ARCH)                                                                                            \
   std::cout << "Executing " << __func__ << " using " << BATCH << " " << VARIABLE_DIMENSION_NAME << " " << (BATCH - FIRST_VALUE) / INCREMENT \
             << "/" << NUM_EXPERIMENTS << std::endl;                                                                    \
-  cudaEvent_t start, stop;                                                                                             \
-  BenchmarkResultsNumbers resF;                                                                                        \
-  resF.firstElapsedTimeMax = fk::minValue<float>;                                                                        \
-  resF.firstElapsedTimeMin = fk::maxValue<float>;                                                                        \
-  resF.firstElapsedTimeAcum = 0.f;                                                                                       \
-  resF.secondElapsedTimeMax = fk::minValue<float>;                                                                         \
-  resF.secondElapsedTimeMin = fk::maxValue<float>;                                                                         \
-  resF.secondElapsedTimeAcum = 0.f;                                                                                        \
-  gpuErrchk(cudaEventCreate(&start));                                                                                  \
-  gpuErrchk(cudaEventCreate(&stop));                                                                                   \
-  std::array<float, ITERS> firstElapsedTime;                                                                             \
-  std::array<float, ITERS> secondElapsedTime;                                                                              \
+  BenchmarkResultsNumbersTwo resF;                                                                                        \
+  TimeMarkerTwo<ARCH> marker(stream);                                                                             \
   for (int idx = 0; idx <ITERS; ++idx) {                                                                                    \
-    gpuErrchk(cudaEventRecord(start, stream));
+    marker.startFirst();
 
-#define STOP_FIRST_START_SECOND_BENCHMARK                                                                                    \
-  gpuErrchk(cudaEventRecord(stop, stream));                                                                            \
-  gpuErrchk(cudaEventSynchronize(stop));                                                                               \
-  gpuErrchk(cudaEventElapsedTime(&firstElapsedTime[idx], start, stop));                                                    \
-  resF.firstElapsedTimeMax = resF.firstElapsedTimeMax < firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMax;    \
-  resF.firstElapsedTimeMin = resF.firstElapsedTimeMin > firstElapsedTime[idx] ? firstElapsedTime[idx] : resF.firstElapsedTimeMin;    \
-  resF.firstElapsedTimeAcum += firstElapsedTime[idx];                                                                        \
-  gpuErrchk(cudaEventRecord(start, stream));
+#define STOP_FIRST_START_SECOND_BENCHMARK marker.stopFirstStartSecond(resF, idx);
 
 #define STOP_SECOND_BENCHMARK                                                                                              \
-  gpuErrchk(cudaEventRecord(stop, stream));                                                                            \
-  gpuErrchk(cudaEventSynchronize(stop));                                                                               \
-  gpuErrchk(cudaEventElapsedTime(&secondElapsedTime[idx], start, stop));                                                     \
-  resF.secondElapsedTimeMax = resF.secondElapsedTimeMax < secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMax;         \
-  resF.secondElapsedTimeMin = resF.secondElapsedTimeMin > secondElapsedTime[idx] ? secondElapsedTime[idx] : resF.secondElapsedTimeMin;         \
-  resF.secondElapsedTimeAcum += secondElapsedTime[idx]; \
-  if (warmup) break;                                                                        \
+    marker.stopSecond(resF, idx);                                                                                       \
+    if (warmup) break;                                                                        \
   }                                                                                                                  \
 processExecution<BATCH, ITERS, variableDimensionValues.size(), variableDimensionValues>(                               \
-      resF, __func__, std::string(FIRST_LABEL), std::string(SECOND_LABEL), firstElapsedTime, secondElapsedTime ,VARIABLE_DIMENSION_NAME);
+        resF, __func__, std::string(FIRST_LABEL), std::string(SECOND_LABEL), \
+        marker.getFirstElapsedTime(), marker.getSecondElapsedTime(), VARIABLE_DIMENSION_NAME);
  
  
 #define CLOSE_BENCHMARK                                                                                                \
   for (auto &&[_, file] : currentFile) {                                                                               \
     file.close();                                                                                                      \
   }
- 
+
+#endif // FK_BENCHMARKS_TWO_EXECUTIONS_H

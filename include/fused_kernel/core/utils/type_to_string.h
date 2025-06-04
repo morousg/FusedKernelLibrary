@@ -18,8 +18,9 @@
 #include <string_view>
 namespace fk {
 
-    constexpr inline std::string_view getTypeNamePretty_helper(const std::string_view& signature, const std::string_view& prefix,
-        const std::string_view& suffix) {
+    constexpr inline std::string_view getTypeNamePretty_helper(const std::string_view& signature,
+                                                               const std::string_view& prefix,
+                                                               const std::string_view& suffix) {
         auto start = signature.find(prefix);
         if (start == std::string_view::npos) {
             return "unknown (prefix not found)";
@@ -40,12 +41,12 @@ namespace fk {
 #if defined(__clang__)
         constexpr std::string_view signature = __PRETTY_FUNCTION__;
         constexpr std::string_view prefix = "[T = ";
-        constexpr char suffix = ']';
+        constexpr std::string_view suffix = "]";
         return getTypeNamePretty_helper(signature, prefix, suffix);
 #elif defined(__GNUC__)
         constexpr std::string_view signature = __PRETTY_FUNCTION__;
         constexpr std::string_view prefix = "[with T = "; // Common case
-        constexpr char suffix = ';';
+        constexpr std::string_view suffix = ";";
         return getTypeNamePretty_helper(signature, prefix, suffix);
 #elif defined(_MSC_VER)
         constexpr std::string_view signature{ __FUNCSIG__ };

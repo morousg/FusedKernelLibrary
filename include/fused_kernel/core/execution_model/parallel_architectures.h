@@ -29,6 +29,12 @@ namespace fk {
         None
     };
 
+#if defined(__NVCC__) || defined(__HIP__)
+    constexpr ParArch defaultParArch = ParArch::GPU_NVIDIA;
+#else
+    constexpr ParArch defaultParArch = ParArch::CPU;
+#endif
+
 } // namespace fk
 
 #endif

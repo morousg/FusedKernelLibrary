@@ -9,15 +9,26 @@ include (cmake/cmake_init.cmake)
 include (cmake/doxygen.cmake)
 include (cmake/targets/virtualfolders.cmake)
 include (cmake/deploy/deploy_dependencies.cmake)
-include (cmake/libs/cuda/archs.cmake)
+
 include (cmake/archflags.cmake)
 include (cmake/generators/version_header.cmake)
-project(FusedKernelLibrary VERSION ${PROJECT_VERSION} LANGUAGES CXX CUDA 
+project(FusedKernelLibrary VERSION ${PROJECT_VERSION} LANGUAGES CXX  
 DESCRIPTION "Implementation of a methodology that allows all sorts of user defined GPU kernel fusion, for non CUDA programmers." 
 HOMEPAGE_URL "https://github.com/morousg/FusedKernelLibrary" )
 
-include (cmake/libs/cuda/cuda.cmake)
-include (cmake/cuda_init.cmake)
+#cuda is optional, but if it is found, it will be used
+option(ENABLE_CPU "Enable CPU support" ON)
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+    option (ENABLE_CUDA "Enable CUDA support" ON)
+    if (${ENABLE_CUDA})
+        include(cmake/cuda_init.cmake)
+    endif()
+else()
+    message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
+endif()
+
 include (cmake/discover_tests.cmake)
 
 option (BUILD_UTEST "build standard unit tests" ON)
@@ -26,13 +37,10 @@ option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
 add_subdirectory(include)
 add_subdirectory(lib)
 
-
-
 if (${BUILD_UTEST})
     enable_testing()  
-    add_subdirectory(tests)    
+    add_subdirectory(tests)      
 endif()
-
 
 if (${ENABLE_BENCHMARK})
     enable_testing()

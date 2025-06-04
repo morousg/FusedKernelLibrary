@@ -20,30 +20,10 @@
 
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/utils/template_operations.h>
-
-struct bool1 {
-    bool x;
-};
-
-struct bool2 {
-    bool x;
-    bool y;
-};
-
-struct bool3 {
-    bool x;
-    bool y;
-    bool z;
-};
-
-struct bool4 {
-    bool x;
-    bool y;
-    bool z;
-    bool w;
-};
+#include <fused_kernel/core/data/vector_types.h>
 
 namespace fk {
+
     template <typename BaseType, int Channels>
     struct VectorType {};
 
@@ -72,19 +52,18 @@ namespace fk {
     VECTOR_TYPE(bool)
 #undef VECTOR_TYPE
 
-        template <typename BaseType, int Channels>
+    template <typename BaseType, int Channels>
     using VectorType_t = typename VectorType<BaseType, Channels>::type;
 
     template <uint CHANNELS>
     using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<char, CHANNELS>,
-        VectorType_t<ushort, CHANNELS>, VectorType_t<short, CHANNELS>,
-        VectorType_t<uint, CHANNELS>, VectorType_t<int, CHANNELS>,
-        VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
-        VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
-        VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
+                                    VectorType_t<ushort, CHANNELS>, VectorType_t<short, CHANNELS>,
+                                    VectorType_t<uint, CHANNELS>, VectorType_t<int, CHANNELS>,
+                                    VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
+                                    VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
+                                    VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
 
-    using StandardTypes =
-        TypeList<bool, uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong, float, double>;
+    using StandardTypes = TypeList<bool, uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong, float, double>;
     using VOne = TypeList<bool1, uchar1, char1, ushort1, short1, uint1, int1, ulong1, long1, ulonglong1, longlong1, float1, double1>;
     using VTwo = VectorTypeList<2>;
     using VThree = VectorTypeList<3>;
@@ -98,14 +77,11 @@ namespace fk {
     FK_HOST_DEVICE_CNST int Channels() {
         if constexpr (one_of_v<T, VOne> || !validCUDAVec<T>) {
             return 1;
-        }
-        else if constexpr (one_of_v<T, VTwo>) {
+        } else if constexpr (one_of_v<T, VTwo>) {
             return 2;
-        }
-        else if constexpr (one_of_v<T, VThree>) {
+        } else if constexpr (one_of_v<T, VThree>) {
             return 3;
-        }
-        else if constexpr (one_of_v<T, VFour>) {
+        } else if constexpr (one_of_v<T, VFour>) {
             return 4;
         }
     }
@@ -130,22 +106,76 @@ namespace fk {
 
     VECTOR_TRAITS(bool)
     VECTOR_TRAITS(uchar)
-        VECTOR_TRAITS(char)
-        VECTOR_TRAITS(short)
-        VECTOR_TRAITS(ushort)
-        VECTOR_TRAITS(int)
-        VECTOR_TRAITS(uint)
-        VECTOR_TRAITS(long)
-        VECTOR_TRAITS(ulong)
-        VECTOR_TRAITS(longlong)
-        VECTOR_TRAITS(ulonglong)
-        VECTOR_TRAITS(float)
-        VECTOR_TRAITS(double)
+    VECTOR_TRAITS(char)
+    VECTOR_TRAITS(short)
+    VECTOR_TRAITS(ushort)
+    VECTOR_TRAITS(int)
+    VECTOR_TRAITS(uint)
+    VECTOR_TRAITS(long)
+    VECTOR_TRAITS(ulong)
+    VECTOR_TRAITS(longlong)
+    VECTOR_TRAITS(ulonglong)
+    VECTOR_TRAITS(float)
+    VECTOR_TRAITS(double)
 #undef VECTOR_TRAITS
 
-        template <typename T>
+    template <typename T>
     using VBase = typename VectorTraits<T>::base;
 
+    using CUDAVectors = TypeList<
+        bool1, bool2, bool3, bool4,
+        uchar1, uchar2, uchar3, uchar4,
+        char1, char2, char3, char4,
+        ushort1, ushort2, ushort3, ushort4,
+        short1, short2, short3, short4,
+        uint1, uint2, uint3, uint4,
+        int1, int2, int3, int4,
+        ulong1, ulong2, ulong3, ulong4,
+        long1, long2, long3, long4,
+        ulonglong1, ulonglong2, ulonglong3, ulonglong4,
+        longlong1, longlong2, longlong3, longlong4,
+        float1, float2, float3, float4,
+        double1, double2, double3, double4>;
+
+    using FKVectors = TypeList<
+        Bool1, Bool2, Bool3, Bool4,
+        Uchar1, Uchar2, Uchar3, Uchar4,
+        Char1, Char2, Char3, Char4,
+        Ushort1, Ushort2, Ushort3, Ushort4,
+        Short1, Short2, Short3, Short4,
+        Uint1, Uint2, Uint3, Uint4,
+        Int1, Int2, Int3, Int4,
+        Ulong1, Ulong2, Ulong3, Ulong4,
+        Long1, Long2, Long3, Long4,
+        Ulonglong1, Ulonglong2, Ulonglong3, Ulonglong4,
+        Longlong1, Longlong2, Longlong3, Longlong4,
+        Float1, Float2, Float3, Float4,
+        Double1, Double2, Double3, Double4>;
+
+    template <typename CUDAVectorType>
+    using FKVectorEquiv_t = EquivalentType_t<CUDAVectorType, CUDAVectors, FKVectors>;
+
+    template <typename FKVectorType>
+    using CUDAVectorEquiv_t = EquivalentType_t<FKVectorType, FKVectors, CUDAVectors>;
+
+    template <typename T>
+    constexpr inline auto getFKVector(const T& vectorVal) {
+        if constexpr (std::is_union_v<T>) {
+            return vectorVal;
+        } else {
+            static_assert(one_of_v<T, CUDAVectors>, "getFKVector can only be used with valid CUDA vector types.");
+            if constexpr (cn<T> == 1) {
+                return FKVectorEquiv_t<T>{ vectorVal.x };
+            } else if constexpr (cn<T> == 2) {
+                return FKVectorEquiv_t<T>{ vectorVal.x, vectorVal.y };
+            } else if constexpr (cn<T> == 3) {
+                return FKVectorEquiv_t<T>{ vectorVal.x, vectorVal.y, vectorVal.z };
+            } else {
+                return FKVectorEquiv_t<T>{ vectorVal.x, vectorVal.y, vectorVal.z, vectorVal.w };
+            }
+        }
+    }
+    
     template <int idx, typename T>
     FK_HOST_DEVICE_CNST auto VectorAt(const T& vector) {
         if constexpr (idx == 0) {
@@ -225,7 +255,15 @@ namespace fk {
         template <typename T, typename... Numbers>
         FK_HOST_DEVICE_FUSE T type(const Numbers&... pack) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: make::type<invalid_type>()");
-            return { static_cast<decltype(T::x)>(pack)... };
+            if constexpr (std::is_union_v<T>) {
+                return T{ static_cast<std::decay_t<decltype(T::at[0])>>(pack)...  };
+            } else if constexpr (std::is_class_v<T>) {
+                return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
+            } else {
+                static_assert(std::is_union_v<T> || std::is_class_v<T>,
+                              "make::type can only be used with CUDA vector_types or fk vector_types");
+                return T{};
+            }
         }
     };
 
@@ -233,9 +271,8 @@ namespace fk {
     FK_HOST_DEVICE_CNST T make_(const Numbers&... pack) {
         if constexpr (std::is_aggregate_v<T>) {
             return make::type<T>(pack...);
-        }
-        else {
-            static_assert(sizeof...(pack) == 1, "Something wrong in make_");
+        } else {
+            static_assert(sizeof...(pack) == 1, "make_ can only be used to create fk vector types");
             return first(pack...);
         }
     }
@@ -334,6 +371,8 @@ inline constexpr typename std::enable_if_t<fk::validCUDAVec<T>, std::ostream&> o
     return print_vector<T>::exec(outs, val);
 }
 #endif
+
+// ####################### VECTOR OPERATORS ##########################
 
 #define VEC_UNARY_OP(op, input_type, output_type) \
 FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a) \
@@ -484,7 +523,6 @@ VEC_COMPOUND_OP(/=, double, uchar)
 VEC_COMPOUND_OP(/=, uint, uint)
 
 #undef VEC_COMPOUND_OP
-
 
 // binary operators (vec & vec)
 #define VEC_BINARY_OP_DIFF_TYPES(op, input_type1, input_type2, output_type) \
@@ -889,7 +927,7 @@ SCALAR_BINARY_OP(^, ushort, ushort, ushort)
 SCALAR_BINARY_OP(^, short, short, short)
 SCALAR_BINARY_OP(^, int, int, int)
 SCALAR_BINARY_OP(^, uint, uint, uint)
-
 #undef SCALAR_BINARY_OP
+// ######################## VECTOR OPERATORS ##########################
 
 #endif
