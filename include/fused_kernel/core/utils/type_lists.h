@@ -19,6 +19,7 @@
 #define FK_TYPE_LIST
 
 #include <stddef.h>
+#include <utility>
 #include <fused_kernel/core/utils/utils.h>
 
 namespace fk { // namespace fused kernel
