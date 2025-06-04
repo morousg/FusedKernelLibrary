@@ -37,7 +37,7 @@ function (add_unix_flags TARGET_NAME)
     
     option(ARCH_FLAGS "native" "instrucion set to use")          
     if (NOT(${ARCH_FLAGS} STREQUAL "disabled"))                
-        target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=${ARCH_FLAGS} -mtune=${ARCH_FLAGS}>)     
+        target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mcpu=${ARCH_FLAGS}>)     
     endif()                        
 
 endfunction()
