@@ -70,12 +70,7 @@ bool testPtr_2D() {
                 } else {
                     std::cout << "Error in output at (" << x << ", " << y << "): ";
                     for (size_t i = 0; i < fk::cn<T>; ++i) {
-#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER <= 1916
-                        const fk::Array<fk::VBase<T>, fk::cn<T>> arr{ output.at({ x, y }) };
-                        std::cout << static_cast<int>(arr.at[i]) << " ";
-#else
-                        std::cout << static_cast<int>(fk::getFKVector(output.at({ x, y })).at[i]) << " ";
-#endif
+                        std::cout << static_cast<int>(fk::toArray(output.at({ x, y })).at[i]) << " ";
                     }
                     std::cout << std::endl;
                 }
