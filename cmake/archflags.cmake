@@ -1,6 +1,13 @@
 function (add_msvc_flags TARGET_NAME)
     # Add MSVC specific flags for the target
-    if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+    #CMAKE_SYSTEM_PROCESSOR is broken and windows and return AMD64
+    #so we need to use the CMAKE_HOST_PROCESSOR instead
+    #https://gitlab.kitware.com/cmake/cmake/-/issues/15170
+         
+    #message(STATUS "ENV{PROCESSOR_ARCHITECTURE}:" "$ENV{PROCESSOR_ARCHITECTURE}")
+    
+    string(FIND "${SYSTEMTYPE_OUTPUT}" "x64"  POS)
+    if (POS GREATER -1) #if x64 is found in the system type output
         SET(ARCH_FLAGS "AVX2" CACHE STRING "instrucion set to use")
         SET_PROPERTY(CACHE ARCH_FLAGS PROPERTY STRINGS AVX AVX2 AVX512 AVX10.1 disabled)  
         option(ARCH_FLAGS "CPU arch" "AVX2")
@@ -8,9 +15,10 @@ function (add_msvc_flags TARGET_NAME)
         if (NOT(${ARCH_FLAGS} STREQUAL "disabled"))                
             target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/arch:${ARCH_FLAGS}>)        
         endif()
-        
-    elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ARM64")
-        #we don't have  windows arm64 hw to test 
+    endif()        
+    string(FIND "${SYSTEMTYPE_OUTPUT}" "arm64"  POS)
+    if (POS GREATER -1) #arm64
+        SET(ARCH_FLAGS "armv8.2" CACHE STRING "instrucion set to use")
         SET_PROPERTY(CACHE ARCH_FLAGS PROPERTY STRINGS armv8.2 disabled)  
         option(ARCH_FLAGS "CPU arch" "disabled")
         if (NOT(${ARCH_FLAGS} STREQUAL "disabled"))                

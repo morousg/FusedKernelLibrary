@@ -3,6 +3,18 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
     set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake")
 endif()
  
+if (WIN32)
+#detect system info
+ set(PS_ARGS "-Command" "(Get-WmiObject -Class Win32_ComputerSystem).SystemType")
+    execute_process(
+            COMMAND "powershell.exe" ${PS_ARGS}
+            OUTPUT_VARIABLE SYSTEMTYPE_OUTPUT 
+            RESULTS_VARIABLE SI_RESULT
+            ERROR_VARIABLE SI_ERROR 
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message(STATUS "Windows host system type:" "${SYSTEMTYPE_OUTPUT}")   
+
+endif()
 #
 if(CMAKE_GENERATOR MATCHES "Ninja")
     set(OUT_DIR "${CMAKE_BINARY_DIR}/bin/")
