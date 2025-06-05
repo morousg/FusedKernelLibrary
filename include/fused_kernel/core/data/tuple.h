@@ -21,12 +21,15 @@
 namespace fk {
     // Generic Tuple
     template <typename... Types>
-    struct Tuple {};
+    struct Tuple {
+        FK_HOST_DEVICE_CNST Tuple() {}
+    };
 
     template <typename T>
     struct Tuple<T> {
         T instance;
         enum { size = 1 };
+        FK_HOST_DEVICE_CNST Tuple(const T& element) : instance(element) {}
     };
 
     template <typename T, typename... Types>
@@ -34,6 +37,7 @@ namespace fk {
         T instance;
         Tuple<Types...> next;
         enum { size = sizeof...(Types) + 1 };
+        FK_HOST_DEVICE_CNST Tuple(const T& element, const Types&... otherElems) : instance(element), next(Tuple<Types...>(otherElems...)) {}
     };
 
     // Primary template: defaults to false
