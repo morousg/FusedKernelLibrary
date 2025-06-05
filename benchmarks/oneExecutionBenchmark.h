@@ -36,7 +36,7 @@ inline void processExecution(const BenchmarkResultsNumbersOne& resF,
                              const std::array<float, ITERS>& fkElapsedTime,
                              const std::string& variableDimension) {
     // Create 2D Table for changing types and changing batch
-    const std::string fileName = functionName + std::string(".csv");
+    const std::string fileName = functionName + std::string("_") + std::string(fk::toStrView(fk::defaultParArch)) + std::string(".csv");
     if constexpr (VARIABLE_DIMENSION == variableDimanesionValues[0]) {
         if (currentFile.find(fileName) == currentFile.end()) {
             currentFile[fileName].open(path + fileName);

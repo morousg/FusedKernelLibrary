@@ -17,17 +17,32 @@
 
 namespace fk {
 
+#define PARALLEL_ARCHITECTURES \
+    PAR_ARCH_VALUE(CPU) \
+    PAR_ARCH_VALUE(GPU_NVIDIA) \
+    PAR_ARCH_VALUE(GPU_NVIDIA_JIT) \
+    PAR_ARCH_VALUE(GPU_AMD) \
+    PAR_ARCH_VALUE(CPU_OMP) \
+    PAR_ARCH_VALUE(CPU_OMPSS) \
+    PAR_ARCH_VALUE(MULTI_GPU_NVIDIA) \
+    PAR_ARCH_VALUE(CLUSTER_GPU_NVIDIA) \
+    PAR_ARCH_VALUE(None)
+
     enum class ParArch {
-        CPU,
-        GPU_NVIDIA,
-        GPU_NVIDIA_JIT,
-        GPU_AMD,
-        CPU_OMP,
-        CPU_OMPSS,
-        MULTI_GPU_NVIDIA,
-        CLUSTER_GPU_NVIDIA,
-        None
+#define PAR_ARCH_VALUE(name) name,
+        PARALLEL_ARCHITECTURES
+#undef PAR_ARCH_VALUE
     };
+
+    constexpr inline std::string_view toStrView(const ParArch& arch) {
+        switch (arch) {
+#define PAR_ARCH_VALUE(name) case ParArch::name: { return std::string_view{#name}; }
+        PARALLEL_ARCHITECTURES
+#undef PAR_ARCH_VALUE
+        default: return "Unknown";
+    }
+}
+
 
 #if defined(__NVCC__) || defined(__HIP__)
     constexpr ParArch defaultParArch = ParArch::GPU_NVIDIA;
