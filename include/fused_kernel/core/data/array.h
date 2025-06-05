@@ -49,9 +49,6 @@ namespace fk {
             T x;
         };
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 1>& other) : x(other.x) {}
-        FK_HOST_DEVICE_CNST Array(const T& initValue) {
-            at[0] = initValue;
-        }
         FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
             int i = 0;
             for (const auto& value : initList) {
