@@ -30,7 +30,7 @@ constexpr int ITERS = 100;
 std::unordered_map<std::string, std::stringstream> benchmarkResultsText;
 std::unordered_map<std::string, std::ofstream> currentFile;
 // Select the path where to write the benchmark files
-const std::string path{ "/home/oscar-amoros-huguet/Documents/cvGPUSpeedupBenchmarkResults/NEW_CPU_AND_GPU/" };
+const std::string path{ "" };
 
 template <size_t START_VALUE, size_t INCREMENT, std::size_t... Is>
 constexpr std::array<size_t, sizeof...(Is)> generate_sequence(std::index_sequence<Is...>) {

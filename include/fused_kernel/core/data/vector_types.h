@@ -24,24 +24,20 @@ using ulong = unsigned long int;
 using ulonglong = unsigned long long int;
 
 namespace fk {
-    union Bool1 {
+    struct Bool1 {
         bool x;
-        bool at[1];
     };
 
-    union Bool2 {
-        struct { bool x, y; };
-        bool at[2];
+    struct Bool2 {
+        bool x, y;
     };
 
-    union Bool3 {
-        struct { bool x, y, z; };
-        bool at[3];
+    struct Bool3 {
+        bool x, y, z;
     };
 
-    union Bool4 {
-        struct { bool x, y, z, w; };
-        bool at[4];
+    struct Bool4 {
+        bool x, y, z, w;
     };
 } // namespace fk
 
@@ -51,244 +47,196 @@ using bool3 = fk::Bool3;
 using bool4 = fk::Bool4;
 
 namespace fk {
-    union Char1 {
+    struct Char1 {
         signed char x;
-        signed char at[1];
     };
 
-    union Uchar1 {
+    struct Uchar1 {
         uchar x;
-        uchar at[1];
     };
 
-    union alignas(2) Char2 {
-        struct { signed char x, y; };
-        signed char at[2];
+    struct alignas(2) Char2 {
+        signed char x, y;
     };
 
-    union alignas(2) Uchar2 {
-        struct { uchar x, y; };
-        uchar at[2];
+    struct alignas(2) Uchar2 {
+        uchar x, y;
     };
 
-    union Char3 {
-        struct { signed char x, y, z; };
-        signed char at[3];
+    struct Char3 {
+       signed char x, y, z;
     };
 
-    union Uchar3 {
-        struct { uchar x, y, z; };
-        uchar at[3];
+    struct Uchar3 {
+       uchar x, y, z;
     };
 
-    union alignas(4) Char4 {
-        struct { signed char x, y, z, w; };
-        signed char at[4];
+    struct alignas(4) Char4 {
+        signed char x, y, z, w;
     };
 
-    union alignas(4) Uchar4 {
-        struct { uchar x, y, z, w; };
-        uchar at[4];
+    struct alignas(4) Uchar4 {
+        uchar x, y, z, w;
     };
 
-    union Short1 {
+    struct Short1 {
         short x;
-        short at[1];
     };
 
-    union Ushort1 {
+    struct Ushort1 {
         ushort x;
-        ushort at[1];
     };
 
-    union alignas(4) Short2 {
-        struct { short x, y; };
-        short at[2];
+    struct alignas(4) Short2 {
+        short x, y;
     };
 
-    union alignas(4) Ushort2 {
-        struct { ushort x, y; };
-        ushort at[2];
+    struct alignas(4) Ushort2 {
+        ushort x, y;
     };
 
-    union Short3 {
-        struct { short x, y, z; };
-        short at[3];
+    struct Short3 {
+        short x, y, z;
     };
 
-    union Ushort3 {
-        struct { ushort x, y, z; };
-        ushort at[3];
+    struct Ushort3 {
+        ushort x, y, z;
     };
 
-    union alignas(8) Short4 {
-        struct { short x, y, z, w; };
-        short at[4];
+    struct alignas(8) Short4 {
+        short x, y, z, w;
     };
 
-    union alignas(8) Ushort4 {
-        struct { ushort x, y, z, w; };
-        ushort at[4];
+    struct alignas(8) Ushort4 {
+        ushort x, y, z, w;
     };
 
-    union Int1 {
+    struct Int1 {
         int x;
-        int at[1];
     };
 
-    union Uint1 {
+    struct Uint1 {
         unsigned int x;
-        unsigned int at[1];
     };
 
-    union alignas(8) Int2 {
-        struct { int x, y; };
-        int at[2];
+    struct alignas(8) Int2 {
+        int x, y;
     };
 
-    union alignas(8) Uint2 {
-        struct { unsigned int x, y; };
-        unsigned int at[2];
+    struct alignas(8) Uint2 {
+        unsigned int x, y;
     };
 
-    union Int3 {
-        struct { int x, y, z; };
-        int at[3];
+    struct Int3 {
+        int x, y, z;
     };
 
-    union Uint3 {
-        struct { unsigned int x, y, z; };
-        unsigned int at[3];
+    struct Uint3 {
+        unsigned int x, y, z;
     };
 
-    union alignas(16) Int4 {
-        struct { int x, y, z, w; };
-        int at[4];
+    struct alignas(16) Int4 {
+        int x, y, z, w;
     };
 
-    union alignas(16) Uint4 {
-        struct { unsigned int x, y, z, w; };
-        unsigned int at[4];
+    struct alignas(16) Uint4 {
+        unsigned int x, y, z, w;
     };
 
-    union Long1 {
+    struct Long1 {
         long int x;
-        long int at[1];
     };
 
-    union Ulong1 {
+    struct Ulong1 {
         ulong x;
-        ulong at[1];
     };
 
-    union alignas(2 * sizeof(long int)) Long2 {
-        struct { long int x, y; };
-        long int at[2];
+    struct alignas(2 * sizeof(long int)) Long2 {
+        long int x, y;
     };
 
-    union alignas(2 * sizeof(unsigned long int)) Ulong2 {
-        struct { ulong x, y; };
-        ulong at[2];
+    struct alignas(2 * sizeof(unsigned long int)) Ulong2 {
+        ulong x, y;
     };
 
-    union Long3 {
-        struct { long int x, y, z; };
-        long int at[3];
+    struct Long3 {
+        long int x, y, z;
     };
 
-    union Ulong3 {
-        struct { ulong x, y, z; };
-        ulong at[3];
+    struct Ulong3 {
+        ulong x, y, z;
     };
 
-    union alignas(16) Long4 {
-        struct { long int x, y, z, w; };
-        long int at[4];
+    struct alignas(16) Long4 {
+        long int x, y, z, w;
     };
 
-    union alignas(16) Ulong4 {
-        struct { ulong x, y, z, w; };
-        ulong at[4];
+    struct alignas(16) Ulong4 {
+        ulong x, y, z, w;
     };
 
-    union Float1 {
+    struct Float1 {
         float x;
-        float at[1];
     };
 
-    union alignas(8) Float2 {
-        struct { float x, y; };
-        float at[2];
+    struct alignas(8) Float2 {
+        float x, y;
     };
 
-    union Float3 {
-        struct { float x, y, z; };
-        float at[3];
+    struct Float3 {
+        float x, y, z;
     };
 
-    union alignas(16) Float4 {
-        struct { float x, y, z, w; };
-        float at[4];
+    struct alignas(16) Float4 {
+        float x, y, z, w;
     };
 
-    union Longlong1 {
+    struct Longlong1 {
         long long int x;
-        long long int at[1];
     };
 
-    union Ulonglong1 {
+    struct Ulonglong1 {
         ulonglong x;
-        ulonglong at[1];
     };
 
-    union alignas(16) Longlong2 {
-        struct { long long int x, y; };
-        long long int at[2];
+    struct alignas(16) Longlong2 {
+        long long int x, y;
     };
 
-    union alignas(16) Ulonglong2 {
-        struct { ulonglong x, y; };
-        ulonglong at[2];
+    struct alignas(16) Ulonglong2 {
+        ulonglong x, y;
     };
 
-    union Longlong3 {
-        struct { long long int x, y, z; };
-        long long int at[3];
+    struct Longlong3 {
+        long long int x, y, z;
     };
 
-    union Ulonglong3 {
-        struct { ulonglong x, y, z; };
-        ulonglong at[3];
+    struct Ulonglong3 {
+        ulonglong x, y, z;
     };
 
-    union alignas(16) Longlong4 {
-        struct { long long int x, y, z, w; };
-        long long int at[4];
+    struct alignas(16) Longlong4 {
+        long long int x, y, z, w;
     };
 
-    union alignas(16) Ulonglong4 {
-        struct { ulonglong x, y, z, w; };
-        ulonglong at[4];
+    struct alignas(16) Ulonglong4 {
+        ulonglong x, y, z, w;
     };
 
-    union Double1 {
+    struct Double1 {
         double x;
-        double at[1];
     };
 
-    union alignas(16) Double2 {
-        struct { double x, y; };
-        double at[2];
+    struct alignas(16) Double2 {
+        double x, y;
     };
 
-    union alignas(16) Double3 {
-        struct { double x, y, z; };
-        double at[3];
+    struct alignas(16) Double3 {
+        double x, y, z;
     };
 
-    union alignas(16) Double4 {
-        struct { double x, y, z, w; };
-        double at[4];
+    struct alignas(16) Double4 {
+        double x, y, z, w;
     };
 } // namespace fk
 

@@ -48,9 +48,7 @@ namespace fk {
         struct {
             T x;
         };
-        FK_HOST_DEVICE_CNST Array(const T& initValue) {
-            at[0] = initValue;
-        }
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 1>& other) : x(other.x) {}
         FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
             int i = 0;
             for (const auto& value : initList) {
@@ -63,6 +61,10 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return x;
         }
+        FK_HOST_DEVICE_CNST Array<T, 1>& operator=(const VectorType_t<T, 1>& other) {
+            x = other.x;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -72,6 +74,7 @@ namespace fk {
         struct {
             T x, y;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 2>& other) : x(other.x), y(other.y) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -92,6 +95,11 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return VectorAt(index, make_<VectorType_t<T,size>>(x,y));
         }
+        FK_HOST_DEVICE_CNST Array<T, 2>& operator=(const VectorType_t<T, 2>& other) {
+            x = other.x;
+            y = other.y;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -101,6 +109,7 @@ namespace fk {
         struct {
             T x, y, z;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 3>& other) : x(other.x), y(other.y), z(other.z) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -121,6 +130,12 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return VectorAt(index, make_<VectorType_t<T, size>>(x, y, z));
         }
+        FK_HOST_DEVICE_CNST Array<T, 3>& operator=(const VectorType_t<T, 3>& other) {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -130,6 +145,7 @@ namespace fk {
         struct {
             T x, y, z, w;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 4>& other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -150,52 +166,36 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return VectorAt(index, make_<VectorType_t<T, size>>(x, y, z, w));
         }
+        FK_HOST_DEVICE_CNST Array<T, 4>& operator=(const VectorType_t<T, 4>& other) {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+            w = other.w;
+            return *this;
+        }
     };
 
-    template <typename V, int... Idx>
-    FK_HOST_DEVICE_CNST Array<VBase<V>, cn<V>> toArray_helper(const V& vector, const std::integer_sequence<int, Idx...>&) {
-        return { { VectorAt<Idx>(vector)... } };
-    }
+    template <typename CUDAVector>
+    using ToArray = Array<VBase<CUDAVector>, cn<CUDAVector>>;
 
     template <typename V>
-    FK_HOST_DEVICE_CNST Array<VBase<V>, cn<V>> toArray(const V& vector) {
-        if constexpr (validCUDAVec<V>) {
-            return toArray_helper(vector, std::make_integer_sequence<int, cn<V>>{});
-        } else {
-            return Array<V, 1>{ {vector} };
-        }
+    FK_HOST_DEVICE_CNST ToArray<V> toArray(const V& vector) {
+        return vector;
     }
 
-    template <typename T, int SIZE, int... Idx>
+    template <typename T, size_t SIZE, size_t... Idx>
     FK_HOST_DEVICE_CNST VectorType_t<T, SIZE> toVector_helper(const Array<T, SIZE>& array_v, const std::integer_sequence<int, Idx...>&) {
         return { array_v.at[Idx]... };
     }
 
-    template <typename T, int SIZE>
+    template <typename T, size_t SIZE>
     FK_HOST_DEVICE_CNST VectorType_t<T, SIZE> toVector(const Array<T, SIZE>& array_v) {
         static_assert(SIZE <= 4, "No Vector types available with size greater than 4");
         if constexpr (SIZE == 1) {
             return array_v.at[0];
         } else {
-            return toVector_helper(array_v, std::make_integer_sequence<int, SIZE>{});
+            return toVector_helper(array_v, std::index_sequence<SIZE>{});
         }
-    }
-
-    template <typename T, size_t BATCH, typename... Types>
-    FK_HOST_DEVICE_CNST Array<T, BATCH> make_array(const Types&... pars) {
-        static_assert(sizeof...(Types) == BATCH, "Too many or too few elements for the array size.");
-        static_assert(std::disjunction_v<std::is_same<T, Types>...>, "All the types should be the same");
-        return { {pars...} };
-    }
-
-    template <typename Array, typename Value, size_t... Idx>
-    FK_HOST_DEVICE_CNST Array make_set_array_helper(const std::index_sequence<Idx...>&, const Value& value) {
-        return { { (static_cast<void>(Idx), value)... } };
-    }
-
-    template <typename T, size_t BATCH>
-    FK_HOST_DEVICE_CNST Array<T, BATCH> make_set_array(const T& value) {
-        return make_set_array_helper<Array<T, BATCH>>(std::make_index_sequence<BATCH>(), value);
     }
 
     template <typename Value, size_t... Idx>

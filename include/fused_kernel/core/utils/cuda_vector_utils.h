@@ -121,60 +121,6 @@ namespace fk {
 
     template <typename T>
     using VBase = typename VectorTraits<T>::base;
-
-    using CUDAVectors = TypeList<
-        bool1, bool2, bool3, bool4,
-        uchar1, uchar2, uchar3, uchar4,
-        char1, char2, char3, char4,
-        ushort1, ushort2, ushort3, ushort4,
-        short1, short2, short3, short4,
-        uint1, uint2, uint3, uint4,
-        int1, int2, int3, int4,
-        ulong1, ulong2, ulong3, ulong4,
-        long1, long2, long3, long4,
-        ulonglong1, ulonglong2, ulonglong3, ulonglong4,
-        longlong1, longlong2, longlong3, longlong4,
-        float1, float2, float3, float4,
-        double1, double2, double3, double4>;
-
-    using FKVectors = TypeList<
-        Bool1, Bool2, Bool3, Bool4,
-        Uchar1, Uchar2, Uchar3, Uchar4,
-        Char1, Char2, Char3, Char4,
-        Ushort1, Ushort2, Ushort3, Ushort4,
-        Short1, Short2, Short3, Short4,
-        Uint1, Uint2, Uint3, Uint4,
-        Int1, Int2, Int3, Int4,
-        Ulong1, Ulong2, Ulong3, Ulong4,
-        Long1, Long2, Long3, Long4,
-        Ulonglong1, Ulonglong2, Ulonglong3, Ulonglong4,
-        Longlong1, Longlong2, Longlong3, Longlong4,
-        Float1, Float2, Float3, Float4,
-        Double1, Double2, Double3, Double4>;
-
-    template <typename CUDAVectorType>
-    using FKVectorEquiv_t = EquivalentType_t<CUDAVectorType, CUDAVectors, FKVectors>;
-
-    template <typename FKVectorType>
-    using CUDAVectorEquiv_t = EquivalentType_t<FKVectorType, FKVectors, CUDAVectors>;
-
-    template <typename T>
-    constexpr inline auto getFKVector(const T& vectorVal) {
-        if constexpr (std::is_union_v<T>) {
-            return vectorVal;
-        } else {
-            static_assert(one_of_v<T, CUDAVectors>, "getFKVector can only be used with valid CUDA vector types.");
-            if constexpr (cn<T> == 1) {
-                return FKVectorEquiv_t<T>{ vectorVal.x };
-            } else if constexpr (cn<T> == 2) {
-                return FKVectorEquiv_t<T>{ vectorVal.x, vectorVal.y };
-            } else if constexpr (cn<T> == 3) {
-                return FKVectorEquiv_t<T>{ vectorVal.x, vectorVal.y, vectorVal.z };
-            } else {
-                return FKVectorEquiv_t<T>{ vectorVal.x, vectorVal.y, vectorVal.z, vectorVal.w };
-            }
-        }
-    }
     
     template <int idx, typename T>
     FK_HOST_DEVICE_CNST auto VectorAt(const T& vector) {
@@ -255,15 +201,21 @@ namespace fk {
         template <typename T, typename... Numbers>
         FK_HOST_DEVICE_FUSE T type(const Numbers&... pack) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: make::type<invalid_type>()");
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER <= 1916
+            return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
+#else
             if constexpr (std::is_union_v<T>) {
-                return T{ static_cast<std::decay_t<decltype(T::at[0])>>(pack)...  };
-            } else if constexpr (std::is_class_v<T>) {
+                return T{ static_cast<std::decay_t<decltype(T::at[0])>>(pack)... };
+            }
+            else if constexpr (std::is_class_v<T>) {
                 return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
-            } else {
+            }
+            else {
                 static_assert(std::is_union_v<T> || std::is_class_v<T>,
-                              "make::type can only be used with CUDA vector_types or fk vector_types");
+                    "make::type can only be used with CUDA vector_types or fk vector_types");
                 return T{};
             }
+#endif
         }
     };
 

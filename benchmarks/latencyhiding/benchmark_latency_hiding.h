@@ -48,9 +48,8 @@ struct VerticalFusion {
 
 template <int VARIABLE_DIMENSION>
 inline int testLatencyHiding(fk::Stream& stream) {
-
-    fk::Ptr1D<float> input(NUM_ELEMENTS, 0, fk::MemType::Device);
-    fk::Ptr1D<float> output(NUM_ELEMENTS, 0, fk::MemType::Device);
+    fk::Ptr1D<float> input(NUM_ELEMENTS);
+    fk::Ptr1D<float> output(NUM_ELEMENTS);
 
     constexpr float init_val{ 1 };
 

@@ -168,9 +168,6 @@ bool testThreadFusionDifferentTypeAndChannelIO(fk::Stream& stream) {
         fk::Ptr2D<O> d_output_cvGS(NUM_ELEMS_X, NUM_ELEMS_Y);
         fk::Ptr2D<O> d_output_cvGS_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y);
 
-        fk::Ptr2D<O> h_cvGSResults(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
-        fk::Ptr2D<O> h_cvGSResults_ThreadFusion(NUM_ELEMS_X, NUM_ELEMS_Y, 0, fk::MemType::HostPinned);
-
         // In this case it's not OpenCV, it's cvGPUSpeedup without thread fusion
         START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
