@@ -255,15 +255,21 @@ namespace fk {
         template <typename T, typename... Numbers>
         FK_HOST_DEVICE_FUSE T type(const Numbers&... pack) {
             static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: make::type<invalid_type>()");
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER <= 1916
+            return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
+#else
             if constexpr (std::is_union_v<T>) {
-                return T{ static_cast<std::decay_t<decltype(T::at[0])>>(pack)...  };
-            } else if constexpr (std::is_class_v<T>) {
+                return T{ static_cast<std::decay_t<decltype(T::at[0])>>(pack)... };
+            }
+            else if constexpr (std::is_class_v<T>) {
                 return T{ static_cast<std::decay_t<decltype(T::x)>>(pack)... };
-            } else {
+            }
+            else {
                 static_assert(std::is_union_v<T> || std::is_class_v<T>,
-                              "make::type can only be used with CUDA vector_types or fk vector_types");
+                    "make::type can only be used with CUDA vector_types or fk vector_types");
                 return T{};
             }
+#endif
         }
     };
 

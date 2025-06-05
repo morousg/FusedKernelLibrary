@@ -48,6 +48,7 @@ namespace fk {
         struct {
             T x;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 1>& other) : x(other.x) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             at[0] = initValue;
         }
@@ -63,6 +64,10 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return x;
         }
+        FK_HOST_DEVICE_CNST Array<T, 1>& operator=(const VectorType_t<T, 1>& other) {
+            x = other.x;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -72,6 +77,7 @@ namespace fk {
         struct {
             T x, y;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 2>& other) : x(other.x), y(other.y) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -92,6 +98,11 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return VectorAt(index, make_<VectorType_t<T,size>>(x,y));
         }
+        FK_HOST_DEVICE_CNST Array<T, 2>& operator=(const VectorType_t<T, 2>& other) {
+            x = other.x;
+            y = other.y;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -101,6 +112,7 @@ namespace fk {
         struct {
             T x, y, z;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 3>& other) : x(other.x), y(other.y), z(other.z) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -121,6 +133,12 @@ namespace fk {
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return VectorAt(index, make_<VectorType_t<T, size>>(x, y, z));
         }
+        FK_HOST_DEVICE_CNST Array<T, 3>& operator=(const VectorType_t<T, 3>& other) {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -130,6 +148,7 @@ namespace fk {
         struct {
             T x, y, z, w;
         };
+        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 4>& other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
@@ -149,6 +168,13 @@ namespace fk {
         // placing it in local memory, which is way slower.
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
             return VectorAt(index, make_<VectorType_t<T, size>>(x, y, z, w));
+        }
+        FK_HOST_DEVICE_CNST Array<T, 4>& operator=(const VectorType_t<T, 4>& other) {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+            w = other.w;
+            return *this;
         }
     };
 

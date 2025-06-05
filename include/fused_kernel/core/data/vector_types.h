@@ -24,6 +24,225 @@ using ulong = unsigned long int;
 using ulonglong = unsigned long long int;
 
 namespace fk {
+
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER <= 1916
+    struct Bool1 {
+        bool x;
+    };
+
+    struct Bool2 {
+        bool x, y;
+    };
+
+    struct Bool3 {
+        bool x, y, z;
+    };
+
+    struct Bool4 {
+        bool x, y, z, w;
+    };
+} // namespace fk
+
+using bool1 = fk::Bool1;
+using bool2 = fk::Bool2;
+using bool3 = fk::Bool3;
+using bool4 = fk::Bool4;
+
+namespace fk {
+    struct Char1 {
+        signed char x;
+    };
+
+    struct Uchar1 {
+        uchar x;
+    };
+
+    struct alignas(2) Char2 {
+        struct { signed char x, y; };
+    };
+
+    union alignas(2) Uchar2 {
+        struct { uchar x, y; };
+    };
+
+    struct Char3 {
+        struct { signed char x, y, z; };
+    };
+
+    struct Uchar3 {
+        struct { uchar x, y, z; };
+    };
+
+    struct alignas(4) Char4 {
+        struct { signed char x, y, z, w; };
+    };
+
+    union alignas(4) Uchar4 {
+        struct { uchar x, y, z, w; };
+    };
+
+    struct Short1 {
+        short x;
+    };
+
+    struct Ushort1 {
+        ushort x;
+    };
+
+    struct alignas(4) Short2 {
+        struct { short x, y; };
+    };
+
+    struct alignas(4) Ushort2 {
+        struct { ushort x, y; };
+    };
+
+    struct Short3 {
+        struct { short x, y, z; };
+    };
+
+    struct Ushort3 {
+        struct { ushort x, y, z; };
+    };
+
+    struct alignas(8) Short4 {
+        struct { short x, y, z, w; };
+    };
+
+    struct alignas(8) Ushort4 {
+        struct { ushort x, y, z, w; };
+    };
+
+    struct Int1 {
+        int x;
+    };
+
+    struct Uint1 {
+        unsigned int x;
+    };
+
+    struct alignas(8) Int2 {
+        struct { int x, y; };
+    };
+
+    struct alignas(8) Uint2 {
+        struct { unsigned int x, y; };
+    };
+
+    struct Int3 {
+        struct { int x, y, z; };
+    };
+
+    struct Uint3 {
+        struct { unsigned int x, y, z; };
+    };
+
+    struct alignas(16) Int4 {
+        struct { int x, y, z, w; };
+    };
+
+    struct alignas(16) Uint4 {
+        struct { unsigned int x, y, z, w; };
+    };
+
+    struct Long1 {
+        long int x;
+    };
+
+    struct Ulong1 {
+        ulong x;
+    };
+
+    struct alignas(2 * sizeof(long int)) Long2 {
+        struct { long int x, y; };
+    };
+
+    struct alignas(2 * sizeof(unsigned long int)) Ulong2 {
+        struct { ulong x, y; };
+    };
+
+    struct Long3 {
+        struct { long int x, y, z; };
+    };
+
+    struct Ulong3 {
+        struct { ulong x, y, z; };
+    };
+
+    union alignas(16) Long4 {
+        struct { long int x, y, z, w; };
+    };
+
+    struct alignas(16) Ulong4 {
+        struct { ulong x, y, z, w; };
+    };
+
+    struct Float1 {
+        float x;
+    };
+
+    struct alignas(8) Float2 {
+        struct { float x, y; };
+    };
+
+    struct Float3 {
+        struct { float x, y, z; };
+    };
+
+    struct alignas(16) Float4 {
+        struct { float x, y, z, w; };
+    };
+
+    struct Longlong1 {
+        long long int x;
+    };
+
+    struct Ulonglong1 {
+        ulonglong x;
+    };
+
+    struct alignas(16) Longlong2 {
+        struct { long long int x, y; };
+    };
+
+    struct alignas(16) Ulonglong2 {
+        struct { ulonglong x, y; };
+    };
+
+    struct Longlong3 {
+        struct { long long int x, y, z; };
+    };
+
+    struct Ulonglong3 {
+        struct { ulonglong x, y, z; };
+    };
+
+    struct alignas(16) Longlong4 {
+        struct { long long int x, y, z, w; };
+    };
+
+    struct alignas(16) Ulonglong4 {
+        struct { ulonglong x, y, z, w; };
+    };
+
+    struct Double1 {
+        double x;
+    };
+
+    struct alignas(16) Double2 {
+        struct { double x, y; };
+    };
+
+    struct alignas(16) Double3 {
+        struct { double x, y, z; };
+    };
+
+    struct alignas(16) Double4 {
+        struct { double x, y, z, w; };
+    };
+} // namespace fk
+
+#else
     union Bool1 {
         bool x;
         bool at[1];
@@ -291,6 +510,7 @@ namespace fk {
         double at[4];
     };
 } // namespace fk
+#endif // 
 
 #if defined(__NVCC__) || defined(__HIP__)
 #include <vector_types.h>
