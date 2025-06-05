@@ -30,14 +30,14 @@ float computeVariance(const float& mean, const std::array<float, ITERATIONS>& ti
     return sumOfDiff / (ITERATIONS - 1);
 }
 
-template <int VARIABLE_DIMENSION, int ITERATIONS, int NUM_BATCH_VALUES, const std::array<size_t, NUM_BATCH_VALUES>& variableDimanesionValues>
+template <int VARIABLE_DIMENSION, int ITERATIONS, int NUM_BATCH_VALUES, const std::array<size_t, NUM_BATCH_VALUES>& variableDimensionValues>
 inline void processExecution(const BenchmarkResultsNumbersOne& resF,
                              const std::string& functionName,
                              const std::array<float, ITERS>& fkElapsedTime,
                              const std::string& variableDimension) {
     // Create 2D Table for changing types and changing batch
     const std::string fileName = functionName + std::string("_") + std::string(fk::toStrView(fk::defaultParArch)) + std::string(".csv");
-    if constexpr (VARIABLE_DIMENSION == variableDimanesionValues[0]) {
+    if constexpr (VARIABLE_DIMENSION == variableDimensionValues[0]) {
         if (currentFile.find(fileName) == currentFile.end()) {
             currentFile[fileName].open(path + fileName);
         }
