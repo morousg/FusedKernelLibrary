@@ -25,22 +25,23 @@ jobs:
       matrix:
         os: [jetsonnanoorin]
         build_type: [Release]
-        c_compiler: [gcc]        
+        cpp_compiler: [g++,clang++]        
         include:
           #- os: windows-latest
-           # c_compiler: cl
+           # cpp_compiler: cl
            # cpp_compiler: cl
           - os: jetsonnanoorin
-            c_compiler: gcc
             cpp_compiler: g++
+          - os: jetsonnanoorin
+            cpp_compiler: clang++
          
         exclude:
          # - os: windows-latest
-         #   c_compiler: gcc
+         #   cpp_compiler: gcc
           #- os: windows-latest
-          #  c_compiler: clang
+          #  cpp_compiler: clang
           - os: jetsonnanoorin
-            c_compiler: cl
+            cpp_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
@@ -57,8 +58,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -G "Ninja" -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}        
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCUDA_ARCH="87;"
         -S ${{ github.workspace }}
