@@ -29,13 +29,11 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
         if(${ENABLE_BENCHMARK})
             target_compile_definitions(${TARGET_NAME_EXT} PRIVATE ENABLE_BENCHMARK)
         endif()
-        
          
-        
         set_target_properties(${TARGET_NAME_EXT} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)            
-        target_include_directories(${TARGET_NAME_EXT} PRIVATE "${CMAKE_SOURCE_DIR}")        
-        target_include_directories(${TARGET_NAME_EXT} PRIVATE "${DIR}")      
-        target_link_libraries(${TARGET_NAME_EXT} PRIVATE FKL::FKL)
+        target_include_directories(${TARGET_NAME_EXT} PUBLIC "${CMAKE_SOURCE_DIR}")        
+        target_include_directories(${TARGET_NAME_EXT} PUBLIC "${DIR}")      
+        target_link_libraries(${TARGET_NAME_EXT} PUBLIC FKL::FKL)
         if (MSVC)
             target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
         endif()
@@ -65,15 +63,25 @@ function (discover_tests DIR)
         file (READ ${test_source} TEST_SOURCE_CONTENTS ) #read the contents of the test source file
        
         string(FIND "${TEST_SOURCE_CONTENTS}" "ONLYCU"  POS)
-       
+        string(FIND "${TEST_SOURCE_CONTENTS}" "gtest/gtest.h"  GTEST_HEADER_POS)
+        
         if (${POS} EQUAL -1) #if the source file does not contain "__ONLY_CU__"    
             if (${ENABLE_CPU})                    
                 add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")
+                if (${GTEST_HEADER_POS} GREATER -1 AND ${GTest_FOUND}) #if the source file does not contain "__ONLY_CU__"    
+                    message(STATUS "Adding googletest to target ${TARGET_NAME}_cpp")                    
+                    add_googletest_to_target("${TARGET_NAME}_cpp")                 
+                endif()
             endif()
         endif()
         if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
             add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_NAME}")
-            add_cuda_to_test("${TARGET_NAME}_cu")            
+            add_cuda_to_test("${TARGET_NAME}_cu")   
+          
+             if (${GTEST_HEADER_POS} GREATER -1 AND ${GTest_FOUND}) #if the source file does not contain "__ONLY_CU__"
+                    message(STATUS "Adding googletest to target ${TARGET_NAME}_cu")    
+                    add_googletest_to_target("${TARGET_NAME}_cu")                 
+            endif()
         endif()
          
       

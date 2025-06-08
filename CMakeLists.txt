@@ -38,6 +38,7 @@ add_subdirectory(include)
 add_subdirectory(lib)
 
 if (${BUILD_UTEST})
+    include (cmake/libs/googletest.cmake)
     enable_testing()  
     add_subdirectory(tests)      
 endif()

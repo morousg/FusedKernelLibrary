@@ -15,7 +15,16 @@
 
  
 #include <tests/main.h>
+#ifdef GTEST
+#include <gtest/gtest.h>
+#endif
+int main(int argc, char **argv) {
+#ifdef GTEST
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+#else
+  return launch();
+#endif()
 
-int main() {
-    return launch();
+
 }
