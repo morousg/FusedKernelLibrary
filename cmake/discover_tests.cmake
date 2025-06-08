@@ -62,8 +62,11 @@ function (discover_tests DIR)
          
         get_filename_component(TARGET_NAME ${test_source} NAME_WE)   
         cmake_path(GET test_source  PARENT_PATH  DIR_NAME) #get the directory name of the test source file
-        string(FIND ${DIR_NAME} "cudabug"  POS)
-        if (${POS} EQUAL -1) #if the directory name does not contain "cudabug"    
+        file (READ ${test_source} TEST_SOURCE_CONTENTS ) #read the contents of the test source file
+       
+        string(FIND "${TEST_SOURCE_CONTENTS}" "ONLYCU"  POS)
+       
+        if (${POS} EQUAL -1) #if the source file does not contain "__ONLY_CU__"    
             if (${ENABLE_CPU})                    
                 add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")
             endif()
