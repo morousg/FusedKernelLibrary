@@ -63,6 +63,8 @@ namespace fk {
     template <enum ND D, typename T>
     struct PerThreadRead {
         using Parent = ReadOperation<T, RawPtr<D, T>, T, TF::ENABLED, PerThreadRead<D, T>>;
+        using Child = PerThreadRead<D, T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_READ_PARENT
         template <uint ELEMS_PER_THREAD=1>
         FK_HOST_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType>
@@ -102,6 +104,8 @@ namespace fk {
     template <enum ND D, typename T>
     struct PerThreadWrite {
         using Parent = WriteOperation<T, RawPtr<D, T>, T, TF::ENABLED, PerThreadWrite<D, T>>;
+        using Child = PerThreadWrite<D, T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
@@ -120,6 +124,8 @@ namespace fk {
     template <typename T>
     struct TensorRead {
         using Parent = ReadOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorRead<T>>;
+        using Child = TensorRead<T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_READ_PARENT
 
         template <uint ELEMS_PER_THREAD = 1>
@@ -150,6 +156,8 @@ namespace fk {
     template <typename T>
     struct TensorWrite {
         using Parent = WriteOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorWrite<T>>;
+        using Child = TensorWrite<T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const ParamsType& params) {
@@ -168,6 +176,8 @@ namespace fk {
     template <typename T>
     struct TensorSplit {
         using Parent = WriteOperation<T, RawPtr<_3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorSplit<T>>;
+        using Child = TensorSplit<T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const T& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
@@ -197,6 +207,8 @@ namespace fk {
     template <typename T>
     struct TensorTSplit {
         using Parent = WriteOperation<T, RawPtr<T3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorTSplit<T>>;
+        using Child = TensorTSplit<T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
@@ -222,6 +234,8 @@ namespace fk {
     template <typename T>
     struct TensorPack {
         using Parent = ReadOperation<VBase<T>, RawPtr<_3D, VBase<T>>, T, TF::DISABLED, TensorPack<T>>;
+        using Child = TensorPack<T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             static_assert(cn<OutputType> >= 2,
@@ -267,6 +281,8 @@ namespace fk {
     template <typename T>
     struct TensorTPack {
         using Parent = ReadOperation<T, RawPtr<T3D, VBase<T>>, T, TF::DISABLED, TensorTPack<T>>;
+        using Child = TensorTPack<T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             static_assert(cn<OutputType> >= 2,
@@ -331,6 +347,8 @@ namespace fk {
     template <ND D, typename T>
     struct SplitWrite {
         using Parent = WriteOperation<T, SplitWriteParams<D, T>, VBase<T>, TF::DISABLED, SplitWrite<D, T>>;
+        using Child = SplitWrite<D, T>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
@@ -405,6 +423,8 @@ namespace fk {
                                     typename Operation::OutputType,
                                     Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                     CircularBatchRead<direction, Operation, BATCH>>;
+        using Child = CircularBatchRead<direction, Operation, BATCH>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_READ_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
@@ -443,6 +463,8 @@ namespace fk {
                                       typename Operation::WriteDataType,
                                       Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                       CircularBatchWrite<direction, Operation, BATCH>>;
+        using Child = CircularBatchWrite<direction, Operation, BATCH>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const ParamsType& params) {
@@ -468,6 +490,8 @@ namespace fk {
                                      typename Operation::OutputType,
                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                      CircularTensorRead<direction, Operation, BATCH>>;
+        using Child = CircularTensorRead<direction, Operation, BATCH>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_READ_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE const ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
@@ -506,6 +530,8 @@ namespace fk {
                                       typename Operation::WriteDataType,
                                       Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                       CircularTensorWrite<direction, Operation, BATCH>>;
+        using Child = CircularTensorWrite<direction, Operation, BATCH>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,

@@ -60,6 +60,14 @@
         struct_name(struct_name&&) = delete; \
         struct_name& operator=(struct_name&&) = delete;
 
+#define FK_STATIC_STRUCT_CHILD(struct_name, struct_alias) \
+    public: /* Ensure deletions are in a public section (conventional) */ \
+        struct_name() = delete; \
+        struct_name(const struct_alias&) = delete; \
+        struct_name& operator=(const struct_alias&) = delete; \
+        struct_name(struct_alias&&) = delete; \
+        struct_name& operator=(struct_alias&&) = delete;
+
 using uchar = unsigned char;
 using schar = signed char;
 using uint = unsigned int;

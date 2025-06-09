@@ -24,6 +24,10 @@ namespace fk {
 
     template <typename T, ShiftDirection SD>
     struct ShiftBase {
+    private:
+        using SelfType = ShiftBase<T, SD>;
+    public:
+        FK_STATIC_STRUCT_CHILD(ShiftBase, SelfType)
         using Parent = BinaryOperation<T, uint, T, ShiftBase<T, SD>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -39,6 +43,10 @@ namespace fk {
 
     template <typename T, ShiftDirection SD>
     struct Shift {
+    private:
+        using SelfType = Shift<T, SD>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Shift, SelfType)
         using Parent = BinaryOperation<T, uint, T, Shift<T, SD>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -53,6 +61,10 @@ namespace fk {
 
     template <typename I>
     struct IsEven {
+    private:
+        using SelfType = IsEven<I>;
+    public:
+        FK_STATIC_STRUCT_CHILD(IsEven, SelfType)
         using Parent = UnaryOperation<I, bool, IsEven<I>>;
         DECLARE_UNARY_PARENT
         using AcceptedTypes = TypeList<uchar, ushort, uint, ulong, ulonglong>;
@@ -64,6 +76,10 @@ namespace fk {
 
     template <typename I, typename P = I, typename O = I, typename IType = BinaryType>
     struct MaxBase {
+    private:
+        using SelfType = MaxBase<I, P, O, IType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(MaxBase, SelfType)
         using Parent = BinaryOperation<I, P, O, MaxBase<I, P, O, BinaryType>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -75,6 +91,10 @@ namespace fk {
 
     template <typename I, typename P, typename O>
     struct MaxBase<I, P, O, UnaryType> {
+    private:
+        using SelfType = MaxBase<I, P, O, UnaryType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(MaxBase, SelfType)
         using Parent = UnaryOperation<Tuple<I, P>, O, MaxBase<I, P, O, UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -86,6 +106,10 @@ namespace fk {
 
     template <typename I, typename P = I, typename O = I, typename IType = BinaryType>
     struct Max {
+    private:
+        using SelfType = Max<I, P, O, IType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Max, SelfType)
         using Parent = BinaryOperation<I, P, O, Max<I, P, O, BinaryType>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -95,6 +119,10 @@ namespace fk {
 
     template <typename I, typename P, typename O>
     struct Max<I, P, O, UnaryType> {
+    private:
+        using SelfType = Max<I, P, O, UnaryType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Max, SelfType)
         using Parent = UnaryOperation<Tuple<I, P>, O, Max<I, P, O, UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -104,6 +132,10 @@ namespace fk {
 
     template <typename I, typename P = I, typename O = I, typename IType = BinaryType>
     struct MinBase {
+    private:
+        using SelfType = MinBase<I, P, O, IType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(MinBase, SelfType)
         using Parent = BinaryOperation<I, P, O, MinBase<I, P, O, BinaryType>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -115,6 +147,10 @@ namespace fk {
 
     template <typename I, typename P, typename O>
     struct MinBase<I, P, O, UnaryType> {
+    private:
+        using SelfType = MinBase<I, P, O, UnaryType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(MinBase, SelfType)
         using Parent = UnaryOperation<Tuple<I, P>, O, MinBase<I, P, O, UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -126,6 +162,10 @@ namespace fk {
 
     template <typename I, typename P = I, typename O = I, typename IType = BinaryType>
     struct Min {
+    private:
+        using SelfType = Min<I, P, O, IType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Min, SelfType)
         using Parent = BinaryOperation<I, P, O, Min<I, P, O, BinaryType>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -135,6 +175,10 @@ namespace fk {
 
     template <typename I, typename P, typename O>
     struct Min<I, P, O, UnaryType> {
+    private:
+        using SelfType = Min<I, P, O, UnaryType>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Min, SelfType)
         using Parent = UnaryOperation<Tuple<I, P>, O, Min<I, P, O, UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -144,6 +188,10 @@ namespace fk {
 
     template <typename I1, typename I2=I1>
     struct Equal {
+    private:
+        using SelfType = Equal<I1, I2>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Equal, SelfType)
         using Parent = UnaryOperation<Tuple<I1, I2>, bool, Equal<I1, I2>>;
         DECLARE_UNARY_PARENT
         template <int N = cn<I1>>

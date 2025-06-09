@@ -18,6 +18,10 @@
 namespace fk {
     template <typename I, typename O>
     struct CastBase {
+    private:
+        using SelfType = CastBase<I, O>;
+    public:
+        FK_STATIC_STRUCT_CHILD(CastBase, SelfType)
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;

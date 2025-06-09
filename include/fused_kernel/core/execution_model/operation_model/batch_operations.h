@@ -41,6 +41,7 @@ namespace fk {
     enum PlanePolicy { PROCESS_ALL = 0, CONDITIONAL_WITH_DEFAULT = 1 };
 
     struct BatchOperation {
+        FK_STATIC_STRUCT(BatchOperation)
         template <typename InstantiableType> FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
             static_assert(isBatchOperation<typename InstantiableType::Operation>,
                 "The IOp passed as parameter is not a batch operation");
@@ -99,6 +100,8 @@ namespace fk {
 
     template <size_t BATCH, typename BatchOperation>
     struct BatchReadBase {
+        using Child = BatchReadBase<BATCH, BatchOperation>;
+        FK_STATIC_STRUCT_CHILD(BatchReadBase, Child)
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationData<BatchOperation>& opData) {
             return BatchOperation::Operation::num_elems_x(thread, opData.params.opData[thread.z]);
         }
@@ -134,6 +137,8 @@ namespace fk {
             BatchReadParams<BATCH, PP, Operation, typename Operation::OutputType>,
             typename Operation::OutputType, Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
             BatchRead<BATCH, PROCESS_ALL, Operation_, OutputType_>>;
+        using Child = BatchRead<BATCH, PROCESS_ALL, Operation_, OutputType_>;
+        FK_STATIC_STRUCT_CHILD(BatchRead, Child)
         DECLARE_READ_PARENT_BASIC
 
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
@@ -217,6 +222,8 @@ namespace fk {
             BatchReadParams<BATCH, PP, Operation, NullTypeToAlternative<typename Operation::OutputType, OutputType_>>,
             NullTypeToAlternative<typename Operation::OutputType, OutputType_>,
             Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED, BatchRead<BATCH, PP, Operation, OutputType_>>;
+        using Child = BatchRead<BATCH, PP, Operation, OutputType_>;
+        FK_STATIC_STRUCT_CHILD(BatchRead, Child)
         DECLARE_READ_PARENT_BASIC
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
         template <uint ELEMS_PER_THREAD = 1> FK_HOST_DEVICE_FUSE auto exec(const Point& thread, const ParamsType& params) {
@@ -276,6 +283,8 @@ namespace fk {
 
     template <size_t BATCH>
     struct BatchRead<BATCH, PROCESS_ALL, void> {
+        using Child = BatchRead<BATCH, PROCESS_ALL, void, NullType>;
+        FK_STATIC_STRUCT(Child)
         template <typename IOp> FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations) {
             return BatchRead<BATCH, PROCESS_ALL, typename IOp::Operation>::build(instantiableOperations);
         }
@@ -283,6 +292,8 @@ namespace fk {
 
     template <size_t BATCH>
     struct BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, void> {
+        using Child = BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, void, NullType>;
+        FK_STATIC_STRUCT(Child)
         template <typename IOp, typename DefaultValueType>
         FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations, const int& usedPlanes,
             const DefaultValueType& defaultValue) {
@@ -302,6 +313,8 @@ namespace fk {
         using Parent = WriteOperation<typename Operation::InputType, typename Operation::ParamsType[BATCH],
                                       typename Operation::WriteDataType,
                                       Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED, BatchWrite<BATCH, Operation>>;
+        using Child = BatchWrite<BATCH, Operation>;
+        FK_STATIC_STRUCT(Child)
         DECLARE_WRITE_PARENT_BASIC
 
         template <uint ELEMS_PER_THREAD = 1>
@@ -352,6 +365,8 @@ namespace fk {
     // MEMORY OPERATION BATCH BUILDERS
     template <typename ReadOperation>
     struct ReadOperationBatchBuilders {
+        using Child = ReadOperationBatchBuilders<ReadOperation>;
+        FK_STATIC_STRUCT(Child)
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
             using BuilderType = BatchRead<BATCH_N, PROCESS_ALL, ReadOperation>;

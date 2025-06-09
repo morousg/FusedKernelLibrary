@@ -24,6 +24,7 @@
 
 namespace fk {
     struct ComputeResizePoint {
+        FK_STATIC_STRUCT(ComputeResizePoint)
         using Parent = BinaryOperation<Point, float2, float2, ComputeResizePoint>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const ParamsType& params) {
@@ -59,6 +60,10 @@ namespace fk {
 
     template <enum InterpolationType IType, enum AspectRatio AR = AspectRatio::IGNORE_AR, typename BackFunction_ = void>
     struct Resize {
+    private:
+        using SelfType = Resize<IType, AR, BackFunction_>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Resize, SelfType)
         using InterpolateOutputType = typename Interpolate<IType, BackFunction_>::OutputType;
         using Parent = ReadBackOperation<typename BackFunction_::Operation::OutputType,
                                          ResizeReadParams<IType, AR, std::conditional_t<AR == AspectRatio::IGNORE_AR, void, InterpolateOutputType>>,
@@ -229,6 +234,10 @@ namespace fk {
 
     template <enum InterpolationType IType, enum AspectRatio AR, typename T>
     struct Resize<IType, AR, TypeList<void, T>> {
+    private:
+        using SelfType = Resize<IType, AR, TypeList<void, T>>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Resize, SelfType)
         using Parent = ReadBackOperation<NullType,
                                          IncompleteResizeReadParams<AR, T>,
                                          NullType,
@@ -264,6 +273,10 @@ namespace fk {
 
     template <enum InterpolationType IType>
     struct Resize<IType, AspectRatio::IGNORE_AR, TypeList<void, void>> {
+    private:
+        using SelfType = Resize<IType, AspectRatio::IGNORE_AR, TypeList<void, void>>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Resize, SelfType)
         using Parent = ReadBackOperation<NullType,
                                          IncompleteResizeReadParams<AspectRatio::IGNORE_AR, void>,
                                          NullType,
@@ -295,6 +308,10 @@ namespace fk {
 
     template <enum InterpolationType IType, enum AspectRatio AR>
     struct Resize<IType, AR, void> {
+    private:
+        using SelfType = Resize<IType, AR, void>;
+    public:
+        FK_STATIC_STRUCT_CHILD(Resize, SelfType)
         using Parent = ReadBackOperation<NullType, NullType, NullType, NullType,
                                          Resize<IType, AR, void>>;
         DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
