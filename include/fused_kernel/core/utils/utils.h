@@ -52,14 +52,6 @@
 #define CUDART_MAJOR_VERSION 0 // We are not compiling with nvcc
 #endif
 
-#define FK_STATIC_STRUCT(struct_name) \
-    public: /* Ensure deletions are in a public section (conventional) */ \
-        struct_name() = delete; \
-        struct_name(const struct_name&) = delete; \
-        struct_name& operator=(const struct_name&) = delete; \
-        struct_name(struct_name&&) = delete; \
-        struct_name& operator=(struct_name&&) = delete;
-
 #define FK_STATIC_STRUCT_SELFTYPE(struct_name, struct_alias) \
     public: /* Ensure deletions are in a public section (conventional) */ \
         struct_name() = delete; \

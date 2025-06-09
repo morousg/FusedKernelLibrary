@@ -580,7 +580,7 @@ namespace fk {
     };
 
     struct SaturateFloatBase {
-        FK_STATIC_STRUCT(SaturateFloatBase)
+        FK_STATIC_STRUCT_SELFTYPE(SaturateFloatBase, SaturateFloatBase)
         using Parent = UnaryOperation<float, float, SaturateFloatBase>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {

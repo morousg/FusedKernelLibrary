@@ -41,7 +41,7 @@ namespace fk {
     enum PlanePolicy { PROCESS_ALL = 0, CONDITIONAL_WITH_DEFAULT = 1 };
 
     struct BatchOperation {
-        FK_STATIC_STRUCT(BatchOperation)
+        FK_STATIC_STRUCT_SELFTYPE(BatchOperation, BatchOperation)
         template <typename InstantiableType> FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
             static_assert(isBatchOperation<typename InstantiableType::Operation>,
                 "The IOp passed as parameter is not a batch operation");
@@ -381,7 +381,7 @@ namespace fk {
     struct ReadOperationBatchBuilders {
     private:
         using SelfType = ReadOperationBatchBuilders<ReadOperation>;
-        FK_STATIC_STRUCT(SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(ReadOperationBatchBuilders, SelfType)
     public:
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {

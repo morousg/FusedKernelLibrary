@@ -24,7 +24,7 @@
 
 namespace fk {
     struct ComputeResizePoint {
-        FK_STATIC_STRUCT(ComputeResizePoint)
+        FK_STATIC_STRUCT_SELFTYPE(ComputeResizePoint, ComputeResizePoint)
         using Parent = BinaryOperation<Point, float2, float2, ComputeResizePoint>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const ParamsType& params) {
