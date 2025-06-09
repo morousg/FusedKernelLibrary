@@ -19,34 +19,33 @@
 
 using namespace fk;
 
-TEST(SaturateCastBaseTest, IntToUchar) {
-    SaturateCastBase<int, uchar> saturate;
-    EXPECT_EQ(saturate.exec(-10), 0);      // Below range
-    EXPECT_EQ(saturate.exec(0), 0);        // Lower bound
-    EXPECT_EQ(saturate.exec(128), 128);    // In range
-    EXPECT_EQ(saturate.exec(255), 255);    // Upper bound
-    EXPECT_EQ(saturate.exec(300), 255);    // Above range
+// Helper function template to test static polymorphism
+template <typename I, typename O> void TestSaturateCastBase(I input, O expected) {
+  SaturateCastBase<I, O> saturate;
+  EXPECT_EQ(saturate.exec(input), expected);
 }
 
-TEST(SaturateCastBaseTest, FloatToUchar) {
-    SaturateCastBase<float, uchar> saturate;
-    EXPECT_EQ(saturate.exec(-1.5f), 0);
-    EXPECT_EQ(saturate.exec(0.0f), 0);
-    EXPECT_EQ(saturate.exec(127.9f), 128);
-    EXPECT_EQ(saturate.exec(255.0f), 255);
-    EXPECT_EQ(saturate.exec(300.0f), 255);
+TEST(SaturateStaticPolymorphism, IntToUchar) {
+  TestSaturateCastBase<int, uchar>(-10, 0);
+  TestSaturateCastBase<int, uchar>(0, 0);
+  TestSaturateCastBase<int, uchar>(128, 128);
+  TestSaturateCastBase<int, uchar>(255, 255);
+  TestSaturateCastBase<int, uchar>(300, 255);
 }
 
-TEST(SaturateCastBaseTest, UcharToSchar) {
-    SaturateCastBase<uchar, schar> saturate;
-    EXPECT_EQ(saturate.exec(0), 0);
-    EXPECT_EQ(saturate.exec(127), 127);
-    EXPECT_EQ(saturate.exec(128), 127);
-    EXPECT_EQ(saturate.exec(255), 127);
+TEST(SaturateStaticPolymorphism, FloatToUchar) {
+  TestSaturateCastBase<float, uchar>(-1.5f, 0);
+  TestSaturateCastBase<float, uchar>(0.0f, 0);
+  TestSaturateCastBase<float, uchar>(127.9f, 128);
+  TestSaturateCastBase<float, uchar>(255.0f, 255);
+  TestSaturateCastBase<float, uchar>(300.0f, 255);
 }
-int launch() {
 
-  return RUN_ALL_TESTS();
-};
+TEST(SaturateStaticPolymorphism, UcharToSchar) {
+  TestSaturateCastBase<uchar, schar>(0, 0);
+  TestSaturateCastBase<uchar, schar>(127, 127);
+  TestSaturateCastBase<uchar, schar>(128, 127);
+  TestSaturateCastBase<uchar, schar>(255, 127);
+}
 
-    // Add more tests for other type combinations as needed
+// You can add more tests for other type combinations as needed.
