@@ -1,4 +1,4 @@
-/* Copyright 2023-2024 Oscar Amoros Huguet
+/* Copyright 2023-2025 Oscar Amoros Huguet
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,20 +52,19 @@
 #define CUDART_MAJOR_VERSION 0 // We are not compiling with nvcc
 #endif
 
-#define FK_STATIC_STRUCT(struct_name) \
+#define FK_STATIC_STRUCT_SELFTYPE(struct_name, struct_alias) \
     public: /* Ensure deletions are in a public section (conventional) */ \
         struct_name() = delete; \
-        struct_name(const struct_name&) = delete; \
-        struct_name& operator=(const struct_name&) = delete; \
-        struct_name(struct_name&&) = delete; \
-        struct_name& operator=(struct_name&&) = delete;
+        struct_name(const struct_alias&) = delete; \
+        struct_name& operator=(const struct_alias&) = delete; \
+        struct_name(struct_alias&&) = delete; \
+        struct_name& operator=(struct_alias&&) = delete;
 
 using uchar = unsigned char;
 using schar = signed char;
 using uint = unsigned int;
 using longlong = long long;
 using ulonglong = unsigned long long;
-
 using ushort = unsigned short;
 using ulong = unsigned long;
 

@@ -21,6 +21,10 @@
 namespace fk {
     template <typename I, typename O>
     struct Cast final : UnaryOperation<I, O, Cast<I, O>>{
+    private:
+        using SelfType = Cast<I, O>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(Cast, SelfType)
         using Parent = UnaryOperation<I, O, Cast<I, O>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {

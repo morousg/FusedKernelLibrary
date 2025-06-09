@@ -28,6 +28,10 @@ namespace fk {
 
     template <typename T>
     struct ReadSet {
+    private:
+        using SelfType = ReadSet<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(ReadSet, SelfType)
         using Parent = ReadOperation<T, ReadSetParams<T>, T, TF::DISABLED, ReadSet<T>>;
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {

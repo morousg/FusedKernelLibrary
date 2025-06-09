@@ -27,6 +27,10 @@ namespace fk {
 
     template <typename I, VBase<I> alpha>
     struct StaticAddAlpha {
+    private:
+        using SelfType = StaticAddAlpha<I, alpha>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(StaticAddAlpha, SelfType)
         using Parent = UnaryOperation<I, VOneMore<I>, StaticAddAlpha<I, alpha>>;
         DECLARE_UNARY_PARENT
         FK_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -41,6 +45,10 @@ namespace fk {
 
     template <typename I, typename O>
     struct RGB2Gray<I, O, CCIR_601> {
+    private:
+        using SelfType = RGB2Gray<I, O, CCIR_601>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(RGB2Gray, SelfType)
         using Parent = UnaryOperation<I, O, RGB2Gray<I, O, CCIR_601>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -120,6 +128,10 @@ namespace fk {
 
     template <typename I, ColorDepth CD>
     struct AddOpaqueAlpha {
+    private:
+        using SelfType = AddOpaqueAlpha<I, CD>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(AddOpaqueAlpha, SelfType)
         using Parent = UnaryOperation<I, VOneMore<I>, AddOpaqueAlpha<I, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -130,6 +142,10 @@ namespace fk {
 
     template <typename T, ColorDepth CD>
     struct SaturateDepth {
+    private:
+        using SelfType = SaturateDepth<T, CD>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(SaturateDepth, SelfType)
         using Parent = UnaryOperation<T, T, SaturateDepth<T, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -194,6 +210,10 @@ namespace fk {
 
     template <typename O, ColorDepth CD>
     struct DenormalizePixel {
+    private:
+        using SelfType = DenormalizePixel<O, CD>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(DenormalizePixel, SelfType)
         using Parent = UnaryOperation<VectorType_t<float, cn<O>>, O, DenormalizePixel<O, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -203,6 +223,10 @@ namespace fk {
 
     template <typename I, ColorDepth CD>
     struct NormalizePixel {
+    private:
+        using SelfType = NormalizePixel<I, CD>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(NormalizePixel, SelfType)
         using Parent = UnaryOperation<I, VectorType_t<float, cn<I>>, NormalizePixel<I, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -212,6 +236,10 @@ namespace fk {
 
     template <typename I, typename O, ColorDepth CD>
     struct SaturateDenormalizePixel {
+    private:
+        using SelfType = SaturateDenormalizePixel<I, O, CD>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(SaturateDenormalizePixel, SelfType)
         using Parent = UnaryOperation<I, O, SaturateDenormalizePixel<I, O, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -223,6 +251,10 @@ namespace fk {
 
     template <typename T, ColorDepth CD>
     struct NormalizeColorRangeDepth {
+    private:
+        using SelfType = NormalizeColorRangeDepth<T, CD>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(NormalizeColorRangeDepth, SelfType)
         using Parent = UnaryOperation<T, T, NormalizeColorRangeDepth<T, CD>>;
         DECLARE_UNARY_PARENT
         using Base = typename VectorTraits<T>::base;
@@ -234,6 +266,10 @@ namespace fk {
 
     template <PixelFormat PF, ColorRange CR, ColorPrimitives CP, bool ALPHA, typename ReturnType = YUVOutputPixelType<PF, ALPHA>>
     struct ConvertYUVToRGB {
+    private:
+        using SelfType = ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(ConvertYUVToRGB, SelfType)
         static constexpr ColorDepth CD = (ColorDepth)PixelFormatTraits<PF>::depth;
         using Parent = UnaryOperation<ColorDepthPixelType<CD>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
         DECLARE_UNARY_PARENT
@@ -291,6 +327,10 @@ namespace fk {
 
     template <PixelFormat PF>
     struct ReadYUV {
+    private:
+        using SelfType = ReadYUV<PF>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(ReadYUV, SelfType)
         using PixelBaseType = ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>;
         using Parent = ReadOperation<PixelBaseType,
                                      RawPtr<_2D, PixelBaseType>,

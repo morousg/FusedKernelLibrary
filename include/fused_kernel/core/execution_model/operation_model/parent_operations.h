@@ -22,6 +22,10 @@ namespace fk {
     // PARENT COMPUTE OPERATIONS
     template <typename I, typename O, typename UOperationImpl, bool IS_FUSED = false> 
     struct UnaryOperation {
+    private:
+        using SelfType = UnaryOperation<I, O, UOperationImpl, IS_FUSED>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(UnaryOperation, SelfType)
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;
@@ -42,6 +46,10 @@ namespace fk {
 
     template <typename I, typename P, typename O, typename BOperationImpl, bool IS_FUSED = false>
     struct BinaryOperation {
+    private:
+        using SelfType = BinaryOperation<I, P, O, BOperationImpl, IS_FUSED>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(BinaryOperation, SelfType)
         // --- REMOVE using ALIASES that depend on BOperationImpl ---
         // These caused the incomplete type error during base class instantiation.
         // We will refer to BOperationImpl::TypeNeeded directly in methods.
@@ -86,6 +94,10 @@ namespace fk {
   FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType &params) { return Parent::build(params); }
     template <typename I, typename P, typename BF, typename O, typename TOperationImpl, bool IS_FUSED = false>
     struct TernaryOperation {
+    private:
+        using SelfType = TernaryOperation<I, P, BF, O, TOperationImpl, IS_FUSED>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TernaryOperation, SelfType)
         using InputType = I;
         using OutputType = O;
         using ParamsType = P;
@@ -123,6 +135,10 @@ namespace fk {
     // PARENT MEMORY OPERATIONS
     template <typename RT, typename P, typename O, enum TF TFE, typename ROperationImpl, bool IS_FUSED = false>
     struct ReadOperation {
+    private:
+        using SelfType = ReadOperation<RT, P, O, TFE, ROperationImpl, IS_FUSED>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(ReadOperation, SelfType)
         using Child = ROperationImpl;
         using ParamsType = P;
         using ReadDataType = RT;
@@ -172,6 +188,10 @@ namespace fk {
 
     template <typename I, typename P, typename WT, enum TF TFE, typename WOperationImpl, bool IS_FUSED = false>
     struct WriteOperation {
+    private:
+        using SelfType = WriteOperation<I, P, WT, TFE, WOperationImpl, IS_FUSED>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(WriteOperation, SelfType)
         using Child = WOperationImpl;
         using ParamsType = P;
         using InputType = I;
@@ -215,6 +235,10 @@ namespace fk {
 
     template <typename RT, typename P, typename B, typename O, typename RBOperationImpl, bool IS_FUSED = false>
     struct ReadBackOperation {
+    private:
+        using SelfType = ReadBackOperation<RT, P, B, O, RBOperationImpl, IS_FUSED>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(ReadBackOperation, SelfType)
         using Child = RBOperationImpl;
         using ReadDataType = RT;
         using OutputType = O;

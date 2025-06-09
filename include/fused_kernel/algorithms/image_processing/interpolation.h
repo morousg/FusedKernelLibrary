@@ -44,13 +44,15 @@ namespace fk {
     };
 
     template <enum InterpolationType INTER_T, typename BackFunction_ = void>
-    struct Interpolate {};
+    struct Interpolate;
 
     template <typename BackFunction_>
     struct Interpolate<InterpolationType::INTER_LINEAR, BackFunction_> {
     private:
+        using SelfType = Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>;
         using ReadOutputType = typename BackFunction_::Operation::OutputType;
     public:
+        FK_STATIC_STRUCT_SELFTYPE(Interpolate, SelfType)
         using Parent = TernaryOperation<float2, InterpolationParameters<InterpolationType::INTER_LINEAR>,
                                         BackFunction_, VectorType_t<float, cn<ReadOutputType>>,
                                         Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>>;
@@ -96,6 +98,10 @@ namespace fk {
 
     template <InterpolationType INTER_T>
     struct Interpolate<INTER_T, void> {
+    private:
+        using SelfType = Interpolate<INTER_T, void>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(Interpolate, SelfType)
         template <typename RealBackFunction>
         FK_HOST_DEVICE_FUSE
             auto build(const OperationData<Interpolate<InterpolationType::INTER_LINEAR, RealBackFunction>>& opData) {

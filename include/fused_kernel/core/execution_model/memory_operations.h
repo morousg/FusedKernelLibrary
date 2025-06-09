@@ -62,7 +62,11 @@ namespace fk {
 
     template <enum ND D, typename T>
     struct PerThreadRead {
+    private:
         using Parent = ReadOperation<T, RawPtr<D, T>, T, TF::ENABLED, PerThreadRead<D, T>>;
+        using SelfType = PerThreadRead<D, T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(PerThreadRead, SelfType)
         DECLARE_READ_PARENT
         template <uint ELEMS_PER_THREAD=1>
         FK_HOST_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType>
@@ -101,7 +105,11 @@ namespace fk {
 
     template <enum ND D, typename T>
     struct PerThreadWrite {
+    private:
         using Parent = WriteOperation<T, RawPtr<D, T>, T, TF::ENABLED, PerThreadWrite<D, T>>;
+        using SelfType = PerThreadWrite<D, T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(PerThreadWrite, SelfType)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,
@@ -119,7 +127,11 @@ namespace fk {
 
     template <typename T>
     struct TensorRead {
+    private:
         using Parent = ReadOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorRead<T>>;
+        using SelfType = TensorRead<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TensorRead, SelfType)
         DECLARE_READ_PARENT
 
         template <uint ELEMS_PER_THREAD = 1>
@@ -149,7 +161,11 @@ namespace fk {
 
     template <typename T>
     struct TensorWrite {
+    private:
         using Parent = WriteOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorWrite<T>>;
+        using SelfType = TensorWrite<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TensorWrite, SelfType)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const ParamsType& params) {
@@ -167,7 +183,11 @@ namespace fk {
 
     template <typename T>
     struct TensorSplit {
+    private:
         using Parent = WriteOperation<T, RawPtr<_3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorSplit<T>>;
+        using SelfType = TensorSplit<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TensorSplit, SelfType)
         DECLARE_WRITE_PARENT
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const T& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
@@ -196,7 +216,11 @@ namespace fk {
 
     template <typename T>
     struct TensorTSplit {
+    private:
         using Parent = WriteOperation<T, RawPtr<T3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorTSplit<T>>;
+        using SelfType = TensorTSplit<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TensorTSplit, SelfType)
         DECLARE_WRITE_PARENT
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
@@ -221,7 +245,11 @@ namespace fk {
 
     template <typename T>
     struct TensorPack {
+    private:
         using Parent = ReadOperation<VBase<T>, RawPtr<_3D, VBase<T>>, T, TF::DISABLED, TensorPack<T>>;
+        using SelfType = TensorPack<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TensorPack, SelfType)
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             static_assert(cn<OutputType> >= 2,
@@ -266,7 +294,11 @@ namespace fk {
 
     template <typename T>
     struct TensorTPack {
+    private:
         using Parent = ReadOperation<T, RawPtr<T3D, VBase<T>>, T, TF::DISABLED, TensorTPack<T>>;
+        using SelfType = TensorTPack<T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(TensorTPack, SelfType)
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             static_assert(cn<OutputType> >= 2,
@@ -330,7 +362,11 @@ namespace fk {
 
     template <ND D, typename T>
     struct SplitWrite {
+    private:
         using Parent = WriteOperation<T, SplitWriteParams<D, T>, VBase<T>, TF::DISABLED, SplitWrite<D, T>>;
+        using SelfType = SplitWrite<D, T>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(SplitWrite, SelfType)
         DECLARE_WRITE_PARENT
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
             static_assert(cn<InputType> >= 2,
@@ -400,11 +436,15 @@ namespace fk {
 
     template <CircularDirection direction, typename Operation, int BATCH>
     struct CircularBatchRead {
+    private:
         using Parent = ReadOperation<typename Operation::ReadDataType,
                                     CircularMemoryParams<OperationData<Operation>[BATCH]>,
                                     typename Operation::OutputType,
                                     Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                     CircularBatchRead<direction, Operation, BATCH>>;
+        using SelfType = CircularBatchRead<direction, Operation, BATCH>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(CircularBatchRead, SelfType)
         DECLARE_READ_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
@@ -438,11 +478,15 @@ namespace fk {
 
     template <CircularDirection direction, typename Operation, int BATCH>
     struct CircularBatchWrite {
+    private:
         using Parent = WriteOperation<typename Operation::InputType,
                                       CircularMemoryParams<OperationData<Operation>[BATCH]>,
                                       typename Operation::WriteDataType,
                                       Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                       CircularBatchWrite<direction, Operation, BATCH>>;
+        using SelfType = CircularBatchWrite<direction, Operation, BATCH>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(CircularBatchWrite, SelfType)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const ParamsType& params) {
@@ -463,11 +507,15 @@ namespace fk {
 
     template <CircularDirection direction, typename Operation, int BATCH>
     struct CircularTensorRead {
+    private:
         using Parent = ReadOperation<typename Operation::ReadDataType,
                                      CircularMemoryParams<OperationData<Operation>>,
                                      typename Operation::OutputType,
                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                      CircularTensorRead<direction, Operation, BATCH>>;
+        using SelfType = CircularTensorRead<direction, Operation, BATCH>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(CircularTensorRead, SelfType)
         DECLARE_READ_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE const ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
@@ -501,11 +549,15 @@ namespace fk {
 
     template <CircularDirection direction, typename Operation, int BATCH>
     struct CircularTensorWrite {
+    private:
         using Parent = WriteOperation<typename Operation::InputType,
                                       CircularMemoryParams<OperationData<Operation>>,
                                       typename Operation::WriteDataType,
                                       Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
                                       CircularTensorWrite<direction, Operation, BATCH>>;
+        using SelfType = CircularTensorWrite<direction, Operation, BATCH>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(CircularTensorWrite, SelfType)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread,

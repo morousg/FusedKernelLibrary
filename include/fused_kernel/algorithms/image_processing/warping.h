@@ -41,6 +41,10 @@ namespace fk {
 
     template <enum WarpType WT>
     struct WarpingCoords {
+    private:
+        using SelfType = WarpingCoords<WT>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(WarpingCoords, SelfType)
         using Parent = BinaryOperation<Point, WarpingParameters<WT>, float2, WarpingCoords<WT>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const ParamsType& params) {
@@ -65,6 +69,10 @@ namespace fk {
 
     template<enum WarpType WT, typename BackIOp = void>
     struct Warping {
+    private:
+        using SelfType = Warping<WT, BackIOp>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(Warping, SelfType)
         using Parent = ReadBackOperation<typename BackIOp::Operation::ReadDataType,
                                          WarpingParameters<WT>,
                                          BackIOp,
@@ -101,6 +109,10 @@ namespace fk {
 
     template<enum WarpType WT>
     struct Warping<WT, void> {
+    private:
+        using SelfType = Warping<WT, void>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(Warping, SelfType)
         using Parent = ReadBackOperation<NullType, WarpingParameters<WT>,
                                          NullType, NullType, Warping<WT, void>>;
         DECLARE_READBACK_PARENT_INCOMPLETE

@@ -22,6 +22,10 @@
 namespace fk {
     template <typename BackIOp = void>
     struct Crop {
+    private:
+        using SelfType = Crop<BackIOp>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(Crop, SelfType)
         using Parent = ReadBackOperation<typename BackIOp::Operation::OutputType,
                                          Rect,
                                          BackIOp,
@@ -56,6 +60,10 @@ namespace fk {
 
     template <>
     struct Crop<void> {
+    private:
+        using SelfType = Crop<void>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(Crop, SelfType)
         using Parent = ReadBackOperation<NullType, Rect, NullType, NullType, Crop<void>>;
         DECLARE_READBACK_PARENT_INCOMPLETE
 

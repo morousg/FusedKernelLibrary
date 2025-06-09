@@ -20,6 +20,10 @@
 namespace fk {
     template <typename Operation, int ITERATIONS>
     struct StaticLoop {
+    private:
+        using SelfType = StaticLoop<Operation, ITERATIONS>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(StaticLoop, SelfType)
         using Parent = BinaryOperation<typename Operation::InputType, typename Operation::ParamsType, typename Operation::OutputType, StaticLoop<Operation, ITERATIONS>>;
         DECLARE_BINARY_PARENT
 
