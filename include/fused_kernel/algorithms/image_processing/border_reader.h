@@ -48,7 +48,7 @@ namespace fk {
     private:
         using SelfType = BorderReader<BT, void, void>;
     public:
-        FK_STATIC_STRUCT_CHILD(BorderReader, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(BorderReader, SelfType)
         using Parent = ReadBackOperation<NullType, NullType, NullType, NullType, BorderReader<BT>>;
         template <typename T, enum BorderType BT_ = BT>
         FK_HOST_FUSE
@@ -91,7 +91,7 @@ namespace fk {
     private:
         using SelfType = BorderReader<BT, TypeList<void, T>>;
     public:
-        FK_STATIC_STRUCT_CHILD(BorderReader, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(BorderReader, SelfType)
         using Parent = ReadBackOperation<T,
                                          BorderReaderParameters<BT, T>,
                                          NullType,
@@ -110,7 +110,7 @@ private: \
         BorderReader<BT, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>>; \
     using IOType = typename BackIOp::Operation::OutputType; \
 public: \
-    FK_STATIC_STRUCT_CHILD(BorderReader, SelfType) \
+    FK_STATIC_STRUCT_SELFTYPE(BorderReader, SelfType) \
     using Parent = ReadBackOperation<IOType, BorderReaderParameters<BT, IOType>, \
         BackIOp, IOType, SelfType>; \
     DECLARE_READBACK_PARENT \

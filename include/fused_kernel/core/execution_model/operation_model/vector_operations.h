@@ -28,7 +28,7 @@ namespace fk {
     private:
         using SelfType = UnaryV<Operation, I, O, std::enable_if_t<!isTuple_v<I>, void>>;
     public:
-        FK_STATIC_STRUCT_CHILD(UnaryV, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(UnaryV, SelfType)
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;
@@ -69,7 +69,7 @@ namespace fk {
     private:
         using SelfType = UnaryV<Operation, I, O, std::enable_if_t<isTuple_v<I>, void>>;
     public:
-        FK_STATIC_STRUCT_CHILD(UnaryV, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(UnaryV, SelfType)
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;
@@ -132,7 +132,7 @@ namespace fk {
     private:
         using SelfType = BinaryV<Operation, I, P, O>;
     public:
-        FK_STATIC_STRUCT_CHILD(BinaryV, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(BinaryV, SelfType)
         using OutputType = O;
         using InputType = I;
         using ParamsType = P;

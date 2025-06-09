@@ -16,12 +16,7 @@
 #define FK_VECTOR_TYPES
 
 #include <fused_kernel/core/utils/type_lists.h>
-
-using uchar = unsigned char;
-using ushort = unsigned short;
-using uint = unsigned int;
-using ulong = unsigned long int;
-using ulonglong = unsigned long long int;
+#include <fused_kernel/core/utils/utils.h>
 
 namespace fk {
     struct Bool1 {

@@ -31,7 +31,7 @@ namespace fk {
     private: \
         using SelfType = SaturateCastBase<IT, O>; \
     public: \
-        FK_STATIC_STRUCT_CHILD(SaturateCastBase, SelfType) \
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCastBase, SelfType) \
         using InputType = IT; \
         using OutputType = O; \
         using InstanceType = UnaryType; \
@@ -58,7 +58,7 @@ namespace fk {
     private: \
         using SelfType = SaturateCastBase<IT, OT>; \
     public: \
-        FK_STATIC_STRUCT_CHILD(SaturateCastBase, SelfType) \
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCastBase, SelfType) \
         using InputType = IT; \
         using OutputType = OT; \
         using InstanceType = UnaryType;
@@ -571,7 +571,7 @@ namespace fk {
     private:
         using SelfType = SaturateCast<I, O>;
     public:
-        FK_STATIC_STRUCT_CHILD(SaturateCast, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCast, SelfType)
         using Parent = UnaryOperation<I, O, SaturateCast<I, O>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -593,7 +593,7 @@ namespace fk {
     private:
         using SelfType = Saturate<T>;
     public:
-        FK_STATIC_STRUCT_CHILD(Saturate, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(Saturate, SelfType)
         using Parent = BinaryOperation<T, VectorType_t<VBase<T>, 2>, T, Saturate<T>>;
         DECLARE_BINARY_PARENT
         using Base = typename VectorTraits<T>::base;
@@ -608,7 +608,7 @@ namespace fk {
     private:
         using SelfType = SaturateFloat<T>;
     public:
-        FK_STATIC_STRUCT_CHILD(SaturateFloat, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(SaturateFloat, SelfType)
         using Parent = UnaryOperation<T, T, SaturateFloat<T>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {

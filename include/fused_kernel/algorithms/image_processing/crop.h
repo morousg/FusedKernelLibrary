@@ -25,7 +25,7 @@ namespace fk {
     private:
         using SelfType = Crop<BackIOp>;
     public:
-        FK_STATIC_STRUCT_CHILD(Crop, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(Crop, SelfType)
         using Parent = ReadBackOperation<typename BackIOp::Operation::OutputType,
                                          Rect,
                                          BackIOp,
@@ -63,7 +63,7 @@ namespace fk {
     private:
         using SelfType = Crop<void>;
     public:
-        FK_STATIC_STRUCT_CHILD(Crop, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(Crop, SelfType)
         using Parent = ReadBackOperation<NullType, Rect, NullType, NullType, Crop<void>>;
         DECLARE_READBACK_PARENT_INCOMPLETE
 

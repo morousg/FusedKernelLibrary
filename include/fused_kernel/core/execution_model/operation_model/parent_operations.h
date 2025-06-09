@@ -25,7 +25,7 @@ namespace fk {
     private:
         using SelfType = UnaryOperation<I, O, UOperationImpl, IS_FUSED>;
     public:
-        FK_STATIC_STRUCT_CHILD(UnaryOperation, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(UnaryOperation, SelfType)
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;
@@ -49,7 +49,7 @@ namespace fk {
     private:
         using SelfType = BinaryOperation<I, P, O, BOperationImpl, IS_FUSED>;
     public:
-        FK_STATIC_STRUCT_CHILD(BinaryOperation, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(BinaryOperation, SelfType)
         // --- REMOVE using ALIASES that depend on BOperationImpl ---
         // These caused the incomplete type error during base class instantiation.
         // We will refer to BOperationImpl::TypeNeeded directly in methods.
@@ -97,7 +97,7 @@ namespace fk {
     private:
         using SelfType = TernaryOperation<I, P, BF, O, TOperationImpl, IS_FUSED>;
     public:
-        FK_STATIC_STRUCT_CHILD(TernaryOperation, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(TernaryOperation, SelfType)
         using InputType = I;
         using OutputType = O;
         using ParamsType = P;
@@ -138,7 +138,7 @@ namespace fk {
     private:
         using SelfType = ReadOperation<RT, P, O, TFE, ROperationImpl, IS_FUSED>;
     public:
-        FK_STATIC_STRUCT_CHILD(ReadOperation, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(ReadOperation, SelfType)
         using Child = ROperationImpl;
         using ParamsType = P;
         using ReadDataType = RT;
@@ -191,7 +191,7 @@ namespace fk {
     private:
         using SelfType = WriteOperation<I, P, WT, TFE, WOperationImpl, IS_FUSED>;
     public:
-        FK_STATIC_STRUCT_CHILD(WriteOperation, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(WriteOperation, SelfType)
         using Child = WOperationImpl;
         using ParamsType = P;
         using InputType = I;
@@ -238,7 +238,7 @@ namespace fk {
     private:
         using SelfType = ReadBackOperation<RT, P, B, O, RBOperationImpl, IS_FUSED>;
     public:
-        FK_STATIC_STRUCT_CHILD(ReadBackOperation, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(ReadBackOperation, SelfType)
         using Child = RBOperationImpl;
         using ReadDataType = RT;
         using OutputType = O;

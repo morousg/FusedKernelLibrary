@@ -30,7 +30,7 @@ namespace fk {
     private:
         using SelfType = StaticAddAlpha<I, alpha>;
     public:
-        FK_STATIC_STRUCT_CHILD(StaticAddAlpha, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(StaticAddAlpha, SelfType)
         using Parent = UnaryOperation<I, VOneMore<I>, StaticAddAlpha<I, alpha>>;
         DECLARE_UNARY_PARENT
         FK_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -48,7 +48,7 @@ namespace fk {
     private:
         using SelfType = RGB2Gray<I, O, CCIR_601>;
     public:
-        FK_STATIC_STRUCT_CHILD(RGB2Gray, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(RGB2Gray, SelfType)
         using Parent = UnaryOperation<I, O, RGB2Gray<I, O, CCIR_601>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -131,7 +131,7 @@ namespace fk {
     private:
         using SelfType = AddOpaqueAlpha<I, CD>;
     public:
-        FK_STATIC_STRUCT_CHILD(AddOpaqueAlpha, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(AddOpaqueAlpha, SelfType)
         using Parent = UnaryOperation<I, VOneMore<I>, AddOpaqueAlpha<I, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -145,7 +145,7 @@ namespace fk {
     private:
         using SelfType = SaturateDepth<T, CD>;
     public:
-        FK_STATIC_STRUCT_CHILD(SaturateDepth, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(SaturateDepth, SelfType)
         using Parent = UnaryOperation<T, T, SaturateDepth<T, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -213,7 +213,7 @@ namespace fk {
     private:
         using SelfType = DenormalizePixel<O, CD>;
     public:
-        FK_STATIC_STRUCT_CHILD(DenormalizePixel, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(DenormalizePixel, SelfType)
         using Parent = UnaryOperation<VectorType_t<float, cn<O>>, O, DenormalizePixel<O, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -226,7 +226,7 @@ namespace fk {
     private:
         using SelfType = NormalizePixel<I, CD>;
     public:
-        FK_STATIC_STRUCT_CHILD(NormalizePixel, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(NormalizePixel, SelfType)
         using Parent = UnaryOperation<I, VectorType_t<float, cn<I>>, NormalizePixel<I, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -239,7 +239,7 @@ namespace fk {
     private:
         using SelfType = SaturateDenormalizePixel<I, O, CD>;
     public:
-        FK_STATIC_STRUCT_CHILD(SaturateDenormalizePixel, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(SaturateDenormalizePixel, SelfType)
         using Parent = UnaryOperation<I, O, SaturateDenormalizePixel<I, O, CD>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -254,7 +254,7 @@ namespace fk {
     private:
         using SelfType = NormalizeColorRangeDepth<T, CD>;
     public:
-        FK_STATIC_STRUCT_CHILD(NormalizeColorRangeDepth, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(NormalizeColorRangeDepth, SelfType)
         using Parent = UnaryOperation<T, T, NormalizeColorRangeDepth<T, CD>>;
         DECLARE_UNARY_PARENT
         using Base = typename VectorTraits<T>::base;
@@ -269,7 +269,7 @@ namespace fk {
     private:
         using SelfType = ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>;
     public:
-        FK_STATIC_STRUCT_CHILD(ConvertYUVToRGB, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(ConvertYUVToRGB, SelfType)
         static constexpr ColorDepth CD = (ColorDepth)PixelFormatTraits<PF>::depth;
         using Parent = UnaryOperation<ColorDepthPixelType<CD>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
         DECLARE_UNARY_PARENT
@@ -330,7 +330,7 @@ namespace fk {
     private:
         using SelfType = ReadYUV<PF>;
     public:
-        FK_STATIC_STRUCT_CHILD(ReadYUV, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(ReadYUV, SelfType)
         using PixelBaseType = ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>;
         using Parent = ReadOperation<PixelBaseType,
                                      RawPtr<_2D, PixelBaseType>,

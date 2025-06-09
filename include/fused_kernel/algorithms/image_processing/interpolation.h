@@ -52,7 +52,7 @@ namespace fk {
         using SelfType = Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>;
         using ReadOutputType = typename BackFunction_::Operation::OutputType;
     public:
-        FK_STATIC_STRUCT_CHILD(Interpolate, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(Interpolate, SelfType)
         using Parent = TernaryOperation<float2, InterpolationParameters<InterpolationType::INTER_LINEAR>,
                                         BackFunction_, VectorType_t<float, cn<ReadOutputType>>,
                                         Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>>;
@@ -101,7 +101,7 @@ namespace fk {
     private:
         using SelfType = Interpolate<INTER_T, void>;
     public:
-        FK_STATIC_STRUCT_CHILD(Interpolate, SelfType)
+        FK_STATIC_STRUCT_SELFTYPE(Interpolate, SelfType)
         template <typename RealBackFunction>
         FK_HOST_DEVICE_FUSE
             auto build(const OperationData<Interpolate<InterpolationType::INTER_LINEAR, RealBackFunction>>& opData) {
