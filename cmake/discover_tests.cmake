@@ -1,6 +1,6 @@
 set (LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/tests/main.cpp;${CMAKE_SOURCE_DIR}/tests/main.h")
 if (WIN32)
-    list(APPEND LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/manifest.xml") #for utf8 codepage
+    list(APPEND LAUNCH_SOURCES "${CMAKE_SOURCE_DIR}/utf8cp.manifest") #for utf8 codepage
 endif() 
 
 function(add_cuda_to_test TARGET_NAME)
@@ -36,6 +36,8 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
         target_link_libraries(${TARGET_NAME_EXT} PUBLIC FKL::FKL)
         if (MSVC)
             target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
+        #    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+             #target_link_libraries(${TARGET_NAME_EXT} -manifest:embed -manifestinput:"${PROJECT_SOURCE_DIR}/myapp.manifest" 
         endif()
         
         add_optimization_flags(${TARGET_NAME_EXT})
