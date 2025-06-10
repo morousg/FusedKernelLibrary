@@ -12,12 +12,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef FK_NVRTC
-#define FK_NVRTC
+#ifndef FK_TEST_NVRTC
+#define FK_TEST_NVRTC
 
-#include <nvrtc.h>
 #include <fused_kernel/core/utils/utils.h>
-#include <cuda.h>
 
 int launch() {
     cuInit(0);
@@ -30,4 +28,4 @@ int launch() {
 }
 
 
-#endif // FK_NVRTC
+#endif // FK_TEST_NVRTC
