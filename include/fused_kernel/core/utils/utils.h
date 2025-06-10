@@ -17,9 +17,18 @@
 
 #include <string>
 #include <stdexcept>
-#if defined(__CUDACC__) || defined(__CUDA_ARCH__)
+
+#if defined(NVRTC_ENABLE)
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <nvrtc.h>
+#endif
+
+#if defined(__CUDACC__) || defined(__CUDA_ARCH__)
+#if !defined(NVRTC_ENABLE)
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 
 #define FK_DEVICE_FUSE static constexpr __device__ __forceinline__
 #define FK_DEVICE_CNST constexpr __device__ __forceinline__
@@ -68,15 +77,32 @@ using ulonglong = unsigned long long;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLE)
 namespace fk {
     inline void gpuAssert(cudaError_t code,
-        const char *file,
-        int line,
-        bool abort = true) {
+                          const char *file,
+                          int line,
+                          bool abort = true) {
         if (code != cudaSuccess) {
             std::string message = "GPUassert: ";
             message.append(cudaGetErrorString(code));
+            message.append(" File: ");
+            message.append(file);
+            message.append(" Line:");
+            message.append(std::to_string(line).c_str());
+            message.append("/n");
+            if (abort) throw std::runtime_error(message.c_str());
+        }
+    }
+    inline void gpuAssert(CUresult code,
+                          const char* file,
+                          int line,
+                          bool abort = true) {
+        if (code != CUDA_SUCCESS) {
+            std::string message = "GPUassert: ";
+            const char* error_str{""};
+            cuGetErrorString(code, &error_str);
+            message.append(error_str);
             message.append(" File: ");
             message.append(file);
             message.append(" Line:");

@@ -235,7 +235,7 @@ namespace fk {
     };
 } // namespace fk
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLE)
 #include <vector_types.h>
 #else
 using char1 = fk::Char1;
