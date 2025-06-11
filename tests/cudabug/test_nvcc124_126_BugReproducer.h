@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#define __ONLYCU__ // This file is only generated and compiled with nvcc, not with the host compiler
+#define __ONLY_CU__ // This file is only generated and compiled with nvcc, not with the host compiler
 
 #include <tests/main.h>
 
