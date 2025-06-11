@@ -29,7 +29,7 @@ namespace fk {
 
 #define VECTOR_TYPE(BaseType) \
     template <> \
-    struct VectorType<BaseType, 1> { using type = BaseType; }; \
+    struct VectorType<BaseType, 1> { using type = BaseType; using type1 = BaseType ## 1; }; \
     template <> \
     struct VectorType<BaseType, 2> { using type = BaseType ## 2; }; \
     template <> \
@@ -662,35 +662,35 @@ VEC_BINARY_OP(^, uint, uint)
     // binary operators (vec & scalar)
 
 #define SCALAR_BINARY_OP(op, input_type, scalar_type, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 1>(a.x op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(scalar_type s, const input_type ## 1 & b) \
+FK_HOST_DEVICE_CNST output_type ## 1 operator op(const scalar_type& s, const input_type ## 1 & b) \
 { \
     return fk::make::type<output_type ## 1>(s op b.x); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 2>(a.x op s, a.y op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(scalar_type s, const input_type ## 2 & b) \
+FK_HOST_DEVICE_CNST output_type ## 2 operator op(const scalar_type& s, const input_type ## 2 & b) \
 { \
     return fk::make::type<output_type ## 2>(s op b.x, s op b.y); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 3>(a.x op s, a.y op s, a.z op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(scalar_type s, const input_type ## 3 & b) \
+FK_HOST_DEVICE_CNST output_type ## 3 operator op(const scalar_type& s, const input_type ## 3 & b) \
 { \
     return fk::make::type<output_type ## 3>(s op b.x, s op b.y, s op b.z); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 4>(a.x op s, a.y op s, a.z op s, a.w op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(scalar_type s, const input_type ## 4 & b) \
+FK_HOST_DEVICE_CNST output_type ## 4 operator op(const scalar_type& s, const input_type ## 4 & b) \
 { \
     return fk::make::type<output_type ## 4>(s op b.x, s op b.y, s op b.z, s op b.w); \
 }

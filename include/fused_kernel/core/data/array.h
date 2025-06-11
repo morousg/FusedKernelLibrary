@@ -1,4 +1,4 @@
-/* Copyright 2024 Oscar Amoros Huguet
+﻿/* Copyright 2024 Oscar Amoros Huguet
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -48,7 +48,8 @@ namespace fk {
         struct {
             T x;
         };
-        FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 1>& other) : x(other.x) {}
+        FK_HOST_DEVICE_CNST Array(const T& other) : x(other.x) {}
+        FK_HOST_DEVICE_CNST Array(const typename VectorType<T,1>::type1& other) : x(other.x) {}
         FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
             int i = 0;
             for (const auto& value : initList) {

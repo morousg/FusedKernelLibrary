@@ -22,80 +22,46 @@
 #define ONLY_CPU // Disable CUDA for this test, as it is not needed and can complicate the test environment.
 using namespace fk;
 
-template <typename I, typename O> FK_HOST_DEVICE_CNST bool executeTestSaturateCast(const I& input) {
-  static_assert((cn<I>) == (cn<O>), "SaturateCast only accepts I and O types with the same number of channels.");
+template <typename I, typename O>
+struct TestData;
 
-  using CompType = decltype((make_set<I>(0) == make_set<O>(0)));
-  constexpr I inputValue = input;
+#define SATURATE_CAST_TEST_DATA(IN, OU)                                                                                \
+  template <> struct TestData<IN, OU> {                                                                                \
+    static_assert(cn<IN> == cn<OU>, "Input and output types must have the same number of channels");                   \
+    using I = IN;                                                                                                      \
+    using O = OU;                                                                                                      \
+    static constexpr size_t CH = cn<I>; \
+static constexpr size_t NUM_VALS{ NUM_VALUES_##IN##_##OU };                                                                   \
+    static constexpr std::array<I, NUM_VALS> inputValues INPUT_VALUES_##IN##_##OU;                                               \
+    static constexpr std::array<O, NUM_VALS> output EXPECTED_VALUES_##IN##_##OU;                                       \
+  };
 
-  constexpr CompType inputGrEqMax = (inputValue >= maxValue<O>);
-  // If inputGrEqMax = true, then SaturateCast(inputValue) = O maxValue<O>
-  // |-----------0-----I--I--|
-  // |-----------0-----O-----|
-  // Else, SaturateCast(inputValue) = O inputValue
-  // |-----------0---I-------|
-  // |-----------0-----O-----|
-  constexpr CompType inputLsEqMin = (inputValue <= minValue<O>);
-  // If inputLsEqMin = true, then SaturateCast(inputValue) = O minValue<O>
-  // |-I--I------0-----------|
-  // |----O------0-----------|
-  // Else, SaturateCast(inputValue) = O minValue<I>
-  // |-------I---0-----------|
-  // |----O------0-----------|
+#define NUM_VALUES_uint1_uint1 3
+#define INPUT_VALUES_uint1_uint1    {minValue<uint1>, maxValue<uint1> / static_cast<uint>(2), maxValue<uint1>}
+#define EXPECTED_VALUES_uint1_uint1 {minValue<uint1>, maxValue<uint1> / static_cast<uint>(2), maxValue<uint1>}
+SATURATE_CAST_TEST_DATA(uint1, uint1)
+    
 
-  using SaturareCast = SaturateCast<I, O>;
-  constexpr I input_min_range = minValue<I>;
-  constexpr I input_max_range = maxValue<I>;
 
-  constexpr O output_min_range = minValue<O>;
-  constexpr O output_max_range = maxValue<O>;
-
-  if constexpr (inputGrEqMax) {
-    //Expected result maxValue<O>
-    return VectorAnd<CompType>::exec(SaturareCast::exec(input) == maxValue<O>);
-  } else if constexpr (inputLsEqMin) {
-    //Expected result minValue<O>
-    return VectorAnd<CompType>::exec(SaturareCast::exec(input) == minValue<O>);
-  } else {
-    //Expected result inputValue
-    return VectorAnd<CompType>::exec(SaturareCast::exec(input) == Cast<I,O>::exec(inputValue));
-  }
-}
-
-template <typename I, typename O> FK_HOST_DEVICE_CNST bool executeFullTestSaturateCast() {
-  static_assert((cn<I>) == (cn<O>), "SaturateCast only accepts I and O types with the same number of channels.");
-  using CompType = decltype(std::declval<I>() == std::declval<O>());
-
-  constexpr CompType inputTypeGrMax = (maxValue<I> > maxValue<O>);
-  constexpr CompType inputTypeLsMin = (minValue<I> < minValue<O>);
-
-  // TODO: generate test values according to I and O types
-  // If maxValue<I> > maxValue<O> && minValue<I> < minValue<O>
-  // Then we need:
-  // 1. A value of type I greater than maxValue<O> to test the saturation to maxValue<O>
-
-  // 2. A value of type I less than minValue<O> to test the saturation to minValue<O>
-  // 3. A value of type I between minValue<O> and maxValue<O> to test the normal cast (we keep the same value)
-  // 4. A value of type I equal to minValue<O> to test the saturation to minValue<O>
-  // 5. A value of type I equal to maxValue<O> to test the saturation to maxValue<O>
-  if constexpr (inputTypeGrMax && inputTypeLsMin) {
-    //
-
-  } else if constexpr (!inputTypeGrMax && inputTypeLsMin) {
-
-  } else if constexpr (inputTypeGrMax && !inputTypeLsMin) {
-
-  } else if constexpr (!inputTypeGrMax && !inputTypeLsMin) {
-
-  } else {
-
-    static_assert(false, "Invalid combination of input and output types for SaturateCast.");
-  }
+template <typename TestDataCase, size_t... Idx>
+constexpr auto testDataElems(const std::index_sequence<Idx...> &) {
+    using I = typename TestDataCase::I;
+    using O = typename TestDataCase::O;
+    return std::array<O, sizeof...(Idx)>{SaturateCast<I, O>::exec(TestData<I, O>::inputValues[Idx])...};
 }
 
 TEST(TestSaturateCast, UInt1ToUInt1) {
-  const bool result = executeFullTestSaturateCast<uint1, uint1>();
-  EXPECT_EQ(result, true);
+  using TestDataCase = TestData<uint1, uint1>;
+  constexpr auto generatedValues = testDataElems<TestDataCase>(std::make_index_sequence<TestDataCase::NUM_VALS>{});
+
+  for (int numTest = 0; numTest < TestDataCase::NUM_VALS; ++numTest) {
+    const auto generated = toArray(generatedValues[numTest]);
+    const auto expected = toArray(TestDataCase::output[numTest]);
+    for (int vecPos = 0; vecPos < TestDataCase::CH; ++vecPos) {
+      EXPECT_EQ(generated[vecPos], expected[vecPos])
+          << "Mismatch at position " << vecPos << " for test case " << numTest << " with I=uint1 and O=uint1";
+    }
+  }
 }
 
 // You can add more tests for other type combinations as needed.
