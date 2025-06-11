@@ -882,4 +882,11 @@ SCALAR_BINARY_OP(^, uint, uint, uint)
 #undef SCALAR_BINARY_OP
 // ######################## VECTOR OPERATORS ##########################
 
+namespace fk {
+    template <typename T, typename = void>
+    struct IsVectorType : std::false_type {};
+    template <typename T>
+    struct IsVectorType<T, std::void_t<decltype(T::x)>> : std::true_type {};
+} // namespace fk
+
 #endif
