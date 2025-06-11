@@ -48,7 +48,7 @@ namespace fk {
         struct {
             T x;
         };
-        FK_HOST_DEVICE_CNST Array(const T& other) : x(other.x) {}
+        FK_HOST_DEVICE_CNST Array(const T& other) : x(other) {}
         FK_HOST_DEVICE_CNST Array(const typename VectorType<T,1>::type1& other) : x(other.x) {}
         FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
             int i = 0;
