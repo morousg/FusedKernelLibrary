@@ -78,7 +78,7 @@ template <typename I, typename O> void testLoop(I in, O ou) {
     for (int vecPos = 0; vecPos < TestDataCase::CH; ++vecPos) {
       EXPECT_TRUE(generated[vecPos] == expected[vecPos])
           << "Mismatch at position " << vecPos << " Actual:" << generated[vecPos] << " Expected:" << expected[vecPos]
-          << "for test case" << numTest << " with I=uint4 and O=uint4";
+          << "for test case" << numTest << " with I=" << typeToString(I) << "and O =" << typeToString(O);
     }
   }
 }
