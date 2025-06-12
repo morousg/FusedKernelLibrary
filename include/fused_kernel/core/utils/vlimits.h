@@ -31,7 +31,7 @@ namespace fk {
     template <typename T, typename Enabler = void>
     constexpr T minValue{};
     template <typename T>
-    constexpr T minValue <T, std::enable_if_t<!validCUDAVec<T> && !std::is_aggregate_v<T>>> = std::numeric_limits<T>::min();
+    constexpr T minValue <T, std::enable_if_t<!validCUDAVec<T> && !std::is_aggregate_v<T>>> = std::numeric_limits<T>::lowest();
     template <typename T>
     constexpr T minValue <T, std::enable_if_t<validCUDAVec<T>>> = make_set<T>(minValue<VBase<T>>);
 
