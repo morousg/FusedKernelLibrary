@@ -14,7 +14,7 @@
    limitations under the License. */
 
  
-#include "@TARGET_NAME@.h"
+#include "@TEST_SOURCE@"
 
 int launcher() {
     return launch();
