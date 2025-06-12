@@ -22,6 +22,7 @@
 #include <iostream>
 
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
+#include <fused_kernel/core/execution_model/executors.h>
 
 // This helper simply forces one more round of macro expansion.
 // Standard concatenation and stringification
@@ -75,16 +76,39 @@ std::map<std::string, std::function<bool()>> testCases;
 #define STOP_ADDING_TESTS }
 #define RUN_ALL_TESTS \
 addTests(); \
+bool correct{true}; \
 for (const auto& [testName, testFunc] : testCases) { \
     if (!testFunc()) { \
-        std::cout << "Test failed: " << testName << std::endl; \
-        return 1; \
+        correct = false; \
     } \
 } \
-return 0;
+return correct ? 0 : -1;
 
 template <typename Operation, typename = void>
 struct TestCaseBuilder;
+
+namespace test_case_builder::detail {
+    template <typename Operation, size_t N>
+    fk::Ptr1D<typename Operation::OutputType>
+    launchUnary(const std::string& testName,
+                const std::array<typename Operation::InputType, N>& inputElems) {
+        fk::Stream stream;
+        using I = typename Operation::InputType;
+        using O = typename Operation::OutputType;
+        fk::Ptr1D<I> inputPtr(N);
+        fk::Ptr1D<O> outputPtr(N);
+        for (size_t i = 0; i < N; ++i) {
+            inputPtr.at(fk::Point(i)) = inputElems[i];
+        }
+        std::cout << "Running test for " << testName << std::endl;
+        inputPtr.upload(stream);
+        fk::Executor<fk::TransformDPP<>>::executeOperations(inputPtr, outputPtr, stream,
+                                                            Operation::build());
+        outputPtr.download(stream);
+        stream.sync();
+        return outputPtr;
+    }
+}
 
 template <typename Operation>
 struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::value &&
@@ -95,10 +119,10 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
         const std::array<typename Operation::InputType, N>& inputElems,
         const std::array<typename Operation::OutputType, N>& expectedElems) {
         return [testName, inputElems, expectedElems]() {
-            std::cout << "Running test for " << testName << std::endl;
+            const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
-                const auto generated = Operation::exec(inputElems[i]);
+                const auto generated = outputPtr.at(fk::Point(i));
                 const auto resultV = generated == expectedElems[i];
                 if (!resultV) {
                     std::cout << "Mismatch at test element index " << i
@@ -121,17 +145,17 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
         const std::array<typename Operation::InputType, N>& inputElems,
         const std::array<typename Operation::OutputType, N>& expectedElems) {
         return [testName, inputElems, expectedElems]() -> bool {
-            std::cout << "Running test for " << testName << std::endl;
+            const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
-                const auto generated = Operation::exec(inputElems[i]);
+                const auto generated = outputPtr.at(fk::Point(i));
                 const auto resultV = generated == expectedElems[i];
-                const auto arrayGenerated = toArray(generated);
-                const auto arrayResult = toArray(resultV);
+                const auto arrayGenerated = fk::toArray(generated);
+                const auto arrayResult = fk::toArray(resultV);
                 for (size_t j = 0; j < fk::cn<decltype(resultV)>; ++j) {
                     if (!arrayResult.at[j]) {
                         std::cout << "Mismatch at test element index " << i << " for vector index " << j
-                            << ": Expected value " << toArray(expectedElems[i]).at[j] << ", got " << arrayGenerated.at[j] << std::endl;
+                            << ": Expected value " << fk::toArray(expectedElems[i]).at[j] << ", got " << arrayGenerated.at[j] << std::endl;
                     }
                     result &= arrayResult[j];
                 }
