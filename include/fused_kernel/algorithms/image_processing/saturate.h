@@ -19,6 +19,7 @@
 
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>
 #include <fused_kernel/algorithms/basic_ops/logical.h>
+#include <fused_kernel/core/utils/vlimits.h>
 
 namespace fk {
 
@@ -62,6 +63,22 @@ namespace fk {
         using InputType = IT; \
         using OutputType = OT; \
         using InstanceType = UnaryType;
+
+    SATURATE_CAST_BASE(double, float)
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
+#ifdef __CUDA_ARCH__
+            return __double2float_rn(input);
+#else
+            if (input > maxValue<OutputType>) {
+                return maxValue<OutputType>;
+            } else if (input < fk::minValue<OutputType>) {
+                return minValue<OutputType>;
+            } else {
+                return static_cast<OutputType>(input);
+            }
+#endif
+        }
+    };
 
     SATURATE_CAST_BASE(schar, uchar)
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
