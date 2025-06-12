@@ -45,17 +45,17 @@ namespace fk {
             Child::executeOperations_helper(stream, iOps...);
         }
 
-        template <enum ParArch PA, typename I, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_<PA>& stream,
+        template <enum ParArch PA, enum ND D, typename I, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, Stream_<PA>& stream,
                                             const IOps&... iOps) {
             Child::executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
         }
 
-        template <enum ParArch PA, typename I, typename O, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
+        template <enum ParArch PA, enum ND D, typename I, typename O, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, const Ptr<D, O>& output,
                                             Stream_<PA>& stream, const IOps&... iOps) {
             Child::executeOperations_helper(stream,
-            PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
+            PerThreadRead<D, I>::build({ input }), iOps..., PerThreadWrite<D, O>::build({ output }));
         }
 
         template <enum ParArch PA, typename I, size_t BATCH, typename... IOps>
@@ -95,12 +95,12 @@ template <enum ParArch PA, typename... IOps> \
 FK_HOST_FUSE void executeOperations(Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(stream, iOps...); \
 } \
-template <enum ParArch PA, typename I, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_<PA>& stream, const IOps&... iOps) { \
+template <enum ParArch PA, enum ND D, typename I, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, stream, iOps...); \
 } \
-template <enum ParArch PA, typename I, typename O, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, Stream_<PA>& stream, const IOps&... iOps) { \
+template <enum ParArch PA, enum ND D, typename I, typename O, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, const Ptr<D, O>& output, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, output, stream, iOps...); \
 } \
 template <enum ParArch PA, typename I, size_t BATCH, typename... IOps> \
