@@ -29,13 +29,13 @@ namespace fk {
 
 #define VECTOR_TYPE(BaseType) \
     template <> \
-    struct VectorType<BaseType, 1> { using type = BaseType; using type1 = BaseType ## 1; }; \
+    struct VectorType<BaseType, 1> { using type = BaseType; using type_v = BaseType ## 1; }; \
     template <> \
-    struct VectorType<BaseType, 2> { using type = BaseType ## 2; }; \
+    struct VectorType<BaseType, 2> { using type = BaseType ## 2; using type_v = type; }; \
     template <> \
-    struct VectorType<BaseType, 3> { using type = BaseType ## 3; }; \
+    struct VectorType<BaseType, 3> { using type = BaseType ## 3; using type_v = type; }; \
     template <> \
-    struct VectorType<BaseType, 4> { using type = BaseType ## 4; };
+    struct VectorType<BaseType, 4> { using type = BaseType ## 4; using type_v = type; };
 
     VECTOR_TYPE(uchar)
     VECTOR_TYPE(char)
