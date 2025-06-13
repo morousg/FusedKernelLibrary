@@ -90,7 +90,7 @@ namespace fk {
             message.append(file);
             message.append(" Line:");
             message.append(std::to_string(line).c_str());
-            message.append("/n");
+            message.append("\n");
             if (abort) throw std::runtime_error(message.c_str());
         }
     }
@@ -107,7 +107,7 @@ namespace fk {
             message.append(file);
             message.append(" Line:");
             message.append(std::to_string(line).c_str());
-            message.append("/n");
+            message.append("\n");
             if (abort) throw std::runtime_error(message.c_str());
         }
     }
