@@ -38,6 +38,7 @@ option(NVRTC_ENABLE "Enable NVRTC for runtime compilation" OFF)
 if (NVRTC_ENABLE)
 	if (CUDAToolkit_FOUND)
 		message(STATUS "NVRTC support is enabled.")
+		add_definitions(-DNVRTC_ENABLED)
 		option(NVRTC_STATIC_LINK "Enable static linking for NVRTC" ON)
 		if(NVRTC_STATIC_LINK)
 			# --- Static Linking (Cross-Platform) ---

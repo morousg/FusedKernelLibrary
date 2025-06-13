@@ -24,7 +24,8 @@
 #include <sstream>
 #include <cstring> // For memcpy
 
-   // CUDA headers
+#if defined(NVRTC_ENABLED)
+// CUDA headers
 #include <cuda.h>
 #include <nvrtc.h>
 
@@ -271,6 +272,13 @@ int launch() {
 
     return 0;
 }
+#else
 
+int launch() {
+    std::cerr << "NVRTC is not enabled. Skipping JIT compilation test." << std::endl;
+    return 0;
+}
+
+#endif // NVRTC_ENABLED
 
 #endif // FK_TEST_NVRTC
