@@ -57,9 +57,6 @@ function(add_cuda_to_target TARGET_NAME COMPONENTS)
     set(COMPONENTS_TO_DEPLOY ${COMPONENTS})
     list(TRANSFORM EXPORTED_CUDA_TARGETS PREPEND "CUDA::")
     target_link_libraries(${TARGET_NAME} PRIVATE ${EXPORTED_CUDA_TARGETS})
-
-    # runtime deployment#######
-    list(REMOVE_ITEM COMPONENTS_TO_DEPLOY "cuda_driver") # comes with nvidia driver installer
     
     if(NOT UNIX)
         deploy_cuda_dependencies(${TARGET_NAME} "${COMPONENTS_TO_DEPLOY}")
