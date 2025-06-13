@@ -39,6 +39,29 @@ void addSintSintTests() {
                    (fk::minValue<int4>, fk::maxValue<int4> / static_cast<int>(2), fk::maxValue<int4>), fk::SaturateCast,
                    int4, int4);
 }
+ 
+void addSintUintTests() {
+ 
+    ADD_UNARY_TEST(
+        (fk::minValue<int1>, fk::maxValue<int1> / static_cast<int>(2), fk::maxValue<int1>),
+        (fk::minValue<uint1>, fk::make_set<uint1>(fk::maxValue<int> / static_cast<int>(2)), fk::make_set<uint1>(fk::maxValue<int>)),
+        fk::SaturateCast, int1, uint1);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<int2>, fk::maxValue<int2> / static_cast<int>(2), fk::maxValue<int2>),
+        (fk::minValue<uint2>, fk::make_set<uint2>(fk::maxValue<int> / static_cast<int>(2)), fk::maxValue<uint2>),
+        fk::SaturateCast, int2, uint2);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<int3>, fk::maxValue<int3> / static_cast<int>(3), fk::maxValue<int3>),
+        (fk::minValue<uint3>, fk::make_set<uint3>(fk::maxValue<int> / static_cast<int>(3)), fk::maxValue<uint3>),
+        fk::SaturateCast, int3, uint3);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<int4>, fk::maxValue<int4> / static_cast<int>(4), fk::maxValue<int4>),
+        (fk::minValue<uint4>, fk::make_set<uint4>(fk::maxValue<int> / static_cast<int>(4)), fk::maxValue<uint4>),
+        fk::SaturateCast, int4, uint4);
+}
 // uint[1234]->uint[1234]
 void addUintUintTests() {
 
@@ -60,7 +83,7 @@ void addUintUintTests() {
                    (fk::minValue<uint4>, fk::maxValue<uint4> / static_cast<uint>(2), fk::maxValue<uint4>),
                    fk::SaturateCast, uint4, uint4);
 }
-// uint[1234]->int[1234]
+
 void addUintSintTests() {
     ADD_UNARY_TEST((fk::minValue<uint1>, fk::maxValue<uint1> / static_cast<uint>(2), fk::maxValue<uint1>),
                    (0, fk::maxValue<int1>, fk::maxValue<int1>), fk::SaturateCast, uint1, int1);
@@ -235,10 +258,10 @@ void addUintSLongLongTests() {
 }
 
 void addUintFloatTests() {
-    ADD_UNARY_TEST((fk::minValue<uint1>, fk::maxValue<uint1> / static_cast<uint>(2), fk::maxValue<uint1>),
-                   (fk::make_set<float1>(0), fk::maxValue<uint> / static_cast<float>(2),
-                    fk::make_set<float1>(fk::maxValue<uint>)),
-                   fk::SaturateCast, uint1, float1);
+    ADD_UNARY_TEST(
+        (fk::minValue<uint1>, fk::maxValue<uint1> / static_cast<uint>(2), fk::maxValue<uint1>),
+        (fk::make_set<float1>(0), fk::maxValue<uint> / static_cast<float>(2), fk::make_set<float1>(fk::maxValue<uint>)),
+        fk::SaturateCast, uint1, float1);
 
     ADD_UNARY_TEST((fk::minValue<uint2>, fk::maxValue<uint2> / static_cast<uint>(2), fk::maxValue<uint2>),
                    (fk::make_set<float2>(0), fk::make_set<float2>(fk::maxValue<uint> / static_cast<uint>(2)),
@@ -255,7 +278,6 @@ void addUintFloatTests() {
                     fk::make_set<float4>(fk::maxValue<uint>)),
                    fk::SaturateCast, uint4, float4);
 }
-
 
 void addUintDoubleTests() {
     ADD_UNARY_TEST((fk::minValue<uint1>, fk::maxValue<uint1> / static_cast<uint>(2), fk::maxValue<uint1>),
@@ -277,12 +299,11 @@ void addUintDoubleTests() {
                    (fk::make_set<double4>(0), fk::make_set<double4>(fk::maxValue<uint> / static_cast<uint>(2)),
                     fk::make_set<double4>(fk::maxValue<uint>)),
                    fk::SaturateCast, uint4, double4);*/
-
 }
 
 START_ADDING_TESTS
 // uint
-/* addUintUintTests();
+addUintUintTests();
 addUintSintTests();
 addUintUCharTests();
 addUintSCharTests();
@@ -293,10 +314,11 @@ addUintULongLongTests();
 addUintSLongTests();
 addUintSLongLongTests();
 addUintFloatTests();
-*/
 addUintDoubleTests();
 
-//addSintSintTests();
+// sint
+addSintSintTests();
+addSintUintTests();
 
 /*
 // double[1234]->double[1234]
