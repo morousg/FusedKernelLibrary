@@ -33,7 +33,32 @@ include (cmake/discover_tests.cmake)
 
 option (BUILD_UTEST "build standard unit tests" ON)
 option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
+option(NVRTC_ENABLE "Enable NVRTC for runtime compilation" OFF)
 
+if (NVRTC_ENABLE)
+	if (CUDAToolkit_FOUND)
+		message(STATUS "NVRTC support is enabled.")
+		add_definitions(-DNVRTC_ENABLED)
+		option(NVRTC_STATIC_LINK "Enable static linking for NVRTC" ON)
+		if(NVRTC_STATIC_LINK)
+			# --- Static Linking (Cross-Platform) ---
+			# The CUDA::nvrtc_static imported target handles finding the correct static library
+			# (nvrtc_static.lib on MSVC, libnvrtc_static.a on Linux) and its dependencies
+			# on all platforms automatically.
+			message(STATUS "Configuring for STATIC NVRTC linkage.")
+			set(NVRTC_LIBRARIES CUDA::nvrtc_static)
+		else()
+			# --- Dynamic Linking (Cross-Platform) ---
+			# The CUDA::nvrtc imported target is the standard way to link the shared/dynamic
+			# NVRTC library on all platforms.
+			message(STATUS "Configuring for DYNAMIC NVRTC linkage.")
+			set(NVRTC_LIBRARIES CUDA::nvrtc)
+		endif()
+	else()
+		set(NVRTC_ENABLE OFF CACHE BOOL "NVRTC support was disabled because the CUDA Toolkit could not be found." FORCE)
+	endif()
+endif()
+	
 add_subdirectory(include)
 add_subdirectory(lib)
 
