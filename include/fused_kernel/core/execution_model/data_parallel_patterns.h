@@ -15,7 +15,7 @@
 #ifndef FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 #define FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
 #include <cooperative_groups.h>
 namespace cooperative_groups {};
 namespace cg = cooperative_groups;
@@ -209,7 +209,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     template <typename DPPDetails, enum TF TFEN, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::GPU_NVIDIA, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
     private:
@@ -295,7 +295,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
     private:

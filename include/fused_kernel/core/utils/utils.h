@@ -15,21 +15,21 @@
 #ifndef FK_UTILS
 #define FK_UTILS
 
+#if !defined(NVRTC_COMPILER)
 #include <string>
 #include <stdexcept>
 
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
+#include <cuda_runtime.h>
+#endif
+
 #if defined(NVRTC_ENABLE)
 #include <cuda.h>
-#include <cuda_runtime.h>
 #include <nvrtc.h>
 #endif
+#endif // NVRTC_COMPILER
 
-#if defined(__CUDACC__) || defined(__CUDA_ARCH__)
-#if !defined(NVRTC_ENABLE)
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
-
+#if defined(__CUDACC__) || defined(__NVCC__) || defined(NVRTC_COMPILER) || defined(__HIPCC__)
 #define FK_DEVICE_FUSE static constexpr __device__ __forceinline__
 #define FK_DEVICE_CNST constexpr __device__ __forceinline__
 #define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE __host__
@@ -52,8 +52,8 @@
 #define FK_RESTRICT __restrict
 #else
 #define FK_RESTRICT __restrict__
-#endif
-#endif
+#endif // _MSC_VER
+#endif // __CUDACC__ || __NVCC__ || NVRTC_COMPILER || __HIPCC__
 
 #ifdef CUDART_VERSION
 #define CUDART_MAJOR_VERSION CUDART_VERSION/1000
@@ -77,7 +77,7 @@ using ulonglong = unsigned long long;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
-#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLE)
+#if (defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLE)) && !defined(NVRTC_COMPILER)
 namespace fk {
     inline void gpuAssert(cudaError_t code,
                           const char *file,
@@ -114,9 +114,9 @@ namespace fk {
 } // namespace fk
 
 #define gpuErrchk(ans) { fk::gpuAssert((ans), __FILE__, __LINE__, true); }
-#endif
+#endif // (__NVCC__) || __HIP__ || NVRTC_ENABLE) && !defined(NVRTC_COMPILER)
 // Null type, used for Operation required aliases that can not still be known, because they are deduced
 // from a backwards operation that is till not defined.
 struct NullType {};
 
-#endif
+#endif // FK_UTILS

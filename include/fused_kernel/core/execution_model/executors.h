@@ -24,7 +24,7 @@
 
 namespace fk {
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
     struct CtxDim3 {
         uint x;
         uint y;
@@ -157,7 +157,7 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
         }
         DECLARE_EXECUTOR_PARENT_IMPL
     };
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     template <enum ParArch PA, typename SequenceSelector, typename... IOpSequences>
     __global__ void launchDivergentBatchTransformDPP_Kernel(const __grid_constant__ IOpSequences... iOpSequences) {
         DivergentBatchTransformDPP<PA, SequenceSelector>::exec(iOpSequences...);
@@ -168,7 +168,8 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
                                               const __grid_constant__ IOps... operations) {
         TransformDPP<PA, TFEN, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
     }
-
+#endif
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
     struct ComputeBestSolutionBase {
         FK_HOST_FUSE uint computeDiscardedThreads(const uint width, const uint height, const uint blockDimx, const uint blockDimy) {
             const uint modX = width % blockDimx;
@@ -222,7 +223,8 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
             }
         }
     };
-
+#endif
+#if defined(__NVCC__) || defined(__HIP__)
     template <enum TF TFEN>
     struct Executor<TransformDPP<ParArch::GPU_NVIDIA, TFEN>> {
         FK_STATIC_STRUCT_SELFTYPE(Executor, Executor)

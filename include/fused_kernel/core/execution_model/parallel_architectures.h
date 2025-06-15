@@ -33,7 +33,8 @@ namespace fk {
         PARALLEL_ARCHITECTURES
 #undef PAR_ARCH_VALUE
     };
-
+#if !defined(NVRTC_COMPILER)
+#pragma message("NVRTC_COMPILER not defined")
     constexpr inline std::string_view toStrView(const ParArch& arch) {
         switch (arch) {
 #define PAR_ARCH_VALUE(name) case ParArch::name: { return std::string_view{#name}; }
@@ -42,9 +43,10 @@ namespace fk {
         default: return "Unknown";
     }
 }
+#endif
 
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED) || defined(__NVRTC__)
     constexpr ParArch defaultParArch = ParArch::GPU_NVIDIA;
 #else
     constexpr ParArch defaultParArch = ParArch::CPU;
