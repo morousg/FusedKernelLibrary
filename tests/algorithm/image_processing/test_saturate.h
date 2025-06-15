@@ -22,7 +22,7 @@
 // uint[1234]->uint[1234]
 void addSintSintTests() {
     // ADD_UNARY_TEST((0,200, 100), (0, 200, 100), fk::SaturateCast, uint, uint)
-
+      
     ADD_UNARY_TEST((fk::minValue<int1>, fk::maxValue<int1> / static_cast<int>(2), fk::maxValue<int1>),
                    (fk::minValue<int1>, fk::maxValue<int1> / static_cast<int>(2), fk::maxValue<int1>), fk::SaturateCast,
                    int1, int1);
@@ -62,6 +62,30 @@ void addSintUintTests() {
         (fk::minValue<uint4>, fk::make_set<uint4>(fk::maxValue<int> / static_cast<int>(4)), fk::maxValue<uint4>),
         fk::SaturateCast, int4, uint4);
 }
+
+void addSintUcharTests() {
+
+    ADD_UNARY_TEST((fk::minValue<int1>, fk::maxValue<int1> / static_cast<int>(2), fk::maxValue<int1>),
+                   (fk::minValue<uchar1>, fk::make_set<uchar1>(fk::maxValue<int> / static_cast<int>(2)),
+                    fk::make_set<uchar1>(fk::maxValue<int>)),
+                   fk::SaturateCast, int1, uchar1);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<int2>, fk::maxValue<int2> / static_cast<int>(2), fk::maxValue<int2>),
+        (fk::minValue<uchar2>, fk::make_set<uchar2>(fk::maxValue<int> / static_cast<int>(2)), fk::maxValue<uchar2>),
+        fk::SaturateCast, int2, uchar2);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<int3>, fk::maxValue<int3> / static_cast<int>(3), fk::maxValue<int3>),
+        (fk::minValue<uchar3>, fk::make_set<uchar3>(fk::maxValue<int> / static_cast<int>(3)), fk::maxValue<uchar3>),
+        fk::SaturateCast, int3, uchar3);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<int4>, fk::maxValue<int4> / static_cast<int>(4), fk::maxValue<int4>),
+        (fk::minValue<uchar4>, fk::make_set<uchar4>(fk::maxValue<int> / static_cast<int>(4)), fk::maxValue<uchar4>),
+        fk::SaturateCast, int4, uchar4);
+}
+
 // uint[1234]->uint[1234]
 void addUintUintTests() {
 
@@ -319,6 +343,7 @@ addUintDoubleTests();
 // sint
 addSintSintTests();
 addSintUintTests();
+addSintUcharTests();
 
 /*
 // double[1234]->double[1234]
@@ -352,6 +377,6 @@ STOP_ADDING_TESTS
 
 // You can add more tests for other type combinations as needed.
 int launch() {
-
+  
     RUN_ALL_TESTS
 };
