@@ -48,7 +48,7 @@ namespace fk {
     template <enum ParArch PA>
     class Stream_;
 
-#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
+#if defined(__NVCC__) || defined(__HIP__)
     template <>
     class Stream_<ParArch::GPU_NVIDIA> final : public BaseStream {
         cudaStream_t m_stream;
@@ -105,6 +105,67 @@ namespace fk {
         };
         static constexpr inline enum ParArch parArch() {
             return ParArch::GPU_NVIDIA;
+        }
+    };
+#endif
+
+#if defined(NVRTC_ENABLED)
+    template <>
+    class Stream_<ParArch::GPU_NVIDIA_JIT> final : public BaseStream {
+        cudaStream_t m_stream;
+        bool m_isMine{ false };
+
+        inline void initFromOther(const Stream_<ParArch::GPU_NVIDIA_JIT>& other) {
+            m_stream = other.m_stream;
+            m_isMine = other.m_isMine;
+        }
+
+    public:
+        Stream_() : BaseStream() {
+            gpuErrchk(cudaStreamCreate(&m_stream));
+            m_isMine = true;
+        }
+        Stream_(const Stream_<ParArch::GPU_NVIDIA_JIT>& other) : BaseStream(other) {
+            initFromOther(other);
+        }
+        explicit Stream_<ParArch::GPU_NVIDIA_JIT>(const cudaStream_t& stream) : m_stream(stream) {}
+
+        cudaStream_t operator()() const {
+            return m_stream;
+        }
+
+        Stream_<ParArch::GPU_NVIDIA_JIT>& operator=(const Stream_<ParArch::GPU_NVIDIA_JIT>& other) {
+            if (this != &other) {
+                BaseStream::operator=(other);
+                initFromOther(other);
+            }
+            return *this;
+        }
+
+        Stream_(Stream_<ParArch::GPU_NVIDIA_JIT>&&) = delete;
+        Stream_<ParArch::GPU_NVIDIA_JIT>& operator=(Stream_<ParArch::GPU_NVIDIA_JIT>&&) = delete;
+
+        ~Stream_() {
+            if (this->getRefCount() == 0 && m_stream != 0 && m_isMine) {
+                sync();
+                gpuErrchk(cudaStreamDestroy(m_stream));
+            }
+        }
+
+        operator cudaStream_t() const {
+            return m_stream;
+        }
+        inline cudaStream_t getCUDAStream() const {
+            return m_stream;
+        }
+        inline void sync() final {
+            gpuErrchk(cudaStreamSynchronize(m_stream));
+        }
+        constexpr inline enum ParArch getParArch() const {
+            return ParArch::GPU_NVIDIA_JIT;
+        };
+        static constexpr inline enum ParArch parArch() {
+            return ParArch::GPU_NVIDIA_JIT;
         }
     };
 #endif

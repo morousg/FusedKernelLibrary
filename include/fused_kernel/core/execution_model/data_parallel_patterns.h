@@ -209,6 +209,9 @@ namespace fk { // namespace FusedKernel
         }
     };
 
+// Note: there are no ParArch::GPU_NVIDIA_JIT DPP implementaitons, because
+// the DPP's are going to be compiled by NVRTC, which uses ParArch::GPU_NVIDIA
+// That is why we include defined(__NVRTC__) in the ifdef below.
 #if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     template <typename DPPDetails, enum TF TFEN, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::GPU_NVIDIA, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
@@ -239,7 +242,7 @@ namespace fk { // namespace FusedKernel
             }
         }
     };
-#endif // defined(__NVCC__) || defined(__HIPCC__)
+#endif // defined(__NVCC__) || defined(__HIPCC__) || defined(__NVRTC__)
 
     template <enum TF TFEN, typename DPPDetails, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::CPU, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
@@ -309,7 +312,7 @@ namespace fk { // namespace FusedKernel
             Parent::template divergent_operate<1>(z, iOpSequences...);
         }
     };
-#endif // defined(__NVCC__) || defined(__HIPCC__)
+#endif // defined(__NVCC__) || defined(__HIPCC__) || defined(__NVRTC__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::CPU, SequenceSelector> {
     private:

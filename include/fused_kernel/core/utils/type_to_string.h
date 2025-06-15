@@ -12,6 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#ifndef FK_TYPE_TO_STRING_H
+#define FK_TYPE_TO_STRING_H
+
 #include <string>
 #include <typeinfo>
 #ifndef __NVCC__
@@ -131,3 +134,4 @@ namespace fk {
     }
 } // namespace fk
 #endif
+#endif // FK_TYPE_TO_STRING_H

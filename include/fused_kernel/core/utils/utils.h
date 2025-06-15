@@ -23,7 +23,7 @@
 #include <cuda_runtime.h>
 #endif
 
-#if defined(NVRTC_ENABLE)
+#if defined(NVRTC_ENABLED)
 #include <cuda.h>
 #include <nvrtc.h>
 #endif
@@ -77,14 +77,14 @@ using ulonglong = unsigned long long;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
-#if (defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLE)) && !defined(NVRTC_COMPILER)
+#if (defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)) && !defined(NVRTC_COMPILER)
 namespace fk {
     inline void gpuAssert(cudaError_t code,
                           const char *file,
                           int line,
                           bool abort = true) {
         if (code != cudaSuccess) {
-            std::string message = "GPUassert: ";
+            std::string message = "GPU Error: ";
             message.append(cudaGetErrorString(code));
             message.append(" File: ");
             message.append(file);
@@ -99,9 +99,25 @@ namespace fk {
                           int line,
                           bool abort = true) {
         if (code != CUDA_SUCCESS) {
-            std::string message = "GPUassert: ";
+            std::string message = "GPU Error: ";
             const char* error_str{""};
             cuGetErrorString(code, &error_str);
+            message.append(error_str);
+            message.append(" File: ");
+            message.append(file);
+            message.append(" Line:");
+            message.append(std::to_string(line).c_str());
+            message.append("\n");
+            if (abort) throw std::runtime_error(message.c_str());
+        }
+    }
+    inline void gpuAssert(nvrtcResult code,
+                          const char* file,
+                          int line,
+                          bool abort = true) {
+        if (code != NVRTC_SUCCESS) {
+            std::string message = "GPU Error: ";
+            const char* error_str = nvrtcGetErrorString(code);
             message.append(error_str);
             message.append(" File: ");
             message.append(file);
@@ -114,7 +130,7 @@ namespace fk {
 } // namespace fk
 
 #define gpuErrchk(ans) { fk::gpuAssert((ans), __FILE__, __LINE__, true); }
-#endif // (__NVCC__) || __HIP__ || NVRTC_ENABLE) && !defined(NVRTC_COMPILER)
+#endif // (__NVCC__) || __HIP__ || NVRTC_ENABLED) && !defined(NVRTC_COMPILER)
 // Null type, used for Operation required aliases that can not still be known, because they are deduced
 // from a backwards operation that is till not defined.
 struct NullType {};

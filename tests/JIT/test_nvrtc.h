@@ -172,44 +172,14 @@ std::vector<JIT_Operation_pp> buildOperationPipeline(const IOps&... iOps) {
 
 int launch() {
     // --- 1. Mock Header Content ---
-    const char* operations_h_content = "struct Op1 { float factor; }; struct Op2 { float offset; };";
-    const char* generic_kernel_h_content = R"(
-        #include "operations.h"
-        #include <cuda/std/type_traits>
-
-        // Base case for recursion: return the final value.
-        __device__ __forceinline__ float apply_ops(float in) {
-            return in;
-        }
-
-        template<typename H, typename... T> 
-        __device__ __forceinline__ float apply_ops(float in, const H& h, const T&... t) {
-            float result;
-            if constexpr (cuda::std::is_same_v<H, Op1>) { result = in * h.factor; }
-            else if constexpr (cuda::std::is_same_v<H, Op2>) { result = in + h.offset; }
-            else { result = in; } // Default case if type is unknown
-            
-            // Pass the result of this operation to the next one.
-            return apply_ops(result, t...);
-        }
-
-        template<typename... Ops> 
-        __global__ void genericKernel(const float* __restrict__ dataIn, float* dataOut, const Ops... ops) {
-            int tid = threadIdx.x + blockIdx.x * blockDim.x;
-            dataOut[tid] = apply_ops(dataIn[tid], ops...);
-        }
-    )";
     const char* main_source_content =
     R"( 
         #include <fused_kernel/core/execution_model/executors.h>
         #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
     )";
-        //"#include \"generic_kernel.h\"";
 
     // --- 2. Define the Runtime Pipeline using JIT_Operation_pp ---
     std::cout << "Defining runtime pipeline with C++ JIT_Operation_pp..." << std::endl;
-    /*Op1 op1_params = {2.0f};
-    Op2 op2_params = { 5.0f };*/
     fk::Stream stream;
     fk::Ptr1D<float> d_data_in(256);
     for (int i = 0; i < 256; ++i) {
@@ -242,13 +212,11 @@ int launch() {
     CUDA_CHECK(cuCtxCreate(&context, 0, device));
 
     nvrtcProgram prog;
-    const char* header_contents[] = { operations_h_content, generic_kernel_h_content };
-    const char* header_names[] = { "operations.h", "generic_kernel.h" };
-    NVRTC_CHECK(nvrtcCreateProgram(&prog, main_source_content, "pipeline.cu", 2, header_contents, header_names));
+    NVRTC_CHECK(nvrtcCreateProgram(&prog, main_source_content, "pipeline.cu", 2, nullptr, nullptr));
 
     // --- 5. Compile ---
     NVRTC_CHECK(nvrtcAddNameExpression(prog, name_expression));
-    const char* options[] = { "--std=c++17", "-ID:/include", "-ID:/FKL/include", "-DNVRTC_COMPILER"};
+    const char* options[] = { "--std=c++17", "-ID:/include", "-IE:/GitHub/FKL/include", "-DNVRTC_COMPILER"};
     nvrtcResult compile_result = nvrtcCompileProgram(prog, 4, options);
     size_t log_size;
     NVRTC_CHECK(nvrtcGetProgramLogSize(prog, &log_size));
@@ -268,7 +236,6 @@ int launch() {
     NVRTC_CHECK(nvrtcGetPTXSize(prog, &ptx_size));
     std::vector<char> ptx(ptx_size);
     NVRTC_CHECK(nvrtcGetPTX(prog, ptx.data()));
-
     CUmodule module;
     CUfunction kernel_func;
     CUDA_CHECK(cuModuleLoadData(&module, ptx.data()));
@@ -276,31 +243,16 @@ int launch() {
 
     // --- 7. Prepare Data and Launch ---
     const int N = 256;
-    /*CUdeviceptr d_data_in;
-    CUdeviceptr d_data_out;
-    CUDA_CHECK(cuMemAlloc(&d_data_in, N * sizeof(float)));
-    CUDA_CHECK(cuMemAlloc(&d_data_out, N * sizeof(float)));
-    std::vector<float> h_data(N);
-    for (int i = 0; i < N; ++i) {
-        h_data[i] = static_cast<float>(i);
-    }
-    CUDA_CHECK(cuMemcpyHtoD(d_data_in, h_data.data(), N * sizeof(float)));*/
-
     std::vector<void*> kernel_args_vec = buildKernelArgumentsFKL(pipeline);//buildKernelArguments(d_data_in, d_data_out, pipeline);
 
     std::cout << "Launching dynamically constructed kernel..." << std::endl;
     CUDA_CHECK(cuLaunchKernel(kernel_func, 1, 1, 1, N, 1, 1, 0, reinterpret_cast<CUstream>(stream.getCUDAStream()), kernel_args_vec.data(), nullptr));
-    //CUDA_CHECK(cuCtxSynchronize());
 
     // --- 8. Verify & Cleanup ---
-    //std::vector<float> h_result(N);
-    //CUDA_CHECK(cuMemcpyDtoH(h_result.data(), d_data_out, N * sizeof(float)));
     d_data_out.download(stream);
     stream.sync();
     std::cout << "Result of op1(factor=2.0) then op2(offset=5.0) on data[3]: " << d_data_out.at(fk::Point(3)) << " (expected 11)" << std::endl;
 
-    /*CUDA_CHECK(cuMemFree(d_data_in));
-    CUDA_CHECK(cuMemFree(d_data_out));*/
     CUDA_CHECK(cuModuleUnload(module));
     NVRTC_CHECK(nvrtcDestroyProgram(&prog));
     CUDA_CHECK(cuCtxDestroy(context));

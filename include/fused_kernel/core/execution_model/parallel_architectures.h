@@ -46,8 +46,13 @@ namespace fk {
 #endif
 
 
-#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED) || defined(__NVRTC__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     constexpr ParArch defaultParArch = ParArch::GPU_NVIDIA;
+#elif defined(NVRTC_ENABLED)
+    // Note: when using JIT, code compiled with the Host compiler 
+    // will have defaultParArch = ParArch::GPU_NVIDIA_JIT
+    // Device code, compiled at runtime, will have ParArch::GPU_NVIDIA
+    constexpr ParArch defaultParArch = ParArch::GPU_NVIDIA_JIT;
 #else
     constexpr ParArch defaultParArch = ParArch::CPU;
 #endif
