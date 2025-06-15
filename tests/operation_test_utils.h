@@ -156,9 +156,11 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                 const auto arrayResult = fk::toArray(resultV);
                 for (size_t j = 0; j < fk::cn<decltype(resultV)>; ++j) {
                     if (!arrayResult.at[j]) {
+                      
                         std::cout << "\033[31m" << "FAIL!!" << "\033[31m" <<std::endl;
                         std::cout <<"\033[31m"<< "Mismatch at test element index " << i << " for vector index " << j
-                            << ": Expected value " << fk::toArray(expectedElems[i]).at[j] << ", got " << arrayGenerated.at[j] << "\033[0m"<<std::endl;
+                                  << ": Expected value " << static_cast<int>(fk::toArray(expectedElems[i]).at[j])
+                                  << ", got " << static_cast<int>(arrayGenerated.at[j]) << "\033[0m" << std::endl;
                     }
                     result &= arrayResult[j];
                 }
