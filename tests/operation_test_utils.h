@@ -1,4 +1,4 @@
-/* Copyright 2025 Oscar Amoros Huguet
+﻿/* Copyright 2025 Oscar Amoros Huguet
    Copyright 2025 Albert Andaluz
    Copyright 2025 Grup Mediapro S.L.U
 
@@ -100,7 +100,7 @@ namespace test_case_builder::detail {
         for (size_t i = 0; i < N; ++i) {
             inputPtr.at(fk::Point(i)) = inputElems[i];
         }
-        std::cout << "Running test for " << testName << std::endl;
+        std::cout << "Running test for " << "\033[1;33m" <<testName << "\033[1;33m" << ": ";
         inputPtr.upload(stream);
         fk::Executor<fk::TransformDPP<>>::executeOperations(inputPtr, outputPtr, stream,
                                                             Operation::build());
@@ -125,12 +125,14 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                 const auto generated = outputPtr.at(fk::Point(i));
                 const auto resultV = generated == expectedElems[i];
                 if (!resultV) {
-                    std::cout << "Mismatch at test element index " << i
-                        << ": Expected value " << expectedElems[i] << ", got " << generated << std::endl;
+                    std::cout << "\033[32m" << "FAIL!!" << "\033[0m" std::endl;
+                    std::cout << std::endl<< "\033[31m Mismatch at test element index " << i << ": Expected value "
+                              << expectedElems[i] << ", got " << generated << "\033[0m"<< std::endl;
                 }
                 result &= resultV;
             }
-            if (result) std::cout << "Success!!" << std::endl;
+            if (result)
+                std::cout << "\033[32m" << "Success!!" << "\033[0m" std::endl;
             return result;
             };
     }
@@ -154,13 +156,15 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                 const auto arrayResult = fk::toArray(resultV);
                 for (size_t j = 0; j < fk::cn<decltype(resultV)>; ++j) {
                     if (!arrayResult.at[j]) {
-                        std::cout << "Mismatch at test element index " << i << " for vector index " << j
-                            << ": Expected value " << fk::toArray(expectedElems[i]).at[j] << ", got " << arrayGenerated.at[j] << std::endl;
+                        std::cout << "\033[31m" << "FAIL!!" << "\033[31m" <<std::endl;
+                        std::cout <<"\033[31m"<< "Mismatch at test element index " << i << " for vector index " << j
+                            << ": Expected value " << fk::toArray(expectedElems[i]).at[j] << ", got " << arrayGenerated.at[j] << "\033[0m"<<std::endl;
                     }
                     result &= arrayResult[j];
                 }
             }
-            if (result) std::cout << "Success!!" << std::endl;
+            if (result) 
+                  std::cout << "\033[32m" << "Success!!" << "\033[0m" <<std::endl;
             return result;
             };
     }
