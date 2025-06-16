@@ -508,10 +508,10 @@ void addIntFloatTests() {
 }
 
 void addIntDoubleTests() {
-    ADD_UNARY_TEST(
-        (fk::minValue<int1>, fk::maxValue<int1> / static_cast<int>(2), fk::maxValue<int1>),
-        (fk::make_set<double1>(fk::minValue<int>), fk::maxValue<int> / static_cast<double>(2), fk::make_set<double1>(fk::maxValue<int>)),
-        fk::SaturateCast, int1, double1);
+    ADD_UNARY_TEST((fk::minValue<int1>, fk::maxValue<int1> / static_cast<int>(2), fk::maxValue<int1>),
+                   (fk::make_set<double1>(fk::minValue<int>), fk::maxValue<int> / static_cast<double>(2),
+                    fk::make_set<double1>(fk::maxValue<int>)),
+                   fk::SaturateCast, int1, double1);
 
     ADD_UNARY_TEST((fk::minValue<int2>, fk::maxValue<int2> / static_cast<int>(2), fk::maxValue<int2>),
                    (fk::make_set<double2>(fk::minValue<int>),
@@ -520,7 +520,8 @@ void addIntDoubleTests() {
                    fk::SaturateCast, int2, double2);
 
     ADD_UNARY_TEST((fk::minValue<int3>, fk::maxValue<int3> / static_cast<int>(2), fk::maxValue<int3>),
-                   (fk::make_set<double3>(fk::minValue<int>), fk::make_set<double3>(fk::maxValue<int> / static_cast<int>(2)),
+                   (fk::make_set<double3>(fk::minValue<int>),
+                    fk::make_set<double3>(fk::maxValue<int> / static_cast<int>(2)),
                     fk::make_set<double3>(fk::maxValue<int>)),
                    fk::SaturateCast, int3, double3);
 
@@ -529,6 +530,40 @@ void addIntDoubleTests() {
                     fk::make_set<double4>(fk::maxValue<int> / static_cast<int>(2)),
                     fk::make_set<double4>(fk::maxValue<int>)),
                    fk::SaturateCast, int4, double4);
+}
+
+void addCharIntTests() {
+
+    // auto p = static_cast<char>(fk::maxValue<char1> / static_cast<char>(2));
+
+    ADD_UNARY_TEST((fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char1> / 2).x)}),
+                    fk::maxValue<char1>),
+                   (fk::make_set<int1>(static_cast<int> (fk::minValue<char1>.x) / static_cast<int>(1)),
+                    fk::make_set<int1>(static_cast<int>(fk::maxValue<char1>.x) / static_cast<int>(2)),
+                    fk::make_set<int1>(static_cast<int>(fk::maxValue<char1>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char1, int1);
+
+    ADD_UNARY_TEST((fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char2> / 2).x)}),
+                    fk::maxValue<char2>),
+                   (fk::make_set<int2>(static_cast<int>(fk::minValue<char2>.x) / static_cast<int>(1)),
+                    fk::make_set<int2>(static_cast<int>(fk::maxValue<char2>.x) / static_cast<int>(2)),
+                    fk::make_set<int2>(static_cast<int>(fk::maxValue<char2>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char2, int2);
+
+    ADD_UNARY_TEST((fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char3> / 2).x)}),
+                    fk::maxValue<char3>),
+                   (fk::make_set<int3>(static_cast<int>(fk::minValue<char3>.x) / static_cast<int>(1)),
+                    fk::make_set<int3>(static_cast<int>(fk::maxValue<char3>.x) / static_cast<int>(2)),
+                    fk::make_set<int3>(static_cast<int>(fk::maxValue<char3>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char3, int3);
+
+    ADD_UNARY_TEST((fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char4> / 2).x)}),
+                    fk::maxValue<char4>),
+                   (fk::make_set<int4>(static_cast<int>(fk::minValue<char4>.x) / static_cast<int>(1)),
+                    fk::make_set<int4>(static_cast<int>(fk::maxValue<char4>.x) / static_cast<int>(2)),
+                    fk::make_set<int4>(static_cast<int>(fk::maxValue<char4>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char4, int4);
+
 }
 
 START_ADDING_TESTS
@@ -560,6 +595,8 @@ addIntULongLongTests();
 addIntFloatTests();
 addIntDoubleTests();
 
+// Char
+addCharIntTests();
 STOP_ADDING_TESTS
 
 // You can add more tests for other type combinations as needed.
