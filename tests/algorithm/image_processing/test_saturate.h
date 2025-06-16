@@ -566,6 +566,41 @@ void addCharIntTests() {
 
 }
 
+
+void addCharUIntTests() {
+
+    // auto p = static_cast<char>(fk::maxValue<char1> / static_cast<char>(2));
+
+    ADD_UNARY_TEST((fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char1> / 2).x)}),
+                    fk::maxValue<char1>),
+                   (fk::make_set<uint1>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint1>(static_cast<uint>(fk::maxValue<char1>.x) / static_cast<int>(2)),
+                    fk::make_set<uint1>(static_cast<uint>(fk::maxValue<char1>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char1, uint1);
+
+    ADD_UNARY_TEST((fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char2> / 2).x)}),
+                    fk::maxValue<char2>),
+                   (fk::make_set<uint2>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint2>(static_cast<uint>(fk::maxValue<char2>.x) / static_cast<int>(2)),
+                    fk::make_set<uint2>(static_cast<uint>(fk::maxValue<char2>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char2, uint2);
+
+    ADD_UNARY_TEST((fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char3> / 2).x)}),
+                    fk::maxValue<char3>),
+                   (fk::make_set<uint3>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint3>(static_cast<uint>(fk::maxValue<char3>.x) / static_cast<int>(2)),
+                    fk::make_set<uint3>(static_cast<uint>(fk::maxValue<char3>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char3, uint3);
+
+    ADD_UNARY_TEST((fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char4> / 2).x)}),
+                    fk::maxValue<char4>),
+                   (fk::make_set<uint4>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint4>(static_cast<uint>(fk::maxValue<char4>.x) / static_cast<int>(2)),
+                    fk::make_set<uint4>(static_cast<uint>(fk::maxValue<char4>.x) / static_cast<int>(1))),
+                   fk::SaturateCast, char4, uint4);
+}
+
+
 START_ADDING_TESTS
 // uint
 addUintIntTests();
@@ -597,6 +632,7 @@ addIntDoubleTests();
 
 // Char
 addCharIntTests();
+addCharUIntTests();
 STOP_ADDING_TESTS
 
 // You can add more tests for other type combinations as needed.
