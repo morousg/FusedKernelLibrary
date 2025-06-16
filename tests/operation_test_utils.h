@@ -125,14 +125,24 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                 const auto generated = outputPtr.at(fk::Point(i));
                 const auto resultV = generated == expectedElems[i];
                 if (!resultV) {
-                    std::cout << "\033[32m" << "FAIL!!" << "\033[0m" std::endl;
-                    std::cout << std::endl<< "\033[31m Mismatch at test element index " << i << ": Expected value "
-                              << expectedElems[i] << ", got " << generated << "\033[0m"<< std::endl;
+                    std::cout << "\033[32m" << "FAIL!!" << "\033[0m" << std::endl;
+                    if constexpr (sizeof(typename Operation::OutputType) == 1) {
+                           std::cout << std::endl<< "\033[31m Mismatch at test element index " << i << ": Expected value "
+                                  << static_cast<int>(resultV) << ", got " << generated << "\033[0m" << std::endl;
+                    }
+                    else {
+                    std::cout << std::endl
+                                  << "\033[31m Mismatch at test element index " << i << ": Expected value " << resultV
+                                  << ", got " << generated << "\033[0m" << std::endl;
+                    
+                    }
+                  
+                    
                 }
                 result &= resultV;
             }
             if (result)
-                std::cout << "\033[32m" << "Success!!" << "\033[0m" std::endl;
+                std::cout << "\033[32m" << "Success!!" << "\033[0m" <<std::endl;
             return result;
             };
     }
@@ -158,9 +168,18 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                     if (!arrayResult.at[j]) {
                       
                         std::cout << "\033[31m" << "FAIL!!" << "\033[31m" <<std::endl;
-                        std::cout <<"\033[31m"<< "Mismatch at test element index " << i << " for vector index " << j
-                                  << ": Expected value " << static_cast<int>(fk::toArray(expectedElems[i]).at[j])
-                                  << ", got " << static_cast<int>(arrayGenerated.at[j]) << "\033[0m" << std::endl;
+                        if constexpr (sizeof(typename Operation::OutputType) == 1) {
+
+                            std::cout << "\033[31m" << "Mismatch at test element index " << i << " for vector index "
+                                      << j << ": Expected value "
+                                      << static_cast<int>(fk::toArray(expectedElems[i]).at[j]) << ", got "
+                                      << static_cast<int>(arrayGenerated.at[j]) << "\033[0m" << std::endl;
+                        } else {
+                            std::cout << "\033[31m" << "Mismatch at test element index " << i << " for vector index "
+                                      << j << ": Expected value "
+                                      << fk::toArray(expectedElems[i]).at[j] << ", got "
+                                      << arrayGenerated.at[j] << "\033[0m" << std::endl;
+                        }
                     }
                     result &= arrayResult[j];
                 }
