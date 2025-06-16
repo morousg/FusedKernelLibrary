@@ -538,7 +538,7 @@ void addCharIntTests() {
 
     ADD_UNARY_TEST((fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char1> / 2).x)}),
                     fk::maxValue<char1>),
-                   (fk::make_set<int1>(static_cast<int> (fk::minValue<char1>.x) / static_cast<int>(1)),
+                   (fk::make_set<int1>(static_cast<int>(fk::minValue<char1>.x) / static_cast<int>(1)),
                     fk::make_set<int1>(static_cast<int>(fk::maxValue<char1>.x) / static_cast<int>(2)),
                     fk::make_set<int1>(static_cast<int>(fk::maxValue<char1>.x) / static_cast<int>(1))),
                    fk::SaturateCast, char1, int1);
@@ -563,9 +563,7 @@ void addCharIntTests() {
                     fk::make_set<int4>(static_cast<int>(fk::maxValue<char4>.x) / static_cast<int>(2)),
                     fk::make_set<int4>(static_cast<int>(fk::maxValue<char4>.x) / static_cast<int>(1))),
                    fk::SaturateCast, char4, int4);
-
 }
-
 
 void addCharUIntTests() {
 
@@ -600,6 +598,60 @@ void addCharUIntTests() {
                    fk::SaturateCast, char4, uint4);
 }
 
+void addCharCharTests() {
+
+    // auto p = static_cast<char>(fk::maxValue<char1> / static_cast<char>(2));
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char1>),
+        (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char1> / 2).x)}),
+         fk::maxValue<char1>),
+        fk::SaturateCast, char1, char1);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char2>),
+        (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char2>),
+        fk::SaturateCast, char2, char2);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char3>),
+        (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char3>),
+        fk::SaturateCast, char3, char3);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char4>),
+        (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char4>),
+        fk::SaturateCast, char4, char4);
+}
+
+void addCharUCharTests() {
+
+    // auto p = static_cast<char>(fk::maxValue<char1> / static_cast<char>(2));
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
+        (fk::make_set<uchar1>(fk::minValue<uchar>), fk::make_set<uchar1>(fk::maxValue<char> / static_cast<int>(2)),
+         fk::make_set<uchar1>(fk::maxValue<char>)),
+        fk::SaturateCast, char1, uchar1);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char2>),
+        (fk::make_set<uchar2>(fk::minValue<uchar>), fk::make_set<uchar2>(fk::maxValue<char> / static_cast<int>(2)),
+         fk::make_set<uchar2>(fk::maxValue<char>)),
+        fk::SaturateCast, char2, uchar2);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char3>),
+        (fk::make_set<uchar3>(fk::minValue<uchar>), fk::make_set<uchar3>(fk::maxValue<char> / static_cast<int>(2)),
+         fk::make_set<uchar3>(fk::maxValue<char>)),
+        fk::SaturateCast, char3, uchar3);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char4>),
+        (fk::make_set<uchar4>(fk::minValue<uchar>), fk::make_set<uchar4>(fk::maxValue<char> / static_cast<int>(2)),
+         fk::make_set<uchar4>(fk::maxValue<char>)),
+        fk::SaturateCast, char4, uchar4);
+}
 
 START_ADDING_TESTS
 // uint
@@ -633,6 +685,8 @@ addIntDoubleTests();
 // Char
 addCharIntTests();
 addCharUIntTests();
+addCharCharTests();
+addCharUCharTests();
 STOP_ADDING_TESTS
 
 // You can add more tests for other type combinations as needed.
