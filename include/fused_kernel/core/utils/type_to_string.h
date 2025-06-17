@@ -17,10 +17,9 @@
 
 #include <string>
 #include <typeinfo>
-#ifndef __NVCC__
+#if !defined(__NVCC__) && !defined(NVRTC_COMPILER)
 #include <string_view>
 namespace fk {
-
     constexpr inline std::string_view getTypeNamePretty_helper(const std::string_view& signature,
                                                                const std::string_view& prefix,
                                                                const std::string_view& suffix) {
@@ -67,9 +66,9 @@ namespace fk {
 #include <map>
 #include <typeinfo> // Required for typeid
 
-    // For GCC and Clang, include cxxabi.h for __cxa_demangle
-    // The condition `!defined(_MSC_VER)` is to ensure this path is not taken by Clang-cl,
-    // which should ideally follow the MSVC path for typeid().name() behavior.
+// For GCC and Clang, include cxxabi.h for __cxa_demangle
+// The condition `!defined(_MSC_VER)` is to ensure this path is not taken by Clang-cl,
+// which should ideally follow the MSVC path for typeid().name() behavior.
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
 #include <cxxabi.h>
 #include <cstdlib> // For std::free
@@ -134,4 +133,5 @@ namespace fk {
     }
 } // namespace fk
 #endif
+
 #endif // FK_TYPE_TO_STRING_H

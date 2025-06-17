@@ -25,13 +25,20 @@
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.h>
 #include <fused_kernel/core/execution_model/operation_model/vector_operations.h>
 #include <fused_kernel/algorithms/basic_ops/cast_base.h>
+#include <fused_kernel/core/utils/value_to_string.h>
 
 namespace fk { // namespace FusedKernel
+#define FK_TO_STRING(...) \
+FK_HOST_CNST auto toString() const { \
+    return serialize(make_tuple(__VA_ARGS__)); \
+}
+
     struct ActiveThreads {
         uint x, y, z;
         FK_HOST_DEVICE_CNST ActiveThreads(const uint& vx = 1,
             const uint& vy = 1,
             const uint& vz = 1) : x(vx), y(vy), z(vz) {}
+        FK_TO_STRING(x, y, z)
     };
 
 #define DEVICE_FUNCTION_DETAILS_IS(instance_type) \

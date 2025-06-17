@@ -74,6 +74,9 @@ namespace fk {
     constexpr bool validCUDAVec = one_of<T, VAll>::value;
 
     template <typename T>
+    struct IsCudaVector : std::conditional_t<validCUDAVec<T>, std::true_type, std::false_type> {};
+
+    template <typename T>
     FK_HOST_DEVICE_CNST int Channels() {
         if constexpr (one_of_v<T, VOne> || !validCUDAVec<T>) {
             return 1;

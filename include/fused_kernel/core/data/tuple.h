@@ -16,6 +16,7 @@
 #define FK_TUPLE
 
 #include <fused_kernel/core/utils/type_lists.h>
+#include <fused_kernel/core/utils/cuda_vector_utils.h>
 #include <array>
 
 namespace fk {
@@ -269,7 +270,19 @@ namespace fk {
         return static_translate_helper<GetSecond<FT, ST>>(NElems, srcArray, std::make_integer_sequence<int, NElems>{});
     }
 
-
+    template <typename T>
+    FK_HOST_CNST auto cudaVectorToTuple(const T& cudaVectType) {
+        static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: cudaVectorToTuple<invalid_type>()");
+        if constexpr (cn<T> == 1) {
+            return fk::make_tuple(cudaVectType.x);
+        } else if constexpr (cn<T> == 2) {
+            return fk::make_tuple(cudaVectType.x, cudaVectType.y);
+        } else if constexpr (cn<T> == 3) {
+            return fk::make_tuple(cudaVectType.x, cudaVectType.y, cudaVectType.z);
+        } else if constexpr (cn<T> == 4) {
+            return fk::make_tuple(cudaVectType.x, cudaVectType.y, cudaVectType.z, cudaVectType.w);
+        }
+    }
 } // namespace fk
 
 #endif

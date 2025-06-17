@@ -226,6 +226,20 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
             }
         }
     };
+
+    FK_HOST_CNST CtxDim3 getDefaultBlockSize(const uint& width, const uint& height) {
+        constexpr uint blockDimX[4] = { 32, 64, 128, 256 };  // Possible block sizes in the x axis
+        constexpr uint blockDimY[2][4] = { { 8,  4,   2,   1},
+                                          { 6,  3,   3,   2} };  // Possible block sizes in the y axis according to blockDim.x
+
+        uint minDiscardedThreads = UINT_MAX;
+        uint bxS = 0; // from 0 to 3
+        uint byS = 0; // from 0 to 1
+
+        computeBestSolution<0, 0>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
+
+        return CtxDim3(blockDimX[bxS], blockDimY[byS][bxS]);
+    }
 #endif
 #if defined(__NVCC__) || defined(__HIP__)
     template <enum TF TFEN>
@@ -235,19 +249,6 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
         using Child = Executor<TransformDPP<ParArch::GPU_NVIDIA, TFEN>>;
         using Parent = BaseExecutor<Child>;
 
-        FK_HOST_FUSE CtxDim3 getDefaultBlockSize(const uint& width, const uint& height) {
-            constexpr uint blockDimX[4] = { 32, 64, 128, 256 };  // Possible block sizes in the x axis
-            constexpr uint blockDimY[2][4] = { { 8,  4,   2,   1},
-                                              { 6,  3,   3,   2} };  // Possible block sizes in the y axis according to blockDim.x
-
-            uint minDiscardedThreads = UINT_MAX;
-            uint bxS = 0; // from 0 to 3
-            uint byS = 0; // from 0 to 1
-
-            computeBestSolution<0, 0>::exec(width, height, bxS, byS, minDiscardedThreads, blockDimX, blockDimY);
-
-            return CtxDim3(blockDimX[bxS], blockDimY[byS][bxS]);
-        }
         template <typename... IOps>
         FK_HOST_FUSE void executeOperations_helper(Stream_<ParArch::GPU_NVIDIA>& stream_, const IOps&... iOps) {
             const cudaStream_t stream = stream_.getCUDAStream();
@@ -415,6 +416,8 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
             )"
         };
     public:
+        // Default constructor
+        JitFkKernel() : m_module(nullptr), m_kernelFunc(nullptr) {}
         JitFkKernel(const std::string& kernelName,
                     const std::vector<JIT_Operation_pp>& pipeline) {
             m_nameExpression = jit_internal::buildNameExpression(kernelName, pipeline);
@@ -442,6 +445,46 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
             gpuErrchk(nvrtcGetPTX(fklProg, ptx.data()));
             gpuErrchk(cuModuleLoadData(&m_module, ptx.data()));
             gpuErrchk(cuModuleGetFunction(&m_kernelFunc, m_module, mangled_name));
+        }
+
+        // Copy constructor
+        JitFkKernel(const JitFkKernel& other)
+            : m_nameExpression(other.m_nameExpression), m_includes(other.m_includes),
+              m_module(other.m_module), m_kernelFunc(other.m_kernelFunc) {}
+
+        // Move constructor
+        JitFkKernel(JitFkKernel&& other) noexcept
+            : m_module(other.m_module),
+            m_kernelFunc(other.m_kernelFunc),
+            m_nameExpression(std::move(other.m_nameExpression)),
+            m_includes(std::move(other.m_includes)) {
+            other.m_module = nullptr;
+            other.m_kernelFunc = nullptr;
+        }
+
+        // Copy assignment operator
+        JitFkKernel& operator=(const JitFkKernel& other) {
+            if (this != &other) {
+                m_nameExpression = other.m_nameExpression;
+                m_includes = other.m_includes;
+                m_module = other.m_module;
+                m_kernelFunc = other.m_kernelFunc;
+            }
+            return *this;
+        }
+
+        // Move assignment operator
+        JitFkKernel& operator=(JitFkKernel&& other) noexcept {
+            if (this != &other) {
+                m_module = other.m_module;
+                m_kernelFunc = other.m_kernelFunc;
+                m_nameExpression = std::move(other.m_nameExpression);
+                m_includes = std::move(other.m_includes);
+
+                other.m_module = nullptr;
+                other.m_kernelFunc = nullptr;
+            }
+            return *this;
         }
 
         CUfunction getKernelFunction() const {
@@ -551,10 +594,48 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
             std::vector<JIT_Operation_pp> pipeline = jit_internal::buildOperationPipeline(iOps...);
             CUfunction kernelFunc = JITExecutorSingleton::getInstance().addKernel(kernelNameWithDetails, pipeline);
             std::vector<void*> args = jit_internal::buildKernelArguments(pipeline);
-            args.insert(args.begin(), &tDetails);
+            args.insert(args.begin(), (void*)&tDetails);
             gpuErrchk(cuLaunchKernel(kernelFunc, grid.x, grid.y, grid.z,
                                      block.x, block.y, block.z, 0,
                                      reinterpret_cast<CUstream>(stream.getCUDAStream()), args.data(), nullptr));
+        }
+        FK_HOST_FUSE void executeOperations_helper(Stream_<ParArch::GPU_NVIDIA_JIT>& stream, const std::vector<JIT_Operation_pp>& iOps) {
+            constexpr ParArch PA = ParArch::GPU_NVIDIA;
+            /*const auto tDetails = TransformDPP<PA, TFEN>::build_details(iOps...);
+            using TDPPDetails = std::decay_t<decltype(tDetails)>;
+            std::string detailsType = fk::typeToString<TDPPDetails>();
+            std::string kernelName{ "launchTransformDPP_Kernel<ParArch::GPU_NVIDIA, " };
+            std::string tfi;
+            ActiveThreads activeThreads;
+            std::string threadDivisible;
+            if constexpr (TDPPDetails::TFI::ENABLED) {
+                tfi = std::string("TF::ENABLED");
+                activeThreads = tDetails.activeThreads;
+                if (!tDetails.threadDivisible) {
+                    threadDivisible = std::string("false");
+                } else {
+                    threadDivisible = std::string("true");
+                }
+            } else {
+                tfi = std::string("TF::DISABLED");
+                activeThreads = get<0>(iOps...).getActiveThreads();
+                threadDivisible = std::string("true");
+            }
+            const CtxDim3 ctx_block = getDefaultBlockSize(activeThreads.x, activeThreads.y);
+
+            const dim3 block{ ctx_block.x, ctx_block.y, 1 };
+            const dim3 grid{ static_cast<uint>(ceil(activeThreads.x / static_cast<float>(block.x))),
+                             static_cast<uint>(ceil(activeThreads.y / static_cast<float>(block.y))),
+                             activeThreads.z };
+
+            std::string kernelNameWithDetails = kernelName + tfi + ", " + threadDivisible + ", " + typeToString<TDPPDetails>() + ", ";
+            std::vector<JIT_Operation_pp> pipeline = jit_internal::buildOperationPipeline(iOps...);
+            CUfunction kernelFunc = JITExecutorSingleton::getInstance().addKernel(kernelNameWithDetails, pipeline);
+            std::vector<void*> args = jit_internal::buildKernelArguments(pipeline);
+            args.insert(args.begin(), &tDetails);
+            gpuErrchk(cuLaunchKernel(kernelFunc, grid.x, grid.y, grid.z,
+                block.x, block.y, block.z, 0,
+                reinterpret_cast<CUstream>(stream.getCUDAStream()), args.data(), nullptr));*/
         }
     public:
         FK_HOST_FUSE ParArch parArch() {

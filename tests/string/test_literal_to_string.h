@@ -12,17 +12,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef FK_DATA
-#define FK_DATA
+#include "tests/main.h"
 
-#include <fused_kernel/core/data/array.h>
-#include <fused_kernel/core/data/circular_tensor.h>
-#include <fused_kernel/core/data/point.h>
-#include <fused_kernel/core/data/ptr_nd.h>
-#include <fused_kernel/core/data/ptr_nd.h>
-#include <fused_kernel/core/data/rect.h>
-#include <fused_kernel/core/data/size.h>
-#include <fused_kernel/core/data/tuple.h>
-#include <fused_kernel/core/data/string.h>
-
-#endif // FK_DATA
+int launch() {
+    return 0;
+}

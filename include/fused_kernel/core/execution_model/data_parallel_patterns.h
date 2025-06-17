@@ -207,6 +207,27 @@ namespace fk { // namespace FusedKernel
                 return Details{};
             }
         }
+        template <typename FirstIOp, typename... IOps>
+        FK_DEVICE_FUSE auto build_details(const ActiveThreads& activeThreads, const uint& readRow, const uint& writeRow) {
+            using Details = TransformDPPDetails<static_cast<bool>(TFEN), FirstIOp, IOps...>;
+            using TFI = typename Details::TFI;
+            if constexpr (TFI::ENABLED) {
+                const ActiveThreads gridActiveThreads(static_cast<uint>(ceil(activeThreads.x / static_cast<float>(TFI::elems_per_thread))),
+                                                      activeThreads.y, activeThreads.z);
+                bool threadDivisible;
+                if constexpr (TFI::ENABLED) {
+                    using ReadOperation = typename FirstIOp::Operation;
+                    using WriteOperation = typename LastType_t<IOps...>::Operation;
+                    threadDivisible = (readRow % TFI::elems_per_thread == 0) && (writeRow % TFI::elems_per_thread == 0);
+                } else {
+                    threadDivisible = true;
+                }
+                const Details details{ gridActiveThreads, threadDivisible };
+                return details;
+            } else {
+                return Details{};
+            }
+        }
     };
 
 // Note: there are no ParArch::GPU_NVIDIA_JIT DPP implementaitons, because
