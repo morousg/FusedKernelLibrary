@@ -722,25 +722,25 @@ void addCharULongTests() {
 
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
-        (fk::make_set<ulong1>(fk::minValue<ulong>), fk::make_set<ulong1>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulong1>(fk::minValue<char>), fk::make_set<ulong1>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulong1>(fk::maxValue<char>)),
         fk::SaturateCast, char1, ulong1);
 
     ADD_UNARY_TEST(
         (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char2>),
-        (fk::make_set<ulong2>(fk::minValue<ulong>), fk::make_set<ulong2>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulong2>(fk::minValue<char>), fk::make_set<ulong2>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulong2>(fk::maxValue<char>)),
         fk::SaturateCast, char2, ulong2);
 
     ADD_UNARY_TEST(
         (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char3>),
-        (fk::make_set<ulong3>(fk::minValue<ulong>), fk::make_set<ulong3>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulong3>(fk::minValue<char>), fk::make_set<ulong3>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulong3>(fk::maxValue<char>)),
         fk::SaturateCast, char3, ulong3);
 
     ADD_UNARY_TEST(
         (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char4>),
-        (fk::make_set<ulong4>(fk::minValue<ulong>), fk::make_set<ulong4>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulong4>(fk::minValue<char>), fk::make_set<ulong4>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulong4>(fk::maxValue<char>)),
         fk::SaturateCast, char4, ulong4);
 }
@@ -776,28 +776,28 @@ void addCharULongLongTests() {
 
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
-        (fk::make_set<ulonglong1>(fk::minValue<ulonglong>),
+        (fk::make_set<ulonglong1>(fk::minValue<char>),
          fk::make_set<ulonglong1>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong1>(fk::maxValue<char>)),
         fk::SaturateCast, char1, ulonglong1);
 
     ADD_UNARY_TEST(
         (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char2>),
-        (fk::make_set<ulonglong2>(fk::minValue<ulonglong>),
+        (fk::make_set<ulonglong2>(fk::minValue<char>),
          fk::make_set<ulonglong2>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong2>(fk::maxValue<char>)),
         fk::SaturateCast, char2, ulonglong2);
 
     ADD_UNARY_TEST(
         (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char3>),
-        (fk::make_set<ulonglong3>(fk::minValue<ulonglong>),
+        (fk::make_set<ulonglong3>(fk::minValue<char>),
          fk::make_set<ulonglong3>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong3>(fk::maxValue<char>)),
         fk::SaturateCast, char3, ulonglong3);
 
     ADD_UNARY_TEST(
         (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char4>),
-        (fk::make_set<ulonglong4>(fk::minValue<ulonglong>),
+        (fk::make_set<ulonglong4>(fk::minValue<char>),
          fk::make_set<ulonglong4>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong4>(fk::maxValue<char>)),
         fk::SaturateCast, char4, ulonglong4);
@@ -1249,7 +1249,7 @@ void addShortUIntTests() {
 }
 
 void addShortCharTests() {
-    
+
     ADD_UNARY_TEST(
         (fk::minValue<short1>, fk::make_set<short1>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short1>),
         (fk::minValue<char1>, fk::maxValue<char1>, fk::maxValue<char1>), fk::SaturateCast, short1, char1);
@@ -1261,14 +1261,14 @@ void addShortCharTests() {
     ADD_UNARY_TEST(
         (fk::minValue<short3>, fk::make_set<short3>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short3>),
         (fk::minValue<char3>, fk::maxValue<char3>, fk::maxValue<char3>), fk::SaturateCast, short3, char3);
-    
+
     ADD_UNARY_TEST(
         (fk::minValue<short4>, fk::make_set<short4>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short4>),
         (fk::minValue<char4>, fk::maxValue<char4>, fk::maxValue<char4>), fk::SaturateCast, short4, char4);
 }
 
 void addShortUCharTests() {
- 
+
     ADD_UNARY_TEST(
         (fk::minValue<short1>, fk::make_set<short1>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short1>),
         (fk::minValue<uchar1>, fk::maxValue<uchar1>, fk::maxValue<uchar1>), fk::SaturateCast, short1, uchar1);
@@ -1284,8 +1284,6 @@ void addShortUCharTests() {
     ADD_UNARY_TEST(
         (fk::minValue<short4>, fk::make_set<short4>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short4>),
         (fk::minValue<uchar4>, fk::maxValue<uchar4>, fk::maxValue<uchar4>), fk::SaturateCast, short4, uchar4);
- 
-
 }
 
 void addShortShortTests() {
@@ -1382,31 +1380,30 @@ void addShortLongTests() {
 }
 
 void addShortULongTests() {
-
     ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short1>),
-                   (fk::make_set<ulong1>(fk::minValue<ulong>),
+                   (fk::make_set<ulong1>(fk::minValue<short>),
                     fk::make_set<ulong1>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulong1>(fk::maxValue<short>)),
                    fk::SaturateCast, short1, ulong1);
 
     ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short2>),
-                   (fk::make_set<ulong2>(fk::minValue<ulong>),
+                   (fk::make_set<ulong2>(fk::minValue<short>),
                     fk::make_set<ulong2>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulong2>(fk::maxValue<short>)),
                    fk::SaturateCast, short2, ulong2);
 
     ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short3>),
-                   (fk::make_set<ulong3>(fk::minValue<ulong>),
+                   (fk::make_set<ulong3>(fk::minValue<short>),
                     fk::make_set<ulong3>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulong3>(fk::maxValue<short>)),
                    fk::SaturateCast, short3, ulong3);
 
     ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short4>),
-                   (fk::make_set<ulong4>(fk::minValue<ulong>),
+                   (fk::make_set<ulong4>(fk::minValue<short>),
                     fk::make_set<ulong4>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulong4>(fk::maxValue<short>)),
                    fk::SaturateCast, short4, ulong4);
@@ -1447,28 +1444,28 @@ void addShortULongLongTests() {
 
     ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short1>),
-                   (fk::make_set<ulonglong1>(fk::minValue<ulonglong>),
+                   (fk::make_set<ulonglong1>(fk::minValue<short>),
                     fk::make_set<ulonglong1>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulonglong1>(fk::maxValue<short>)),
                    fk::SaturateCast, short1, ulonglong1);
 
     ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short2>),
-                   (fk::make_set<ulonglong2>(fk::minValue<ulonglong>),
+                   (fk::make_set<ulonglong2>(fk::minValue<short>),
                     fk::make_set<ulonglong2>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulonglong2>(fk::maxValue<short>)),
                    fk::SaturateCast, short2, ulonglong2);
 
     ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short3>),
-                   (fk::make_set<ulonglong3>(fk::minValue<ulonglong>),
+                   (fk::make_set<ulonglong3>(fk::minValue<short>),
                     fk::make_set<ulonglong3>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulonglong3>(fk::maxValue<short>)),
                    fk::SaturateCast, short3, ulonglong3);
 
     ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
                     fk::maxValue<short4>),
-                   (fk::make_set<ulonglong4>(fk::minValue<ulonglong>),
+                   (fk::make_set<ulonglong4>(fk::minValue<short>),
                     fk::make_set<ulonglong4>(fk::maxValue<short> / static_cast<int>(2)),
                     fk::make_set<ulonglong4>(fk::maxValue<short>)),
                    fk::SaturateCast, short4, ulonglong4);
@@ -1537,6 +1534,20 @@ void addShortDoubleTests() {
 }
 
 START_ADDING_TESTS
+
+addIntIntTests();
+addIntUintTests();
+addIntCharTests();
+addIntUcharTests();
+addIntShortTests();
+addIntUShortTests();
+addIntLongTests();
+addIntULongTests();
+addIntLongLongTests();
+addIntULongLongTests();
+addIntFloatTests();
+addIntDoubleTests();
+
 // uint
 
 addUintIntTests();
@@ -1551,20 +1562,6 @@ addUintULongTests();
 addUintULongLongTests();
 addUintFloatTests();
 addUintDoubleTests();
-
-// Int
-addIntIntTests();
-addIntUintTests();
-addIntCharTests();
-addIntUcharTests();
-addIntShortTests();
-addIntUShortTests();
-addIntLongTests();
-addIntULongTests();
-addIntLongLongTests();
-addIntULongLongTests();
-addIntFloatTests();
-addIntDoubleTests();
 
 // Char
 addCharIntTests();
@@ -1594,8 +1591,6 @@ addUCharFloatTests();
 addUCharDoubleTests();
 
 // short
-
-// Char
 addShortIntTests();
 addShortUIntTests();
 addShortCharTests();
