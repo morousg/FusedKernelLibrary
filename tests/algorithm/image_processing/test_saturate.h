@@ -249,7 +249,7 @@ void addUintDoubleTests() {
          fk::make_set<double1>(fk::maxValue<uint>)),
         fk::SaturateCast, uint1, double1);
 
-     ADD_UNARY_TEST(
+    ADD_UNARY_TEST(
         (fk::minValue<uint1>, fk::make_set<uint1>({static_cast<uint>((fk::maxValue<uint> / 2))}), fk::maxValue<uint1>),
         (fk::make_set<double1>(fk::minValue<uint>), fk::make_set<double1>(fk::maxValue<uint> / static_cast<uint>(2)),
          fk::make_set<double1>(fk::maxValue<uint>)),
@@ -259,17 +259,11 @@ void addUintDoubleTests() {
         (fk::make_set<double1>(fk::minValue<uint>), fk::make_set<double1>(fk::maxValue<uint> / static_cast<uint>(2)),
          fk::make_set<double1>(fk::maxValue<uint>)),
         fk::SaturateCast, uint1, double1);
-     ADD_UNARY_TEST(
+    ADD_UNARY_TEST(
         (fk::minValue<uint1>, fk::make_set<uint1>({static_cast<uint>((fk::maxValue<uint> / 2))}), fk::maxValue<uint1>),
         (fk::make_set<double1>(fk::minValue<uint>), fk::make_set<double1>(fk::maxValue<uint> / static_cast<uint>(2)),
          fk::make_set<double1>(fk::maxValue<uint>)),
         fk::SaturateCast, uint1, double1);
-    
-
-
-
-
-
 }
 
 // uint[1234]->uint[1234]
@@ -537,36 +531,33 @@ void addIntDoubleTests() {
 }
 
 void addCharIntTests() {
-      ADD_UNARY_TEST((fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}),
-                    fk::maxValue<char1>),
-                   (fk::make_set<int1>(fk::minValue<char>),
-                    fk::make_set<int1>(fk::maxValue<char>) / static_cast<int>(2),
-                    fk::make_set<int1>(fk::maxValue<char>)),
-                   fk::SaturateCast, char1, int1);
-    
-      ADD_UNARY_TEST(
+    ADD_UNARY_TEST(
+        (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
+        (fk::make_set<int1>(fk::minValue<char>), fk::make_set<int1>(fk::maxValue<char>) / static_cast<int>(2),
+         fk::make_set<int1>(fk::maxValue<char>)),
+        fk::SaturateCast, char1, int1);
+
+    ADD_UNARY_TEST(
         (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char2>),
         (fk::make_set<int2>(fk::minValue<char>), fk::make_set<int2>(fk::maxValue<char>) / static_cast<int>(2),
          fk::make_set<int2>(fk::maxValue<char>)),
         fk::SaturateCast, char2, int2);
 
-       ADD_UNARY_TEST((fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char> / 2))}),
-                      fk::maxValue<char3>),
-                     (fk::make_set<int3>(fk::minValue<char>),
-                      fk::make_set<int3>(fk::maxValue<char>) / static_cast<int>(2),
-                      fk::make_set<int3>(fk::maxValue<char>)),
-                     fk::SaturateCast, char3, int3);
+    ADD_UNARY_TEST(
+        (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char3>),
+        (fk::make_set<int3>(fk::minValue<char>), fk::make_set<int3>(fk::maxValue<char>) / static_cast<int>(2),
+         fk::make_set<int3>(fk::maxValue<char>)),
+        fk::SaturateCast, char3, int3);
 
-        ADD_UNARY_TEST((fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char> / 2))}),
-                       fk::maxValue<char4>),
-                      (fk::make_set<int4>(fk::minValue<char>),
-                       fk::make_set<int4>(fk::maxValue<char>) / static_cast<int>(2),
-                       fk::make_set<int4>(fk::maxValue<char>)),
-                      fk::SaturateCast, char4, int4);
+    ADD_UNARY_TEST(
+        (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char4>),
+        (fk::make_set<int4>(fk::minValue<char>), fk::make_set<int4>(fk::maxValue<char>) / static_cast<int>(2),
+         fk::make_set<int4>(fk::maxValue<char>)),
+        fk::SaturateCast, char4, int4);
 }
 
 void addCharUIntTests() {
- 
+
     ADD_UNARY_TEST((fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char1> / 2).x)}),
                     fk::maxValue<char1>),
                    (fk::make_set<uint1>(static_cast<uint>(0) / static_cast<int>(1)),
@@ -597,31 +588,30 @@ void addCharUIntTests() {
 }
 
 void addCharCharTests() {
- 
+
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char1>),
-        (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char1> / 2).x)}),
-         fk::maxValue<char1>),
-        fk::SaturateCast, char1, char1);
+        (fk::minValue<char1>, fk::make_set<char1>(fk::maxValue<char> / 2), fk::maxValue<char1>), fk::SaturateCast,
+        char1, char1);
 
     ADD_UNARY_TEST(
         (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char2>),
-        (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char2>),
-        fk::SaturateCast, char2, char2);
+        (fk::minValue<char2>, fk::make_set<char2>(fk::maxValue<char> / 2), fk::maxValue<char2>), fk::SaturateCast,
+        char2, char2);
 
     ADD_UNARY_TEST(
         (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char3>),
-        (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char3>),
-        fk::SaturateCast, char3, char3);
+        (fk::minValue<char3>, fk::make_set<char3>(fk::maxValue<char> / 2), fk::maxValue<char3>), fk::SaturateCast,
+        char3, char3);
 
     ADD_UNARY_TEST(
         (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char4>),
-        (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>(fk::maxValue<char> / 2)}), fk::maxValue<char4>),
-        fk::SaturateCast, char4, char4);
+        (fk::minValue<char4>, fk::make_set<char4>(fk::maxValue<char> / 2), fk::maxValue<char4>), fk::SaturateCast,
+        char4, char4);
 }
 
 void addCharUCharTests() {
- 
+
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
         (fk::make_set<uchar1>(fk::minValue<uchar>), fk::make_set<uchar1>(fk::maxValue<char> / static_cast<int>(2)),
@@ -648,7 +638,7 @@ void addCharUCharTests() {
 }
 
 void addCharShortTests() {
- 
+
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
         (fk::make_set<short1>(fk::minValue<char>), fk::make_set<short1>(fk::maxValue<char> / static_cast<int>(2)),
@@ -674,9 +664,8 @@ void addCharShortTests() {
         fk::SaturateCast, char4, short4);
 }
 
-
 void addCharUShortTests() {
- 
+
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
         (fk::make_set<ushort1>(fk::minValue<ushort>), fk::make_set<ushort1>(fk::maxValue<char> / static_cast<int>(2)),
@@ -701,7 +690,6 @@ void addCharUShortTests() {
          fk::make_set<ushort4>(fk::maxValue<char>)),
         fk::SaturateCast, char4, ushort4);
 }
-
 
 void addCharLongTests() {
 
@@ -730,9 +718,8 @@ void addCharLongTests() {
         fk::SaturateCast, char4, long4);
 }
 
-
 void addCharULongTests() {
- 
+
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
         (fk::make_set<ulong1>(fk::minValue<ulong>), fk::make_set<ulong1>(fk::maxValue<char> / static_cast<int>(2)),
@@ -785,31 +772,33 @@ void addCharLongLongTests() {
         fk::SaturateCast, char4, longlong4);
 }
 
-
-
 void addCharULongLongTests() {
 
     ADD_UNARY_TEST(
         (fk::minValue<char1>, fk::make_set<char1>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char1>),
-        (fk::make_set<ulonglong1>(fk::minValue<ulonglong>), fk::make_set<ulonglong1>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulonglong1>(fk::minValue<ulonglong>),
+         fk::make_set<ulonglong1>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong1>(fk::maxValue<char>)),
         fk::SaturateCast, char1, ulonglong1);
 
     ADD_UNARY_TEST(
         (fk::minValue<char2>, fk::make_set<char2>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char2>),
-        (fk::make_set<ulonglong2>(fk::minValue<ulonglong>), fk::make_set<ulonglong2>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulonglong2>(fk::minValue<ulonglong>),
+         fk::make_set<ulonglong2>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong2>(fk::maxValue<char>)),
         fk::SaturateCast, char2, ulonglong2);
 
     ADD_UNARY_TEST(
         (fk::minValue<char3>, fk::make_set<char3>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char3>),
-        (fk::make_set<ulonglong3>(fk::minValue<ulonglong>), fk::make_set<ulonglong3>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulonglong3>(fk::minValue<ulonglong>),
+         fk::make_set<ulonglong3>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong3>(fk::maxValue<char>)),
         fk::SaturateCast, char3, ulonglong3);
 
     ADD_UNARY_TEST(
         (fk::minValue<char4>, fk::make_set<char4>({static_cast<char>((fk::maxValue<char> / 2))}), fk::maxValue<char4>),
-        (fk::make_set<ulonglong4>(fk::minValue<ulonglong>), fk::make_set<ulonglong4>(fk::maxValue<char> / static_cast<int>(2)),
+        (fk::make_set<ulonglong4>(fk::minValue<ulonglong>),
+         fk::make_set<ulonglong4>(fk::maxValue<char> / static_cast<int>(2)),
          fk::make_set<ulonglong4>(fk::maxValue<char>)),
         fk::SaturateCast, char4, ulonglong4);
 }
@@ -841,7 +830,6 @@ void addCharFloatTests() {
         fk::SaturateCast, char4, float4);
 }
 
-
 void addCharDoubleTests() {
 
     ADD_UNARY_TEST(
@@ -870,31 +858,34 @@ void addCharDoubleTests() {
 }
 
 void addUCharIntTests() {
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<int>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<int1>(fk::minValue<uchar>), fk::make_set<int1>(fk::maxValue<uchar>) / static_cast<int>(2),
-         fk::make_set<int1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, int1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<int>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<int1>(fk::minValue<uchar>),
+                    fk::make_set<int1>(fk::maxValue<uchar>) / static_cast<int>(2),
+                    fk::make_set<int1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, int1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<int2>(fk::minValue<uchar>), fk::make_set<int2>(fk::maxValue<uchar>) / static_cast<int>(2),
-         fk::make_set<int2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, int2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<int2>(fk::minValue<uchar>),
+                    fk::make_set<int2>(fk::maxValue<uchar>) / static_cast<int>(2),
+                    fk::make_set<int2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, int2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<int3>(fk::minValue<uchar>), fk::make_set<int3>(fk::maxValue<uchar>) / static_cast<int>(2),
-         fk::make_set<int3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, int3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<int3>(fk::minValue<uchar>),
+                    fk::make_set<int3>(fk::maxValue<uchar>) / static_cast<int>(2),
+                    fk::make_set<int3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, int3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<int4>(fk::minValue<uchar>), fk::make_set<int4>(fk::maxValue<uchar>) / static_cast<int>(2),
-         fk::make_set<int4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, int4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<int4>(fk::minValue<uchar>),
+                    fk::make_set<int4>(fk::maxValue<uchar>) / static_cast<int>(2),
+                    fk::make_set<int4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, int4);
 }
-
 
 void addUCharUIntTests() {
 
@@ -927,15 +918,14 @@ void addUCharUIntTests() {
                    fk::SaturateCast, uchar4, uint4);
 }
 
-
 void addUcharUcharTests() {
 
     ADD_UNARY_TEST(
         (fk::minValue<uchar1>, fk::make_set<uchar1>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar1>),
         (fk::minValue<uchar1>, fk::make_set<uchar1>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar1>),
-                   fk::SaturateCast, uchar1, uchar1);
+        fk::SaturateCast, uchar1, uchar1);
 
-     ADD_UNARY_TEST(
+    ADD_UNARY_TEST(
         (fk::minValue<uchar2>, fk::make_set<uchar2>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar2>),
         (fk::minValue<uchar2>, fk::make_set<uchar2>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar2>),
         fk::SaturateCast, uchar2, uchar2);
@@ -943,122 +933,135 @@ void addUcharUcharTests() {
         (fk::minValue<uchar3>, fk::make_set<uchar3>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar3>),
         (fk::minValue<uchar3>, fk::make_set<uchar3>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar3>),
         fk::SaturateCast, uchar3, uchar3);
-     ADD_UNARY_TEST(
-         (fk::minValue<uchar4>, fk::make_set<uchar4>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar4>),
-         (fk::minValue<uchar4>, fk::make_set<uchar4>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar4>),
-         fk::SaturateCast, uchar4, uchar4);
+    ADD_UNARY_TEST(
+        (fk::minValue<uchar4>, fk::make_set<uchar4>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar4>),
+        (fk::minValue<uchar4>, fk::make_set<uchar4>(fk::maxValue<uchar> / static_cast<int>(2)), fk::maxValue<uchar4>),
+        fk::SaturateCast, uchar4, uchar4);
 }
-
 
 void addUCharShortTests() {
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<short1>(fk::minValue<uchar>), fk::make_set<short1>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<short1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, short1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<short1>(fk::minValue<uchar>),
+                    fk::make_set<short1>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<short1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, short1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<short2>(fk::minValue<uchar>), fk::make_set<short2>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<short2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, short2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<short2>(fk::minValue<uchar>),
+                    fk::make_set<short2>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<short2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, short2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<short3>(fk::minValue<uchar>), fk::make_set<short3>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<short3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, short3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<short3>(fk::minValue<uchar>),
+                    fk::make_set<short3>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<short3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, short3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<short4>(fk::minValue<uchar>), fk::make_set<short4>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<short4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, short4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<short4>(fk::minValue<uchar>),
+                    fk::make_set<short4>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<short4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, short4);
 }
 
 void addUCharUShortTests() {
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<ushort1>(fk::minValue<ushort>), fk::make_set<ushort1>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ushort1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, ushort1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<ushort1>(fk::minValue<ushort>),
+                    fk::make_set<ushort1>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ushort1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, ushort1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<ushort2>(fk::minValue<ushort>), fk::make_set<ushort2>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ushort2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, ushort2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<ushort2>(fk::minValue<ushort>),
+                    fk::make_set<ushort2>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ushort2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, ushort2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<ushort3>(fk::minValue<ushort>), fk::make_set<ushort3>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ushort3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, ushort3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<ushort3>(fk::minValue<ushort>),
+                    fk::make_set<ushort3>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ushort3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, ushort3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<ushort4>(fk::minValue<ushort>), fk::make_set<ushort4>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ushort4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, ushort4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<ushort4>(fk::minValue<ushort>),
+                    fk::make_set<ushort4>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ushort4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, ushort4);
 }
-
 
 void addUCharLongTests() {
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<long1>(fk::minValue<uchar>), fk::make_set<long1>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<long1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, long1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<long1>(fk::minValue<uchar>),
+                    fk::make_set<long1>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<long1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, long1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<long2>(fk::minValue<uchar>), fk::make_set<long2>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<long2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, long2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<long2>(fk::minValue<uchar>),
+                    fk::make_set<long2>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<long2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, long2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<long3>(fk::minValue<uchar>), fk::make_set<long3>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<long3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, long3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<long3>(fk::minValue<uchar>),
+                    fk::make_set<long3>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<long3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, long3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<long4>(fk::minValue<uchar>), fk::make_set<long4>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<long4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, long4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<long4>(fk::minValue<uchar>),
+                    fk::make_set<long4>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<long4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, long4);
 }
 
 void addUCharULongTests() {
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<ulong1>(fk::minValue<ulong>), fk::make_set<ulong1>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ulong1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, ulong1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<ulong1>(fk::minValue<ulong>),
+                    fk::make_set<ulong1>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ulong1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, ulong1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<ulong2>(fk::minValue<ulong>), fk::make_set<ulong2>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ulong2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, ulong2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<ulong2>(fk::minValue<ulong>),
+                    fk::make_set<ulong2>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ulong2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, ulong2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<ulong3>(fk::minValue<ulong>), fk::make_set<ulong3>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ulong3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, ulong3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<ulong3>(fk::minValue<ulong>),
+                    fk::make_set<ulong3>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ulong3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, ulong3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<ulong4>(fk::minValue<ulong>), fk::make_set<ulong4>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<ulong4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, ulong4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<ulong4>(fk::minValue<ulong>),
+                    fk::make_set<ulong4>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<ulong4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, ulong4);
 }
-
 
 void addUCharLongLongTests() {
 
@@ -1124,59 +1127,414 @@ void addUCharULongLongTests() {
 
 void addUCharFloatTests() {
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<float1>(fk::minValue<uchar>), fk::make_set<float1>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<float1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, float1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<float1>(fk::minValue<uchar>),
+                    fk::make_set<float1>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<float1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, float1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<float2>(fk::minValue<uchar>), fk::make_set<float2>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<float2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, float2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<float2>(fk::minValue<uchar>),
+                    fk::make_set<float2>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<float2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, float2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<float3>(fk::minValue<uchar>), fk::make_set<float3>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<float3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, float3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<float3>(fk::minValue<uchar>),
+                    fk::make_set<float3>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<float3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, float3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<float4>(fk::minValue<uchar>), fk::make_set<float4>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<float4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, float4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<float4>(fk::minValue<uchar>),
+                    fk::make_set<float4>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<float4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, float4);
 }
 
 void addUCharDoubleTests() {
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar1>),
-        (fk::make_set<double1>(fk::minValue<uchar>), fk::make_set<double1>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<double1>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar1, double1);
+    ADD_UNARY_TEST((fk::minValue<uchar1>, fk::make_set<uchar1>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar1>),
+                   (fk::make_set<double1>(fk::minValue<uchar>),
+                    fk::make_set<double1>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<double1>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar1, double1);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar2>),
-        (fk::make_set<double2>(fk::minValue<uchar>), fk::make_set<double2>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<double2>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar2, double2);
+    ADD_UNARY_TEST((fk::minValue<uchar2>, fk::make_set<uchar2>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar2>),
+                   (fk::make_set<double2>(fk::minValue<uchar>),
+                    fk::make_set<double2>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<double2>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar2, double2);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar3>),
-        (fk::make_set<double3>(fk::minValue<uchar>), fk::make_set<double3>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<double3>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar3, double3);
+    ADD_UNARY_TEST((fk::minValue<uchar3>, fk::make_set<uchar3>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar3>),
+                   (fk::make_set<double3>(fk::minValue<uchar>),
+                    fk::make_set<double3>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<double3>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar3, double3);
 
-    ADD_UNARY_TEST(
-        (fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}), fk::maxValue<uchar4>),
-        (fk::make_set<double4>(fk::minValue<uchar>), fk::make_set<double4>(fk::maxValue<uchar> / static_cast<int>(2)),
-         fk::make_set<double4>(fk::maxValue<uchar>)),
-        fk::SaturateCast, uchar4, double4);
+    ADD_UNARY_TEST((fk::minValue<uchar4>, fk::make_set<uchar4>({static_cast<uchar>((fk::maxValue<uchar> / 2))}),
+                    fk::maxValue<uchar4>),
+                   (fk::make_set<double4>(fk::minValue<uchar>),
+                    fk::make_set<double4>(fk::maxValue<uchar> / static_cast<int>(2)),
+                    fk::make_set<double4>(fk::maxValue<uchar>)),
+                   fk::SaturateCast, uchar4, double4);
 }
 
+void addShortIntTests() {
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<int1>(fk::minValue<short>),
+                    fk::make_set<int1>(fk::maxValue<short>) / static_cast<int>(2),
+                    fk::make_set<int1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, int1);
 
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<int2>(fk::minValue<short>),
+                    fk::make_set<int2>(fk::maxValue<short>) / static_cast<int>(2),
+                    fk::make_set<int2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, int2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<int3>(fk::minValue<short>),
+                    fk::make_set<int3>(fk::maxValue<short>) / static_cast<int>(2),
+                    fk::make_set<int3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, int3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<int4>(fk::minValue<short>),
+                    fk::make_set<int4>(fk::maxValue<short>) / static_cast<int>(2),
+                    fk::make_set<int4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, int4);
+}
+
+void addShortUIntTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short1> / 2).x)}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<uint1>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint1>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(2)),
+                    fk::make_set<uint1>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(1))),
+                   fk::SaturateCast, short1, uint1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short2> / 2).x)}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<uint2>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint2>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(2)),
+                    fk::make_set<uint2>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(1))),
+                   fk::SaturateCast, short2, uint2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short3> / 2).x)}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<uint3>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint3>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(2)),
+                    fk::make_set<uint3>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(1))),
+                   fk::SaturateCast, short3, uint3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short4> / 2).x)}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<uint4>(static_cast<uint>(0) / static_cast<int>(1)),
+                    fk::make_set<uint4>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(2)),
+                    fk::make_set<uint4>(static_cast<uint>(fk::maxValue<short>) / static_cast<int>(1))),
+                   fk::SaturateCast, short4, uint4);
+}
+
+void addShortCharTests() {
+    
+    ADD_UNARY_TEST(
+        (fk::minValue<short1>, fk::make_set<short1>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short1>),
+        (fk::minValue<char1>, fk::maxValue<char1>, fk::maxValue<char1>), fk::SaturateCast, short1, char1);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<short2>, fk::make_set<short2>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short2>),
+        (fk::minValue<char2>, fk::maxValue<char2>, fk::maxValue<char2>), fk::SaturateCast, short2, char2);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<short3>, fk::make_set<short3>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short3>),
+        (fk::minValue<char3>, fk::maxValue<char3>, fk::maxValue<char3>), fk::SaturateCast, short3, char3);
+    
+    ADD_UNARY_TEST(
+        (fk::minValue<short4>, fk::make_set<short4>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short4>),
+        (fk::minValue<char4>, fk::maxValue<char4>, fk::maxValue<char4>), fk::SaturateCast, short4, char4);
+}
+
+void addShortUCharTests() {
+ 
+    ADD_UNARY_TEST(
+        (fk::minValue<short1>, fk::make_set<short1>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short1>),
+        (fk::minValue<uchar1>, fk::maxValue<uchar1>, fk::maxValue<uchar1>), fk::SaturateCast, short1, uchar1);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<short2>, fk::make_set<short2>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short2>),
+        (fk::minValue<uchar2>, fk::maxValue<uchar2>, fk::maxValue<uchar2>), fk::SaturateCast, short2, uchar2);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<short3>, fk::make_set<short3>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short3>),
+        (fk::minValue<uchar3>, fk::maxValue<uchar3>, fk::maxValue<uchar3>), fk::SaturateCast, short3, uchar3);
+
+    ADD_UNARY_TEST(
+        (fk::minValue<short4>, fk::make_set<short4>(fk::maxValue<short> / static_cast<short>(2)), fk::maxValue<short4>),
+        (fk::minValue<uchar4>, fk::maxValue<uchar4>, fk::maxValue<uchar4>), fk::SaturateCast, short4, uchar4);
+ 
+
+}
+
+void addShortShortTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<short1>(fk::minValue<short>),
+                    fk::make_set<short1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<short1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, short1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<short2>(fk::minValue<short>),
+                    fk::make_set<short2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<short2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, short2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<short3>(fk::minValue<short>),
+                    fk::make_set<short3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<short3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, short3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<short4>(fk::minValue<short>),
+                    fk::make_set<short4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<short4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, short4);
+}
+
+void addShortUShortTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<ushort1>(fk::minValue<ushort>),
+                    fk::make_set<ushort1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ushort1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, ushort1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<ushort2>(fk::minValue<ushort>),
+                    fk::make_set<ushort2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ushort2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, ushort2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<ushort3>(fk::minValue<ushort>),
+                    fk::make_set<ushort3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ushort3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, ushort3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<ushort4>(fk::minValue<ushort>),
+                    fk::make_set<ushort4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ushort4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, ushort4);
+}
+
+void addShortLongTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<long1>(fk::minValue<short>),
+                    fk::make_set<long1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<long1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, long1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<long2>(fk::minValue<short>),
+                    fk::make_set<long2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<long2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, long2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<long3>(fk::minValue<short>),
+                    fk::make_set<long3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<long3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, long3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<long4>(fk::minValue<short>),
+                    fk::make_set<long4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<long4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, long4);
+}
+
+void addShortULongTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<ulong1>(fk::minValue<ulong>),
+                    fk::make_set<ulong1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulong1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, ulong1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<ulong2>(fk::minValue<ulong>),
+                    fk::make_set<ulong2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulong2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, ulong2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<ulong3>(fk::minValue<ulong>),
+                    fk::make_set<ulong3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulong3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, ulong3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<ulong4>(fk::minValue<ulong>),
+                    fk::make_set<ulong4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulong4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, ulong4);
+}
+
+void addShortLongLongTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<longlong1>(fk::minValue<short>),
+                    fk::make_set<longlong1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<longlong1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, longlong1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<longlong2>(fk::minValue<short>),
+                    fk::make_set<longlong2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<longlong2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, longlong2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<longlong3>(fk::minValue<short>),
+                    fk::make_set<longlong3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<longlong3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, longlong3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<longlong4>(fk::minValue<short>),
+                    fk::make_set<longlong4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<longlong4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, longlong4);
+}
+
+void addShortULongLongTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<ulonglong1>(fk::minValue<ulonglong>),
+                    fk::make_set<ulonglong1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulonglong1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, ulonglong1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<ulonglong2>(fk::minValue<ulonglong>),
+                    fk::make_set<ulonglong2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulonglong2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, ulonglong2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<ulonglong3>(fk::minValue<ulonglong>),
+                    fk::make_set<ulonglong3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulonglong3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, ulonglong3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<ulonglong4>(fk::minValue<ulonglong>),
+                    fk::make_set<ulonglong4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<ulonglong4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, ulonglong4);
+}
+
+void addShortFloatTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<float1>(fk::minValue<short>),
+                    fk::make_set<float1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<float1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, float1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<float2>(fk::minValue<short>),
+                    fk::make_set<float2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<float2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, float2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<float3>(fk::minValue<short>),
+                    fk::make_set<float3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<float3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, float3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<float4>(fk::minValue<short>),
+                    fk::make_set<float4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<float4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, float4);
+}
+
+void addShortDoubleTests() {
+
+    ADD_UNARY_TEST((fk::minValue<short1>, fk::make_set<short1>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short1>),
+                   (fk::make_set<double1>(fk::minValue<short>),
+                    fk::make_set<double1>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<double1>(fk::maxValue<short>)),
+                   fk::SaturateCast, short1, double1);
+
+    ADD_UNARY_TEST((fk::minValue<short2>, fk::make_set<short2>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short2>),
+                   (fk::make_set<double2>(fk::minValue<short>),
+                    fk::make_set<double2>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<double2>(fk::maxValue<short>)),
+                   fk::SaturateCast, short2, double2);
+
+    ADD_UNARY_TEST((fk::minValue<short3>, fk::make_set<short3>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short3>),
+                   (fk::make_set<double3>(fk::minValue<short>),
+                    fk::make_set<double3>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<double3>(fk::maxValue<short>)),
+                   fk::SaturateCast, short3, double3);
+
+    ADD_UNARY_TEST((fk::minValue<short4>, fk::make_set<short4>({static_cast<short>((fk::maxValue<short> / 2))}),
+                    fk::maxValue<short4>),
+                   (fk::make_set<double4>(fk::minValue<short>),
+                    fk::make_set<double4>(fk::maxValue<short> / static_cast<int>(2)),
+                    fk::make_set<double4>(fk::maxValue<short>)),
+                   fk::SaturateCast, short4, double4);
+}
 
 START_ADDING_TESTS
 // uint
@@ -1222,8 +1580,7 @@ addCharULongLongTests();
 addCharFloatTests();
 addCharDoubleTests();
 
-
-//uchar
+// uchar
 addUCharIntTests();
 addUCharUIntTests();
 addUcharUcharTests();
@@ -1235,6 +1592,22 @@ addUCharLongLongTests();
 addUCharULongLongTests();
 addUCharFloatTests();
 addUCharDoubleTests();
+
+// short
+
+// Char
+addShortIntTests();
+addShortUIntTests();
+addShortCharTests();
+addShortUCharTests();
+addShortShortTests();
+addShortUShortTests();
+addShortLongTests();
+addShortULongTests();
+addShortLongLongTests();
+addShortULongLongTests();
+addShortFloatTests();
+addShortDoubleTests();
 
 STOP_ADDING_TESTS
 
