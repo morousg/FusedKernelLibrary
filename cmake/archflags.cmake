@@ -7,7 +7,7 @@ function (add_msvc_flags TARGET_NAME)
     #message(STATUS "ENV{PROCESSOR_ARCHITECTURE}:" "$ENV{PROCESSOR_ARCHITECTURE}")
     
     if ( ${CMAKE_VS_PLATFORM_NAME} STREQUAL "x64")
-        SET(ARCH_FLAGS "AVX2" CACHE STRING "instrucion set to use")
+        SET(ARCH_FLAGS "AVX2" CACHE STRING "instruction set to use")
         SET_PROPERTY(CACHE ARCH_FLAGS PROPERTY STRINGS AVX AVX2 AVX512 AVX10.1 disabled)  
         option(ARCH_FLAGS "CPU arch" "AVX2")
             
