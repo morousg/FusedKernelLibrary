@@ -17,7 +17,7 @@ function (add_msvc_flags TARGET_NAME)
     endif()        
 
     if ( ${CMAKE_VS_PLATFORM_NAME} STREQUAL "ARM64" OR ${CMAKE_VS_PLATFORM_NAME} STREQUAL "ARM64EC")        
-        SET(ARCH_FLAGS "armv8.2" CACHE STRING "instrucion set to use")
+        SET(ARCH_FLAGS "armv8.2" CACHE STRING "instruction set to use")
         SET_PROPERTY(CACHE ARCH_FLAGS PROPERTY STRINGS armv8.2 disabled)  
         option(ARCH_FLAGS "CPU arch" "disabled")
         if (NOT(${ARCH_FLAGS} STREQUAL "disabled"))                
