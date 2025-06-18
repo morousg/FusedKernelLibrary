@@ -20,7 +20,7 @@
 
 namespace fk {
     template <typename I, typename O>
-    struct Cast final : UnaryOperation<I, O, Cast<I, O>>{
+    struct Cast {
     private:
         using SelfType = Cast<I, O>;
     public:
