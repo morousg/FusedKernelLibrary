@@ -1,5 +1,4 @@
 ﻿/* Copyright 2025 Oscar Amoros Huguet
-   Copyright 2025 Albert Andaluz
    Copyright 2025 Grup Mediapro S.L.U
 
    Licensed under the Apache License, Version 2.0 (the "License");

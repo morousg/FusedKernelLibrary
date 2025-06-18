@@ -44,10 +44,11 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
         add_optimization_flags(${TARGET_NAME_EXT})
         
         add_test(NAME  ${TARGET_NAME_EXT} COMMAND ${TARGET_NAME_EXT})    
+        
         cmake_path(SET path2 "${DIR}")
-		cmake_path(GET path2 FILENAME DIR_NAME)       
-		set_property(TARGET ${cuda_target} PROPERTY FOLDER tests/${DIR_NAME})
-        set_property(TARGET "${TARGET_NAME_EXT}" PROPERTY FOLDER "tests/${EXTENSION}/${DIR_NAME}")    
+		cmake_path(GET path2 FILENAME DIR_NAME)   
+  
+        set_property(TARGET "${TARGET_NAME_EXT}" PROPERTY FOLDER "${ROOT_TEST_DIR}/${EXTENSION}/${DIR_NAME}")    
         
 endfunction()
 
@@ -69,13 +70,13 @@ function (discover_tests DIR)
         
         if (${POS_ONLY_CU} EQUAL -1) #if the source file does not contain "__ONLY_CU__"    
             if (${ENABLE_CPU})                    
-                add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_NAME}")                
+                add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR}")                
             endif()
         endif()
 
         if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
             if (${POS_ONLY_CPU} EQUAL -1) #if the source file does not contain "__ONLY_CPU__"
-                add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_NAME}")
+                add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR}")
                 add_cuda_to_test("${TARGET_NAME}_cu")                           
             endif()
         endif()
