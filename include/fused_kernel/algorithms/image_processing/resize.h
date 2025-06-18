@@ -24,7 +24,7 @@
 
 namespace fk {
     struct ComputeResizePoint {
-        FK_STATIC_STRUCT_SELFTYPE(ComputeResizePoint, ComputeResizePoint)
+        FK_STATIC_STRUCT(ComputeResizePoint, ComputeResizePoint)
         using Parent = BinaryOperation<Point, float2, float2, ComputeResizePoint>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& thread, const ParamsType& params) {
@@ -63,7 +63,7 @@ namespace fk {
     private:
         using SelfType = Resize<IType, AR, BackFunction_>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Resize, SelfType)
+        FK_STATIC_STRUCT(Resize, SelfType)
         using InterpolateOutputType = typename Interpolate<IType, BackFunction_>::OutputType;
         using Parent = ReadBackOperation<typename BackFunction_::Operation::OutputType,
                                          ResizeReadParams<IType, AR, std::conditional_t<AR == AspectRatio::IGNORE_AR, void, InterpolateOutputType>>,
@@ -237,7 +237,7 @@ namespace fk {
     private:
         using SelfType = Resize<IType, AR, TypeList<void, T>>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Resize, SelfType)
+        FK_STATIC_STRUCT(Resize, SelfType)
         using Parent = ReadBackOperation<NullType,
                                          IncompleteResizeReadParams<AR, T>,
                                          NullType,
@@ -276,7 +276,7 @@ namespace fk {
     private:
         using SelfType = Resize<IType, AspectRatio::IGNORE_AR, TypeList<void, void>>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Resize, SelfType)
+        FK_STATIC_STRUCT(Resize, SelfType)
         using Parent = ReadBackOperation<NullType,
                                          IncompleteResizeReadParams<AspectRatio::IGNORE_AR, void>,
                                          NullType,
@@ -311,7 +311,7 @@ namespace fk {
     private:
         using SelfType = Resize<IType, AR, void>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Resize, SelfType)
+        FK_STATIC_STRUCT(Resize, SelfType)
         using Parent = ReadBackOperation<NullType, NullType, NullType, NullType,
                                          Resize<IType, AR, void>>;
         DECLARE_READBACK_PARENT_BATCH_INCOMPLETE

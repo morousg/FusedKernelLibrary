@@ -137,7 +137,7 @@ namespace fk {
     private:
         using SelfType = FusedOperation_<Enabler, Operations...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         static constexpr bool IS_FUSED_OP{ true };
     };
 
@@ -146,7 +146,7 @@ namespace fk {
     private:
         using SelfType = FusedOperation_<std::enable_if_t<allUnaryTypes<FirstOp, RemOps...> && (sizeof...(RemOps) + 1 > 1)>, FirstOp, RemOps...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         using Parent =
             UnaryOperation<typename FirstOp::InputType,
             typename LastType_t<RemOps...>::OutputType,
@@ -165,7 +165,7 @@ namespace fk {
     private:
         using SelfType = FusedOperation_<std::enable_if_t<isUnaryType<Operation>>, Operation>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         using Parent =
             UnaryOperation<typename Operation::InputType,
             typename Operation::OutputType,
@@ -186,7 +186,7 @@ namespace fk {
         using SelfType = FusedOperation_<std::enable_if_t<isComputeType<FirstType_t<Operations...>> &&
                                          !allUnaryTypes<Operations...>>, Operations...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         using Parent =
             BinaryOperation<typename FirstType_t<Operations...>::InputType,
             OperationTuple<Operations...>,
@@ -207,7 +207,7 @@ namespace fk {
             FirstType_t<Operations...>::THREAD_FUSION);
         using SelfType = FusedOperation_<std::enable_if_t<isAnyReadType<FirstType_t<Operations...>>>, Operations...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         using Parent = ReadOperation<typename FirstType_t<Operations...>::ReadDataType,
                                      OperationTuple<Operations...>,
                                      FOOT<LastType_t<Operations...>>,
@@ -244,7 +244,7 @@ namespace fk {
     private:
         using SelfType = FusedOperation_<std::enable_if_t<isWriteType<FirstType_t<Operations...>>>, Operations...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         using ParamsType = OperationTuple<Operations...>;
         using OutputType = FOOT<LastType_t<Operations...>>;
         using InputType = typename FirstType_t<Operations...>::InputType;
@@ -287,7 +287,7 @@ namespace fk {
     private:
         using SelfType = FusedOperation_<std::enable_if_t<isMidWriteType<FirstType_t<Operations...>>>, Operations...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(FusedOperation_, SelfType)
+        FK_STATIC_STRUCT(FusedOperation_, SelfType)
         using ParamsType = OperationTuple<Operations...>;
         using OutputType = FOOT<LastType_t<Operations...>>;
         using InputType = typename FirstType_t<Operations...>::InputType;
@@ -354,7 +354,7 @@ namespace fk {
     private:
         using SelfType = InstantiableFusedOperationToOperationTuple<FusedIOp, std::enable_if_t<isAllUnaryFusedOperation<typename FusedIOp::Operation>, void>>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(InstantiableFusedOperationToOperationTuple, SelfType)
+        FK_STATIC_STRUCT(InstantiableFusedOperationToOperationTuple, SelfType)
         FK_HOST_FUSE auto value(const FusedIOp& iOp) {
             return TypeListToOT<typename FusedIOp::Operation::Operations>{};
         }
@@ -364,7 +364,7 @@ namespace fk {
     private:
         using SelfType = InstantiableFusedOperationToOperationTuple<FusedIOp, std::enable_if_t<isNotAllUnaryFusedOperation<typename FusedIOp::Operation>, void>>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(InstantiableFusedOperationToOperationTuple, SelfType)
+        FK_STATIC_STRUCT(InstantiableFusedOperationToOperationTuple, SelfType)
         FK_HOST_FUSE auto value(const FusedIOp& iOp) {
             return iOp.params;
         }
@@ -378,7 +378,7 @@ namespace fk {
     private:
         using SelfType = OperationTupleToInstantiableOperation<OperationTuple<Operations...>, std::enable_if_t<allUnaryTypes<Operations...>, void>>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(OperationTupleToInstantiableOperation, SelfType)
+        FK_STATIC_STRUCT(OperationTupleToInstantiableOperation, SelfType)
         FK_HOST_FUSE auto value(const OperationTuple<Operations...>& opTuple) {
             return Instantiable<FusedOperation<Operations...>>{};
         }
@@ -389,7 +389,7 @@ namespace fk {
     private:
         using SelfType = OperationTupleToInstantiableOperation<OperationTuple<Operations...>, std::enable_if_t<notAllUnaryTypes<Operations...>, void>>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(OperationTupleToInstantiableOperation, SelfType)
+        FK_STATIC_STRUCT(OperationTupleToInstantiableOperation, SelfType)
         FK_HOST_FUSE auto value(const OperationTuple<Operations...>& opTuple) {
             return Instantiable<FusedOperation<Operations...>>{opTuple};
         }

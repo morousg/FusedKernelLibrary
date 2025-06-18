@@ -24,7 +24,7 @@ namespace fk {
     private:
         using SelfType = Discard<I, O>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Discard, SelfType)
+        FK_STATIC_STRUCT(Discard, SelfType)
         using Parent = UnaryOperation<I, O, Discard<I, O>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -51,7 +51,7 @@ namespace fk {
     private:
         using SelfType = VectorReorder<T, Idx...>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(VectorReorder, SelfType)
+        FK_STATIC_STRUCT(VectorReorder, SelfType)
         using Parent = UnaryOperation<T, T, VectorReorder<T, Idx...>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -66,7 +66,7 @@ namespace fk {
     private:
         using SelfType = VectorReorderRT<T>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(VectorReorderRT, SelfType)
+        FK_STATIC_STRUCT(VectorReorderRT, SelfType)
         using Parent = BinaryOperation<T, VectorType_t<int, cn<T>>, T, VectorReorderRT<T>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -90,7 +90,7 @@ namespace fk {
     private:
         using SelfType = VectorReduce<T, Operation>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(VectorReduce, SelfType)
+        FK_STATIC_STRUCT(VectorReduce, SelfType)
         using Parent = UnaryOperation<T, typename Operation::OutputType, VectorReduce<T, Operation>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -133,7 +133,7 @@ namespace fk {
     private:
         using SelfType = AddLast<I, O>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(AddLast, SelfType)
+        FK_STATIC_STRUCT(AddLast, SelfType)
         using Parent = BinaryOperation<I, typename VectorTraits<I>::base, O, AddLast<I, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -159,7 +159,7 @@ namespace fk {
     private:
         using SelfType = VectorAnd<T>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(VectorAnd, SelfType)
+        FK_STATIC_STRUCT(VectorAnd, SelfType)
         //static_assert(std::is_same_v<VBase<T>, bool>, "VectorAnd only works with boolean vectors");
         using Parent = UnaryOperation<T, bool, VectorAnd<T>>;
         DECLARE_UNARY_PARENT
