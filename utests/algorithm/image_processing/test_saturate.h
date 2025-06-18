@@ -42,7 +42,7 @@ inline std::string niceType(const std::string& input) {
 
 template <typename InputType, typename OutputType>
 constexpr OutputType expectedMinValue() {
-    if constexpr (fk::minValue<fk::VBase<InputType>> <= fk::minValue<fk::VBase<OutputType>>) {
+    if constexpr (cxp::cmp_less_equal(fk::minValue<fk::VBase<InputType>>, fk::minValue<fk::VBase<OutputType>>)) {
         return fk::minValue<OutputType>;
     } else {
         return fk::Cast<InputType, OutputType>::exec(fk::minValue<InputType>);
@@ -56,7 +56,7 @@ constexpr T halfPositiveRange() {
 
 template <typename OutputType, typename InputType>
 constexpr OutputType expectedPositiveValue(const InputType& input) {
-    if (fk::VectorAt<0>(input) > fk::maxValue<fk::VBase<OutputType>>) {
+    if (cxp::cmp_greater(fk::VectorAt<0>(input), fk::maxValue<fk::VBase<OutputType>>)) {
         return fk::maxValue<OutputType>;
     } else {
         return fk::Cast<InputType, OutputType>::exec(input);
