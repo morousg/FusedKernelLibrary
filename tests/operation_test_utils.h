@@ -146,8 +146,8 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
 
 template <typename Operation>
 struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::value &&
-                                    (std::is_aggregate_v<typename Operation::InputType> ||
-                                     std::is_aggregate_v<typename Operation::OutputType>), void>> {
+                                    (fk::validCUDAVec<typename Operation::InputType> ||
+                                     fk::validCUDAVec<typename Operation::OutputType>), void>> {
     template <size_t N>
     static std::function<bool()> build(const std::string& testName,
         const std::array<typename Operation::InputType, N>& inputElems,
@@ -157,6 +157,7 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
                 const auto generated = outputPtr.at(fk::Point(i));
+                static_assert(std::is_same_v<std::decay_t<decltype(generated)>, std::decay_t<decltype(expectedElems[i])>>, "Output and Expected types are not the same");
                 const auto resultV = generated == expectedElems[i];
                 const auto arrayGenerated = fk::toArray(generated);
                 const auto arrayResult = fk::toArray(resultV);
