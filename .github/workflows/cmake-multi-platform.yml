@@ -32,8 +32,8 @@ jobs:
            # cpp_compiler: cl
           - os: jetsonnanoorin
             cpp_compiler: g++
-          - os: jetsonnanoorin
-            cpp_compiler: clang++
+        #  - os: jetsonnanoorin
+         #   cpp_compiler: clang++
          
         exclude:
          # - os: windows-latest
@@ -42,6 +42,9 @@ jobs:
           #  cpp_compiler: clang
           - os: jetsonnanoorin
             cpp_compiler: cl
+
+          - os: jetsonnanoorin
+            cpp_compiler: clang++
 
     steps:
     - uses: actions/checkout@v4
