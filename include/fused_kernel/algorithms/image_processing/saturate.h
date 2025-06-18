@@ -581,6 +581,78 @@ namespace fk {
         }
     };
 
+    template <typename O> 
+    struct SaturateCastBase<ulong, O> {
+    private: 
+        using SelfType = SaturateCastBase<ulong, O>;
+        using Parent = UnaryOperation<ulong, O, SelfType>;
+    public: 
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCastBase, SelfType)
+        DECLARE_UNARY_PARENT
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
+            if (input > maxValue<O>) {
+                return maxValue<O>;
+            } else {
+                return static_cast<OutputType>(input);
+            }
+        }
+    };
+
+    template <typename O>
+    struct SaturateCastBase<long, O> {
+    private:
+        using SelfType = SaturateCastBase<long, O>;
+        using Parent = UnaryOperation<long, O, SelfType>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCastBase, SelfType)
+        DECLARE_UNARY_PARENT
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
+            if (input > maxValue<OutputType>) {
+                return maxValue<OutputType>;
+            } else if (input < minValue<O>) {
+                return minValue<OutputType>;
+            } else {
+                return static_cast<OutputType>(input);
+            }
+        }
+    };
+
+    template <typename O>
+    struct SaturateCastBase<ulonglong, O> {
+    private:
+        using SelfType = SaturateCastBase<ulonglong, O>;
+        using Parent = UnaryOperation<ulonglong, O, SelfType>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCastBase, SelfType)
+        DECLARE_UNARY_PARENT
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
+            if (input > maxValue<OutputType>) {
+                return maxValue<OutputType>;
+            } else {
+                return static_cast<OutputType>(input);
+            }
+        }
+    };
+
+    template <typename O>
+    struct SaturateCastBase<longlong, O> {
+    private:
+        using SelfType = SaturateCastBase<longlong, O>;
+        using Parent = UnaryOperation<longlong, O, SelfType>;
+    public:
+        FK_STATIC_STRUCT_SELFTYPE(SaturateCastBase, SelfType)
+        DECLARE_UNARY_PARENT
+        FK_HOST_DEVICE_STATIC OutputType exec(const InputType& input) {
+            if (input > maxValue<OutputType>) {
+                return maxValue<OutputType>;
+            } else if (input < minValue<OutputType>) {
+                return minValue<OutputType>;
+            } else {
+                return static_cast<OutputType>(input);
+            }
+        }
+    };
+
     #undef SATURATE_CAST_BASE
 
     template <typename I, typename O>
