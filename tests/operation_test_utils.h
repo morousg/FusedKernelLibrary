@@ -123,21 +123,17 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
                 const auto generated = outputPtr.at(fk::Point(i));
+                static_assert(std::is_same_v<std::decay_t<decltype(generated)>, std::decay_t<decltype(expectedElems[i])>>, "Output and Expected types are not the same");
                 const auto resultV = generated == expectedElems[i];
                 if (!resultV) {
                     std::cout << "\033[32m" << "FAIL!!" << "\033[0m" << std::endl;
-                    if constexpr (sizeof(typename Operation::OutputType) == 1) {
-                           std::cout << std::endl<< "\033[31m Mismatch at test element index " << i << ": Expected value "
-                                  << static_cast<int>(resultV) << ", got " << generated << "\033[0m" << std::endl;
+                    if constexpr (sizeof(typename Operation::OutputType) < 4) {
+                            std::cout << "\033[31m Mismatch at test element index " << i << ": Expected value "
+                                  << static_cast<int>(expectedElems[i]) << ", got " << static_cast<int>(generated) << "\033[0m" << std::endl;
+                    } else {
+                            std::cout << "\033[31m Mismatch at test element index " << i << ": Expected value "
+                                << expectedElems[i] << ", got " << generated << "\033[0m" << std::endl;
                     }
-                    else {
-                    std::cout << std::endl
-                                  << "\033[31m Mismatch at test element index " << i << ": Expected value " << resultV
-                                  << ", got " << generated << "\033[0m" << std::endl;
-                    
-                    }
-                  
-                    
                 }
                 result &= resultV;
             }
@@ -168,7 +164,7 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                     if (!arrayResult.at[j]) {
                       
                         std::cout << "\033[31m" << "FAIL!!" << "\033[31m" <<std::endl;
-                        if constexpr (sizeof(typename Operation::OutputType) == 1) {
+                        if constexpr (sizeof(fk::VBase<typename Operation::OutputType>) < 4) {
 
                             std::cout << "\033[31m" << "Mismatch at test element index " << i << " for vector index "
                                       << j << ": Expected value "
@@ -184,8 +180,9 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                     result &= arrayResult[j];
                 }
             }
-            if (result) 
-                  std::cout << "\033[32m" << "Success!!" << "\033[0m" <<std::endl;
+            if (result) {
+                std::cout << "\033[32m" << "Success!!" << "\033[0m" << std::endl;
+            }
             return result;
             };
     }
