@@ -33,6 +33,81 @@ namespace cxp {
         return x == x && x != T(0) && x + x == x;
     }
 
+    // safe_cmp_equal
+    template<typename T, typename U>
+    FK_HOST_DEVICE_CNST bool cmp_equal(const T& t, const U& u) {
+        static_assert(!std::is_same_v<T, bool> && std::is_fundamental_v<T>,
+            "First parameter should be a fundamental type other than bool.");
+        static_assert(!std::is_same_v<U, bool> && std::is_fundamental_v<U>,
+            "Second parameter should be a fundamental type other than bool.");
+        constexpr bool isAnyFloatingPoint = std::is_floating_point_v<T> || std::is_floating_point_v<U>;
+        constexpr bool areBothSigned = std::is_signed_v<T> == std::is_signed_v<U>;
+
+        if constexpr (isAnyFloatingPoint || areBothSigned) {
+            // Safe comparison cases
+            return t == u;
+        } else if constexpr (std::is_signed_v<T>) {
+            // T is signed, U is unsigned, both are integers
+            if (t < 0) return false; // Negative cannot equal any unsigned.
+            return std::make_unsigned_t<T>(t) == u;
+        } else {
+            // T is unsigned, U is signed, both are integers
+            if (u < 0) return false; // Negative cannot equal any unsigned.
+            return t == std::make_unsigned_t<U>(u);
+        }
+    }
+
+    // safe_cmp_not_equal
+    template<typename T, typename U>
+    FK_HOST_DEVICE_CNST bool cmp_not_equal(const T& t, const U& u) {
+        return !cmp_equal(t, u);
+    }
+
+    // safe_cmp_less
+    template<typename T, typename U>
+    FK_HOST_DEVICE_CNST bool cmp_less(const T& t, const U& u) {
+        static_assert(!std::is_same_v<T, bool> && std::is_fundamental_v<T>,
+            "First parameter must be a fundamental type other than bool");
+        static_assert(!std::is_same_v<U, bool> && std::is_fundamental_v<U>,
+            "Second parameter must be a fundamental type other than bool");
+        constexpr bool isAnyFloatingPoint = std::is_floating_point_v<T> || std::is_floating_point_v<U>;
+        constexpr bool areBothSigned = std::is_signed_v<T> == std::is_signed_v<U>;
+
+        if constexpr (isAnyFloatingPoint || areBothSigned) {
+            // Safe comparison cases
+            return t < u;
+        } else if constexpr (std::is_signed_v<T>) {
+            // T is signed, U is unsigned, both are integers
+            if (t < 0) return true; // Signed negative is always less than unsigned.
+            return static_cast<std::make_unsigned_t<T>>(t) < u;
+        } else {
+            // T is unsigned, U is signed, both are integers
+            if (u < 0) return false; // Unsigned is never less than a signed negative.
+            return t < static_cast<std::make_unsigned_t<U>>(u);
+        }
+    }
+
+    // safe_cmp_greater
+    template<typename T, typename U>
+    FK_HOST_DEVICE_CNST bool cmp_greater(const T& t, const U& u) {
+        // Re-use the logic from cmp_less by swapping the arguments.
+        return cmp_less(u, t);
+    }
+
+    // safe_cmp_less_equal
+    template<typename T, typename U>
+    FK_HOST_DEVICE_CNST bool cmp_less_equal(const T& t, const U& u) {
+        // Equivalent to "not greater than".
+        return !cmp_greater(t, u);
+    }
+
+    // safe_cmp_greater_equal
+    template<typename T, typename U>
+    FK_HOST_DEVICE_CNST bool cmp_greater_equal(const T& t, const U& u) {
+        // Equivalent to "not less than".
+        return !cmp_less(t, u);
+    }
+
     template<typename T>
     FK_HOST_DEVICE_CNST T round(T x) {
         static_assert(std::is_floating_point<T>::value, "Input must be a floating-point type");
