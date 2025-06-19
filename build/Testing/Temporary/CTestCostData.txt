@@ -17,5 +17,5 @@ test_operation_types_cpp 2 0.000367492
 test_thread_fusion_cpp 2 0.000645382
 test_VBase_cpp 2 0.000371445
 test_saturate_cpp 2 0.003498
-test_constexpr_cmath_cpp 4 0.000192828
+test_constexpr_cmath_cpp 5 0.000172483
 ---
