@@ -41,7 +41,7 @@ namespace fk {
     enum PlanePolicy { PROCESS_ALL = 0, CONDITIONAL_WITH_DEFAULT = 1 };
 
     struct BatchOperation {
-        FK_STATIC_STRUCT_SELFTYPE(BatchOperation, BatchOperation)
+        FK_STATIC_STRUCT(BatchOperation, BatchOperation)
         template <typename InstantiableType> FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
             static_assert(isBatchOperation<typename InstantiableType::Operation>,
                 "The IOp passed as parameter is not a batch operation");
@@ -103,7 +103,7 @@ namespace fk {
     private:
         using SelfType = BatchReadBase<BATCH, BatchOperation>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchReadBase, SelfType)
+        FK_STATIC_STRUCT(BatchReadBase, SelfType)
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationData<BatchOperation>& opData) {
             return BatchOperation::Operation::num_elems_x(thread, opData.params.opData[thread.z]);
         }
@@ -135,7 +135,7 @@ namespace fk {
     private:
         using SelfType = BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchRead, SelfType)
+        FK_STATIC_STRUCT(BatchRead, SelfType)
         using Operation = Operation_;
         static constexpr size_t BATCH = BATCH_;
         static constexpr PlanePolicy PP = PROCESS_ALL;
@@ -220,7 +220,7 @@ namespace fk {
     private:
         using SelfType = BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchRead, SelfType)
+        FK_STATIC_STRUCT(BatchRead, SelfType)
         using Operation = Operation_;
         static constexpr int BATCH = BATCH_;
         static constexpr PlanePolicy PP = CONDITIONAL_WITH_DEFAULT;
@@ -290,7 +290,7 @@ namespace fk {
     private:
         using SelfType = BatchRead<BATCH, PROCESS_ALL, void, NullType>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchRead, SelfType)
+        FK_STATIC_STRUCT(BatchRead, SelfType)
         template <typename IOp> FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations) {
             return BatchRead<BATCH, PROCESS_ALL, typename IOp::Operation>::build(instantiableOperations);
         }
@@ -301,7 +301,7 @@ namespace fk {
     private:
         using SelfType = BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, void, NullType>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchRead, SelfType)
+        FK_STATIC_STRUCT(BatchRead, SelfType)
         template <typename IOp, typename DefaultValueType>
         FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations, const int& usedPlanes,
             const DefaultValueType& defaultValue) {
@@ -321,7 +321,7 @@ namespace fk {
     private:
         using SelfType = BatchWrite<BATCH, Operation>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchWrite, SelfType)
+        FK_STATIC_STRUCT(BatchWrite, SelfType)
         using Parent = WriteOperation<typename Operation::InputType, typename Operation::ParamsType[BATCH],
                                       typename Operation::WriteDataType,
                                       Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED, BatchWrite<BATCH, Operation>>;
@@ -369,7 +369,7 @@ namespace fk {
     private:
         using SelfType = BatchWrite<BATCH, void>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(BatchWrite, SelfType)
+        FK_STATIC_STRUCT(BatchWrite, SelfType)
         using InstaceType = WriteType;
         template <typename IOp> FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& iOps) {
             return BatchWrite<BATCH, typename IOp::Operation>::build(iOps);
@@ -381,7 +381,7 @@ namespace fk {
     struct ReadOperationBatchBuilders {
     private:
         using SelfType = ReadOperationBatchBuilders<ReadOperation>;
-        FK_STATIC_STRUCT_SELFTYPE(ReadOperationBatchBuilders, SelfType)
+        FK_STATIC_STRUCT(ReadOperationBatchBuilders, SelfType)
     public:
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
@@ -454,7 +454,7 @@ namespace fk {
     private:
         using SelfType = ReadBackIncompleteOperationBatchBuilders<ReadOperation>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(ReadBackIncompleteOperationBatchBuilders, SelfType)
+        FK_STATIC_STRUCT(ReadBackIncompleteOperationBatchBuilders, SelfType)
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
             const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);

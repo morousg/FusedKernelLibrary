@@ -27,7 +27,7 @@ namespace fk {
     private:
         using SelfType = Add<I, P, O, BinaryType>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Add, SelfType)
+        FK_STATIC_STRUCT(Add, SelfType)
         using Parent = BinaryOperation<I, P, O, Add<I, P, O, BinaryType>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -40,7 +40,7 @@ namespace fk {
     private:
         using SelfType = Add<I1, I2, O, UnaryType>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Add, SelfType)
+        FK_STATIC_STRUCT(Add, SelfType)
         using Parent = UnaryOperation<Tuple<I1, I2>, O, Add<I1, I2, O, UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
@@ -53,7 +53,7 @@ namespace fk {
     private:
         using SelfType = Sub<I, P, O>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Sub, SelfType)
+        FK_STATIC_STRUCT(Sub, SelfType)
         using Parent = BinaryOperation<I, P, O, Sub<I, P, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -66,7 +66,7 @@ namespace fk {
     private:
         using SelfType = Mul<I, P, O>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Mul, SelfType)
+        FK_STATIC_STRUCT(Mul, SelfType)
         using Parent = BinaryOperation<I, P, O, Mul<I, P, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
@@ -79,7 +79,7 @@ namespace fk {
     private:
         using SelfType = Div<I, P, O>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(Div, SelfType)
+        FK_STATIC_STRUCT(Div, SelfType)
         using Parent = BinaryOperation<I, P, O, Div<I, P, O>>;
         DECLARE_BINARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {

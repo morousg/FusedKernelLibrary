@@ -15,7 +15,7 @@
 
  
 #include <tests/main.h>
-
-int main() {
-    return launch();
+int main(int argc, char **argv) {
+ return launch();
 }
+

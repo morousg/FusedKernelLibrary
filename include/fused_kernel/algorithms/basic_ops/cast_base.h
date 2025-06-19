@@ -21,7 +21,7 @@ namespace fk {
     private:
         using SelfType = CastBase<I, O>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(CastBase, SelfType)
+        FK_STATIC_STRUCT(CastBase, SelfType)
         using InputType = I;
         using OutputType = O;
         using InstanceType = UnaryType;

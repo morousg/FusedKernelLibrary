@@ -12,6 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#ifndef FK_TYPE_TO_STRING_H
+#define FK_TYPE_TO_STRING_H
+
 #include <string>
 #include <typeinfo>
 #ifndef __NVCC__
@@ -55,10 +58,10 @@ namespace fk {
         return getTypeNamePretty_helper(signature, prefix, suffix);
 #else
         return "unknown (unsupported compiler)";
-#endif
+#endif // __clang__ __GNUC__ _MSC_VER
     }
 } // namespace fk
-#endif
+#endif // __NVCC__ __CUDACC__
 
 #include <vector>
 #include <map>
@@ -130,4 +133,6 @@ namespace fk {
         return typeid(T).name();
     }
 } // namespace fk
-#endif
+#endif // (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
+
+#endif // FK_TYPE_TO_STRING_H

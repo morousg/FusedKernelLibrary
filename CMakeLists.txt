@@ -37,9 +37,10 @@ option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
 add_subdirectory(include)
 add_subdirectory(lib)
 
-if (${BUILD_UTEST})
+if (${BUILD_UTEST})    
     enable_testing()  
-    add_subdirectory(tests)      
+    add_subdirectory(tests)
+    add_subdirectory(utests)         
 endif()
 
 if (${ENABLE_BENCHMARK})

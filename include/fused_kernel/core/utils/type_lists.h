@@ -34,6 +34,15 @@ namespace fk { // namespace fused kernel
         enum { size=sizeof...(Types) };
     };
 
+    template <typename T>
+    struct IsTypeList : std::false_type {};
+
+    template <typename... Types>
+    struct IsTypeList<TypeList<Types...>> : std::true_type {};
+
+    template <typename T>
+    constexpr bool isTypeList = IsTypeList<T>::value;
+
     /**
      * @struct TypeList<TypeList<Args1...>, TypeList<Args2...>, TypeList<Args3...>, TypeList<Args4...>>
      * @brief Struct to fuse 4 TypeList into a single one.
@@ -217,6 +226,23 @@ namespace fk { // namespace fused kernel
 
     template <typename T, typename TypeList>
     using InsertTypeFront_t = typename InsertType<0, T, TypeList>::type;
+
+    template <std::size_t Index, typename... Types>
+    struct RemoveType;
+
+    template <typename Head, typename... Tail>
+    struct RemoveType<0, TypeList<Head, Tail...>> {
+        using type = TypeList<Tail...>; // Remove the first type
+    };
+
+    template <std::size_t Index, typename Head, typename... Tail>
+    struct RemoveType<Index, TypeList<Head, Tail...>> {
+        static_assert(Index < TypeList<Head, Tail...>::size, "Index out of range");
+        using type = TypeListCat_t<TypeList<Head>, typename RemoveType<Index - 1, TypeList<Tail...>>::type>;
+    };
+
+    template <std::size_t Index, typename TypeList>
+    using RemoveType_t = typename RemoveType<Index, TypeList>::type;
 
     template <typename T, typename Restriction, typename TypeList, bool last, T currentInt, T... integers>
     struct RestrictedIntegerSequenceBuilder;
