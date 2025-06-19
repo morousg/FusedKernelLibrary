@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_VBase_cpp.dir/link.d CMakeFiles/test_VBase_cpp.dir/test_VBase_cpp/launcher.cpp.o CMakeFiles/test_VBase_cpp.dir/main.cpp.o -o ../bin/test_VBase_cpp

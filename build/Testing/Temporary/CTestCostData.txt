@@ -1,0 +1,20 @@
+test_batchresize_build_cpp 1 0.0011482
+test_border_reader_cpp 1 0.000853294
+test_crop_cpp 1 0.00075999
+test_warp_cpp 1 0.000754009
+basic_test_cpp 1 32.2491
+test_ptr_nd_cpp 1 0.00287882
+test_rect_cpp 1 0.000804506
+test_tuple_cpp 1 0.00131541
+test_typelist_cpp 1 0.00074379
+readme_test_code_cpp 1 0.0199323
+test_filtered_index_sequence_cpp 1 0.000798171
+test_fused_operation_cpp 1 0.000780829
+test_instantiable_operations_cpp 1 0.00189838
+test_operation_fuser_cpp 1 0.00130025
+test_operation_tuple_cpp 1 0.00133136
+test_operation_types_cpp 1 0.000761052
+test_thread_fusion_cpp 1 0.00129185
+test_VBase_cpp 1 0.000741365
+test_saturate_cpp 1 0.00707626
+---
