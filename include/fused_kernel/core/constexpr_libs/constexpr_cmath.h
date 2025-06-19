@@ -22,6 +22,14 @@
 #include <limits>
 
 namespace cxp {
+    template <typename T>
+    constexpr T minValue = std::numeric_limits<T>::lowest();
+
+    template <typename T>
+    constexpr T maxValue = std::numeric_limits<T>::max();
+
+    template <typename T>
+    constexpr T smallestPositiveValue = std::is_floating_point_v<T> ? std::numeric_limits<T>::min() : static_cast<T>(1);
 
     template <typename T>
     FK_HOST_DEVICE_CNST bool isnan(T x) {
@@ -160,8 +168,10 @@ namespace cxp {
     FK_HOST_DEVICE_CNST T abs(const T& x) {
         static_assert(std::is_fundamental_v<T>, "abs does not support non fundamental types");
         if constexpr (std::is_signed_v<T>) {
-            if (x == std::numeric_limits<T>::min()) {
-                return std::numeric_limits<T>::max();
+            constexpr T minVal = minValue<T>;
+            if (x == minVal) {
+                constexpr T maxVal = maxValue<T>;
+                return maxVal;
             }
             return x < T(0) ? -x : x;
         } else {

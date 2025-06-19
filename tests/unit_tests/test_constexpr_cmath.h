@@ -180,7 +180,7 @@ constexpr bool test_abs() {
         static_assert(cxp::abs(T(0)) == T(0), "abs(0) should be 0");
         
         // Test edge case: most negative value
-        static_assert(cxp::abs(std::numeric_limits<T>::min()) == std::numeric_limits<T>::max(), 
+        static_assert(cxp::abs(cxp::minValue<T>) == cxp::maxValue<T>, 
                       "abs(min) should be max for signed types");
     } else {
         // Unsigned types
@@ -266,7 +266,7 @@ bool runtime_tests() {
     if (cxp::abs(1.5f) != 1.5f) return false;
     
     // Test abs with min value edge case
-    if (cxp::abs(std::numeric_limits<int>::min()) != std::numeric_limits<int>::max()) return false;
+    if (cxp::abs(cxp::minValue<int>) != cxp::maxValue<int>) return false;
     
     // Test max with runtime values
     if (cxp::max(3, 5, 1) != 5) return false;
