@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_batchresize_build_cpp.dir/link.d CMakeFiles/test_batchresize_build_cpp.dir/test_batchresize_build_cpp/launcher.cpp.o CMakeFiles/test_batchresize_build_cpp.dir/main.cpp.o -o ../bin/test_batchresize_build_cpp

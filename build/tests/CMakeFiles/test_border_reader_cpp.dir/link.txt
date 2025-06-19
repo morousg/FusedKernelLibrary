@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_border_reader_cpp.dir/link.d CMakeFiles/test_border_reader_cpp.dir/test_border_reader_cpp/launcher.cpp.o CMakeFiles/test_border_reader_cpp.dir/main.cpp.o -o ../bin/test_border_reader_cpp

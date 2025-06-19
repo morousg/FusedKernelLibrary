@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_operation_types_cpp.dir/link.d CMakeFiles/test_operation_types_cpp.dir/test_operation_types_cpp/launcher.cpp.o CMakeFiles/test_operation_types_cpp.dir/main.cpp.o -o ../bin/test_operation_types_cpp
