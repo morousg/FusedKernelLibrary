@@ -165,15 +165,13 @@ namespace cxp {
     }
 
     template <typename T>
-    FK_HOST_DEVICE_CNST T abs(const T& x) {
+    FK_HOST_DEVICE_CNST auto abs(const T& x) {
         static_assert(std::is_fundamental_v<T>, "abs does not support non fundamental types");
         if constexpr (std::is_signed_v<T>) {
-            constexpr T minVal = minValue<T>;
-            if (x == minVal) {
-                constexpr T maxVal = maxValue<T>;
-                return maxVal;
-            }
-            return x < T(0) ? -x : x;
+            // For signed integrals, when x is std::numerical_limits<T>::lowest(),
+            // the result is undefined behavior in C++. So, for the sake of performance,
+            // we will not do any special treatment for those cases.
+            return x < static_cast<T>(0) ? -x : x;
         } else {
             return x;
         }
