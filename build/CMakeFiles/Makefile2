@@ -150,6 +150,7 @@ tests/all: tests/CMakeFiles/test_operation_tuple_cpp.dir/all
 tests/all: tests/CMakeFiles/test_operation_types_cpp.dir/all
 tests/all: tests/CMakeFiles/test_thread_fusion_cpp.dir/all
 tests/all: tests/CMakeFiles/test_VBase_cpp.dir/all
+tests/all: tests/CMakeFiles/test_constexpr_cmath_cpp.dir/all
 .PHONY : tests/all
 
 # Recursive "codegen" directory target.
@@ -171,6 +172,7 @@ tests/codegen: tests/CMakeFiles/test_operation_tuple_cpp.dir/codegen
 tests/codegen: tests/CMakeFiles/test_operation_types_cpp.dir/codegen
 tests/codegen: tests/CMakeFiles/test_thread_fusion_cpp.dir/codegen
 tests/codegen: tests/CMakeFiles/test_VBase_cpp.dir/codegen
+tests/codegen: tests/CMakeFiles/test_constexpr_cmath_cpp.dir/codegen
 .PHONY : tests/codegen
 
 # Recursive "preinstall" directory target.
@@ -196,6 +198,7 @@ tests/clean: tests/CMakeFiles/test_operation_tuple_cpp.dir/clean
 tests/clean: tests/CMakeFiles/test_operation_types_cpp.dir/clean
 tests/clean: tests/CMakeFiles/test_thread_fusion_cpp.dir/clean
 tests/clean: tests/CMakeFiles/test_VBase_cpp.dir/clean
+tests/clean: tests/CMakeFiles/test_constexpr_cmath_cpp.dir/clean
 .PHONY : tests/clean
 
 #=============================================================================
@@ -320,7 +323,7 @@ tests/CMakeFiles/test_border_reader_cpp.dir/clean:
 tests/CMakeFiles/test_crop_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crop_cpp.dir/build.make tests/CMakeFiles/test_crop_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crop_cpp.dir/build.make tests/CMakeFiles/test_crop_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=16,17,18 "Built target test_crop_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=19,20,21 "Built target test_crop_cpp"
 .PHONY : tests/CMakeFiles/test_crop_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -337,7 +340,7 @@ test_crop_cpp: tests/CMakeFiles/test_crop_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_crop_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crop_cpp.dir/build.make tests/CMakeFiles/test_crop_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=16,17,18 "Finished codegen for target test_crop_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=19,20,21 "Finished codegen for target test_crop_cpp"
 .PHONY : tests/CMakeFiles/test_crop_cpp.dir/codegen
 
 # clean rule for target.
@@ -352,7 +355,7 @@ tests/CMakeFiles/test_crop_cpp.dir/clean:
 tests/CMakeFiles/test_warp_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_warp_cpp.dir/build.make tests/CMakeFiles/test_warp_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_warp_cpp.dir/build.make tests/CMakeFiles/test_warp_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=55,56,57 "Built target test_warp_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=58,59,60 "Built target test_warp_cpp"
 .PHONY : tests/CMakeFiles/test_warp_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -369,7 +372,7 @@ test_warp_cpp: tests/CMakeFiles/test_warp_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_warp_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_warp_cpp.dir/build.make tests/CMakeFiles/test_warp_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=55,56,57 "Finished codegen for target test_warp_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=58,59,60 "Finished codegen for target test_warp_cpp"
 .PHONY : tests/CMakeFiles/test_warp_cpp.dir/codegen
 
 # clean rule for target.
@@ -416,7 +419,7 @@ tests/CMakeFiles/basic_test_cpp.dir/clean:
 tests/CMakeFiles/test_ptr_nd_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_ptr_nd_cpp.dir/build.make tests/CMakeFiles/test_ptr_nd_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_ptr_nd_cpp.dir/build.make tests/CMakeFiles/test_ptr_nd_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=37,38,39 "Built target test_ptr_nd_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=40,41,42 "Built target test_ptr_nd_cpp"
 .PHONY : tests/CMakeFiles/test_ptr_nd_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -433,7 +436,7 @@ test_ptr_nd_cpp: tests/CMakeFiles/test_ptr_nd_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_ptr_nd_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_ptr_nd_cpp.dir/build.make tests/CMakeFiles/test_ptr_nd_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=37,38,39 "Finished codegen for target test_ptr_nd_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=40,41,42 "Finished codegen for target test_ptr_nd_cpp"
 .PHONY : tests/CMakeFiles/test_ptr_nd_cpp.dir/codegen
 
 # clean rule for target.
@@ -448,7 +451,7 @@ tests/CMakeFiles/test_ptr_nd_cpp.dir/clean:
 tests/CMakeFiles/test_rect_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_rect_cpp.dir/build.make tests/CMakeFiles/test_rect_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_rect_cpp.dir/build.make tests/CMakeFiles/test_rect_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=40,41,42 "Built target test_rect_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=43,44,45 "Built target test_rect_cpp"
 .PHONY : tests/CMakeFiles/test_rect_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -465,7 +468,7 @@ test_rect_cpp: tests/CMakeFiles/test_rect_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_rect_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_rect_cpp.dir/build.make tests/CMakeFiles/test_rect_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=40,41,42 "Finished codegen for target test_rect_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=43,44,45 "Finished codegen for target test_rect_cpp"
 .PHONY : tests/CMakeFiles/test_rect_cpp.dir/codegen
 
 # clean rule for target.
@@ -480,7 +483,7 @@ tests/CMakeFiles/test_rect_cpp.dir/clean:
 tests/CMakeFiles/test_tuple_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_tuple_cpp.dir/build.make tests/CMakeFiles/test_tuple_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_tuple_cpp.dir/build.make tests/CMakeFiles/test_tuple_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=49,50,51 "Built target test_tuple_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=52,53,54 "Built target test_tuple_cpp"
 .PHONY : tests/CMakeFiles/test_tuple_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -497,7 +500,7 @@ test_tuple_cpp: tests/CMakeFiles/test_tuple_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_tuple_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_tuple_cpp.dir/build.make tests/CMakeFiles/test_tuple_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=49,50,51 "Finished codegen for target test_tuple_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=52,53,54 "Finished codegen for target test_tuple_cpp"
 .PHONY : tests/CMakeFiles/test_tuple_cpp.dir/codegen
 
 # clean rule for target.
@@ -512,7 +515,7 @@ tests/CMakeFiles/test_tuple_cpp.dir/clean:
 tests/CMakeFiles/test_typelist_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_typelist_cpp.dir/build.make tests/CMakeFiles/test_typelist_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_typelist_cpp.dir/build.make tests/CMakeFiles/test_typelist_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=52,53,54 "Built target test_typelist_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=55,56,57 "Built target test_typelist_cpp"
 .PHONY : tests/CMakeFiles/test_typelist_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -529,7 +532,7 @@ test_typelist_cpp: tests/CMakeFiles/test_typelist_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_typelist_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_typelist_cpp.dir/build.make tests/CMakeFiles/test_typelist_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=52,53,54 "Finished codegen for target test_typelist_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=55,56,57 "Finished codegen for target test_typelist_cpp"
 .PHONY : tests/CMakeFiles/test_typelist_cpp.dir/codegen
 
 # clean rule for target.
@@ -576,7 +579,7 @@ tests/CMakeFiles/readme_test_code_cpp.dir/clean:
 tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/build.make tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/build.make tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=19,20,21 "Built target test_filtered_index_sequence_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=22,23,24 "Built target test_filtered_index_sequence_cpp"
 .PHONY : tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -593,7 +596,7 @@ test_filtered_index_sequence_cpp: tests/CMakeFiles/test_filtered_index_sequence_
 # codegen rule for target.
 tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/build.make tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=19,20,21 "Finished codegen for target test_filtered_index_sequence_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=22,23,24 "Finished codegen for target test_filtered_index_sequence_cpp"
 .PHONY : tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/codegen
 
 # clean rule for target.
@@ -608,7 +611,7 @@ tests/CMakeFiles/test_filtered_index_sequence_cpp.dir/clean:
 tests/CMakeFiles/test_fused_operation_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_fused_operation_cpp.dir/build.make tests/CMakeFiles/test_fused_operation_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_fused_operation_cpp.dir/build.make tests/CMakeFiles/test_fused_operation_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=22,23,24 "Built target test_fused_operation_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=25,26,27 "Built target test_fused_operation_cpp"
 .PHONY : tests/CMakeFiles/test_fused_operation_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -625,7 +628,7 @@ test_fused_operation_cpp: tests/CMakeFiles/test_fused_operation_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_fused_operation_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_fused_operation_cpp.dir/build.make tests/CMakeFiles/test_fused_operation_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=22,23,24 "Finished codegen for target test_fused_operation_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=25,26,27 "Finished codegen for target test_fused_operation_cpp"
 .PHONY : tests/CMakeFiles/test_fused_operation_cpp.dir/codegen
 
 # clean rule for target.
@@ -640,7 +643,7 @@ tests/CMakeFiles/test_fused_operation_cpp.dir/clean:
 tests/CMakeFiles/test_instantiable_operations_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_instantiable_operations_cpp.dir/build.make tests/CMakeFiles/test_instantiable_operations_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_instantiable_operations_cpp.dir/build.make tests/CMakeFiles/test_instantiable_operations_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=25,26,27 "Built target test_instantiable_operations_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=28,29,30 "Built target test_instantiable_operations_cpp"
 .PHONY : tests/CMakeFiles/test_instantiable_operations_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -657,7 +660,7 @@ test_instantiable_operations_cpp: tests/CMakeFiles/test_instantiable_operations_
 # codegen rule for target.
 tests/CMakeFiles/test_instantiable_operations_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_instantiable_operations_cpp.dir/build.make tests/CMakeFiles/test_instantiable_operations_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=25,26,27 "Finished codegen for target test_instantiable_operations_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=28,29,30 "Finished codegen for target test_instantiable_operations_cpp"
 .PHONY : tests/CMakeFiles/test_instantiable_operations_cpp.dir/codegen
 
 # clean rule for target.
@@ -672,7 +675,7 @@ tests/CMakeFiles/test_instantiable_operations_cpp.dir/clean:
 tests/CMakeFiles/test_operation_fuser_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_fuser_cpp.dir/build.make tests/CMakeFiles/test_operation_fuser_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_fuser_cpp.dir/build.make tests/CMakeFiles/test_operation_fuser_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=28,29,30 "Built target test_operation_fuser_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=31,32,33 "Built target test_operation_fuser_cpp"
 .PHONY : tests/CMakeFiles/test_operation_fuser_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -689,7 +692,7 @@ test_operation_fuser_cpp: tests/CMakeFiles/test_operation_fuser_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_operation_fuser_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_fuser_cpp.dir/build.make tests/CMakeFiles/test_operation_fuser_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=28,29,30 "Finished codegen for target test_operation_fuser_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=31,32,33 "Finished codegen for target test_operation_fuser_cpp"
 .PHONY : tests/CMakeFiles/test_operation_fuser_cpp.dir/codegen
 
 # clean rule for target.
@@ -704,7 +707,7 @@ tests/CMakeFiles/test_operation_fuser_cpp.dir/clean:
 tests/CMakeFiles/test_operation_tuple_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_tuple_cpp.dir/build.make tests/CMakeFiles/test_operation_tuple_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_tuple_cpp.dir/build.make tests/CMakeFiles/test_operation_tuple_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=31,32,33 "Built target test_operation_tuple_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=34,35,36 "Built target test_operation_tuple_cpp"
 .PHONY : tests/CMakeFiles/test_operation_tuple_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -721,7 +724,7 @@ test_operation_tuple_cpp: tests/CMakeFiles/test_operation_tuple_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_operation_tuple_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_tuple_cpp.dir/build.make tests/CMakeFiles/test_operation_tuple_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=31,32,33 "Finished codegen for target test_operation_tuple_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=34,35,36 "Finished codegen for target test_operation_tuple_cpp"
 .PHONY : tests/CMakeFiles/test_operation_tuple_cpp.dir/codegen
 
 # clean rule for target.
@@ -736,7 +739,7 @@ tests/CMakeFiles/test_operation_tuple_cpp.dir/clean:
 tests/CMakeFiles/test_operation_types_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_types_cpp.dir/build.make tests/CMakeFiles/test_operation_types_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_types_cpp.dir/build.make tests/CMakeFiles/test_operation_types_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=34,35,36 "Built target test_operation_types_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=37,38,39 "Built target test_operation_types_cpp"
 .PHONY : tests/CMakeFiles/test_operation_types_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -753,7 +756,7 @@ test_operation_types_cpp: tests/CMakeFiles/test_operation_types_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_operation_types_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_types_cpp.dir/build.make tests/CMakeFiles/test_operation_types_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=34,35,36 "Finished codegen for target test_operation_types_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=37,38,39 "Finished codegen for target test_operation_types_cpp"
 .PHONY : tests/CMakeFiles/test_operation_types_cpp.dir/codegen
 
 # clean rule for target.
@@ -768,7 +771,7 @@ tests/CMakeFiles/test_operation_types_cpp.dir/clean:
 tests/CMakeFiles/test_thread_fusion_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_thread_fusion_cpp.dir/build.make tests/CMakeFiles/test_thread_fusion_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_thread_fusion_cpp.dir/build.make tests/CMakeFiles/test_thread_fusion_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=46,47,48 "Built target test_thread_fusion_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=49,50,51 "Built target test_thread_fusion_cpp"
 .PHONY : tests/CMakeFiles/test_thread_fusion_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -785,7 +788,7 @@ test_thread_fusion_cpp: tests/CMakeFiles/test_thread_fusion_cpp.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/test_thread_fusion_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_thread_fusion_cpp.dir/build.make tests/CMakeFiles/test_thread_fusion_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=46,47,48 "Finished codegen for target test_thread_fusion_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=49,50,51 "Finished codegen for target test_thread_fusion_cpp"
 .PHONY : tests/CMakeFiles/test_thread_fusion_cpp.dir/codegen
 
 # clean rule for target.
@@ -826,13 +829,45 @@ tests/CMakeFiles/test_VBase_cpp.dir/clean:
 .PHONY : tests/CMakeFiles/test_VBase_cpp.dir/clean
 
 #=============================================================================
+# Target rules for target tests/CMakeFiles/test_constexpr_cmath_cpp.dir
+
+# All Build rule for target.
+tests/CMakeFiles/test_constexpr_cmath_cpp.dir/all:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/depend
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=16,17,18 "Built target test_constexpr_cmath_cpp"
+.PHONY : tests/CMakeFiles/test_constexpr_cmath_cpp.dir/all
+
+# Build rule for subdir invocation for target.
+tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/test_constexpr_cmath_cpp.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles 0
+.PHONY : tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule
+
+# Convenience name for target.
+test_constexpr_cmath_cpp: tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule
+.PHONY : test_constexpr_cmath_cpp
+
+# codegen rule for target.
+tests/CMakeFiles/test_constexpr_cmath_cpp.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=16,17,18 "Finished codegen for target test_constexpr_cmath_cpp"
+.PHONY : tests/CMakeFiles/test_constexpr_cmath_cpp.dir/codegen
+
+# clean rule for target.
+tests/CMakeFiles/test_constexpr_cmath_cpp.dir/clean:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/clean
+.PHONY : tests/CMakeFiles/test_constexpr_cmath_cpp.dir/clean
+
+#=============================================================================
 # Target rules for target utests/CMakeFiles/test_saturate_cpp.dir
 
 # All Build rule for target.
 utests/CMakeFiles/test_saturate_cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f utests/CMakeFiles/test_saturate_cpp.dir/build.make utests/CMakeFiles/test_saturate_cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f utests/CMakeFiles/test_saturate_cpp.dir/build.make utests/CMakeFiles/test_saturate_cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=43,44,45 "Built target test_saturate_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=46,47,48 "Built target test_saturate_cpp"
 .PHONY : utests/CMakeFiles/test_saturate_cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -849,7 +884,7 @@ test_saturate_cpp: utests/CMakeFiles/test_saturate_cpp.dir/rule
 # codegen rule for target.
 utests/CMakeFiles/test_saturate_cpp.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f utests/CMakeFiles/test_saturate_cpp.dir/build.make utests/CMakeFiles/test_saturate_cpp.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=43,44,45 "Finished codegen for target test_saturate_cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/CMakeFiles --progress-num=46,47,48 "Finished codegen for target test_saturate_cpp"
 .PHONY : utests/CMakeFiles/test_saturate_cpp.dir/codegen
 
 # clean rule for target.

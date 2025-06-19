@@ -420,6 +420,19 @@ test_VBase_cpp/fast:
 .PHONY : test_VBase_cpp/fast
 
 #=============================================================================
+# Target rules for targets named test_constexpr_cmath_cpp
+
+# Build rule for target.
+test_constexpr_cmath_cpp: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_constexpr_cmath_cpp
+.PHONY : test_constexpr_cmath_cpp
+
+# fast build rule for target.
+test_constexpr_cmath_cpp/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build
+.PHONY : test_constexpr_cmath_cpp/fast
+
+#=============================================================================
 # Target rules for targets named test_saturate_cpp
 
 # Build rule for target.
@@ -451,6 +464,7 @@ help:
 	@echo "... test_VBase_cpp"
 	@echo "... test_batchresize_build_cpp"
 	@echo "... test_border_reader_cpp"
+	@echo "... test_constexpr_cmath_cpp"
 	@echo "... test_crop_cpp"
 	@echo "... test_filtered_index_sequence_cpp"
 	@echo "... test_fused_operation_cpp"

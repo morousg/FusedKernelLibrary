@@ -1,116 +1,116 @@
-Start testing: Jun 19 09:56 UTC
+Start testing: Jun 19 10:01 UTC
 ----------------------------------------------------------
-1/19 Testing: test_batchresize_build_cpp
-1/19 Test: test_batchresize_build_cpp
+1/20 Testing: test_batchresize_build_cpp
+1/20 Test: test_batchresize_build_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_batchresize_build_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_batchresize_build_cpp" start time: Jun 19 09:56 UTC
+"test_batchresize_build_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_batchresize_build_cpp" end time: Jun 19 09:56 UTC
+"test_batchresize_build_cpp" end time: Jun 19 10:01 UTC
 "test_batchresize_build_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-2/19 Testing: test_border_reader_cpp
-2/19 Test: test_border_reader_cpp
+2/20 Testing: test_border_reader_cpp
+2/20 Test: test_border_reader_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_border_reader_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_border_reader_cpp" start time: Jun 19 09:56 UTC
+"test_border_reader_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_border_reader_cpp" end time: Jun 19 09:56 UTC
+"test_border_reader_cpp" end time: Jun 19 10:01 UTC
 "test_border_reader_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-3/19 Testing: test_crop_cpp
-3/19 Test: test_crop_cpp
+3/20 Testing: test_crop_cpp
+3/20 Test: test_crop_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_crop_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_crop_cpp" start time: Jun 19 09:56 UTC
+"test_crop_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_crop_cpp" end time: Jun 19 09:56 UTC
+"test_crop_cpp" end time: Jun 19 10:01 UTC
 "test_crop_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-4/19 Testing: test_warp_cpp
-4/19 Test: test_warp_cpp
+4/20 Testing: test_warp_cpp
+4/20 Test: test_warp_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_warp_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_warp_cpp" start time: Jun 19 09:56 UTC
+"test_warp_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_warp_cpp" end time: Jun 19 09:56 UTC
+"test_warp_cpp" end time: Jun 19 10:01 UTC
 "test_warp_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-5/19 Testing: basic_test_cpp
-5/19 Test: basic_test_cpp
+5/20 Testing: basic_test_cpp
+5/20 Test: basic_test_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/basic_test_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"basic_test_cpp" start time: Jun 19 09:56 UTC
+"basic_test_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 cuda_transform executed!!
 <end of output>
-Test time =  32.25 sec
+Test time =  32.27 sec
 ----------------------------------------------------------
 Test Passed.
-"basic_test_cpp" end time: Jun 19 09:56 UTC
+"basic_test_cpp" end time: Jun 19 10:01 UTC
 "basic_test_cpp" time elapsed: 00:00:32
 ----------------------------------------------------------
 
-6/19 Testing: test_ptr_nd_cpp
-6/19 Test: test_ptr_nd_cpp
+6/20 Testing: test_ptr_nd_cpp
+6/20 Test: test_ptr_nd_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_ptr_nd_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_ptr_nd_cpp" start time: Jun 19 09:56 UTC
+"test_ptr_nd_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_ptr_nd_cpp" end time: Jun 19 09:56 UTC
+"test_ptr_nd_cpp" end time: Jun 19 10:01 UTC
 "test_ptr_nd_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-7/19 Testing: test_rect_cpp
-7/19 Test: test_rect_cpp
+7/20 Testing: test_rect_cpp
+7/20 Test: test_rect_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_rect_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_rect_cpp" start time: Jun 19 09:56 UTC
+"test_rect_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_rect_cpp" end time: Jun 19 09:56 UTC
+"test_rect_cpp" end time: Jun 19 10:01 UTC
 "test_rect_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-8/19 Testing: test_tuple_cpp
-8/19 Test: test_tuple_cpp
+8/20 Testing: test_tuple_cpp
+8/20 Test: test_tuple_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_tuple_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_tuple_cpp" start time: Jun 19 09:56 UTC
+"test_tuple_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 test_tuple Passed!!
@@ -118,165 +118,180 @@ test_tuple Passed!!
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_tuple_cpp" end time: Jun 19 09:56 UTC
+"test_tuple_cpp" end time: Jun 19 10:01 UTC
 "test_tuple_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-9/19 Testing: test_typelist_cpp
-9/19 Test: test_typelist_cpp
+9/20 Testing: test_typelist_cpp
+9/20 Test: test_typelist_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_typelist_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_typelist_cpp" start time: Jun 19 09:56 UTC
+"test_typelist_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_typelist_cpp" end time: Jun 19 09:56 UTC
+"test_typelist_cpp" end time: Jun 19 10:01 UTC
 "test_typelist_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-10/19 Testing: readme_test_code_cpp
-10/19 Test: readme_test_code_cpp
+10/20 Testing: readme_test_code_cpp
+10/20 Test: readme_test_code_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/readme_test_code_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"readme_test_code_cpp" start time: Jun 19 09:56 UTC
+"readme_test_code_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"readme_test_code_cpp" end time: Jun 19 09:56 UTC
+"readme_test_code_cpp" end time: Jun 19 10:01 UTC
 "readme_test_code_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-11/19 Testing: test_filtered_index_sequence_cpp
-11/19 Test: test_filtered_index_sequence_cpp
+11/20 Testing: test_filtered_index_sequence_cpp
+11/20 Test: test_filtered_index_sequence_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_filtered_index_sequence_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_filtered_index_sequence_cpp" start time: Jun 19 09:56 UTC
+"test_filtered_index_sequence_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_filtered_index_sequence_cpp" end time: Jun 19 09:56 UTC
+"test_filtered_index_sequence_cpp" end time: Jun 19 10:01 UTC
 "test_filtered_index_sequence_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-12/19 Testing: test_fused_operation_cpp
-12/19 Test: test_fused_operation_cpp
+12/20 Testing: test_fused_operation_cpp
+12/20 Test: test_fused_operation_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_fused_operation_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_fused_operation_cpp" start time: Jun 19 09:56 UTC
+"test_fused_operation_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_fused_operation_cpp" end time: Jun 19 09:56 UTC
+"test_fused_operation_cpp" end time: Jun 19 10:01 UTC
 "test_fused_operation_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-13/19 Testing: test_instantiable_operations_cpp
-13/19 Test: test_instantiable_operations_cpp
+13/20 Testing: test_instantiable_operations_cpp
+13/20 Test: test_instantiable_operations_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_instantiable_operations_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_instantiable_operations_cpp" start time: Jun 19 09:56 UTC
+"test_instantiable_operations_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_instantiable_operations_cpp" end time: Jun 19 09:56 UTC
+"test_instantiable_operations_cpp" end time: Jun 19 10:01 UTC
 "test_instantiable_operations_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-14/19 Testing: test_operation_fuser_cpp
-14/19 Test: test_operation_fuser_cpp
+14/20 Testing: test_operation_fuser_cpp
+14/20 Test: test_operation_fuser_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_operation_fuser_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_operation_fuser_cpp" start time: Jun 19 09:56 UTC
+"test_operation_fuser_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_operation_fuser_cpp" end time: Jun 19 09:56 UTC
+"test_operation_fuser_cpp" end time: Jun 19 10:01 UTC
 "test_operation_fuser_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-15/19 Testing: test_operation_tuple_cpp
-15/19 Test: test_operation_tuple_cpp
+15/20 Testing: test_operation_tuple_cpp
+15/20 Test: test_operation_tuple_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_operation_tuple_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_operation_tuple_cpp" start time: Jun 19 09:56 UTC
+"test_operation_tuple_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_operation_tuple_cpp" end time: Jun 19 09:56 UTC
+"test_operation_tuple_cpp" end time: Jun 19 10:01 UTC
 "test_operation_tuple_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-16/19 Testing: test_operation_types_cpp
-16/19 Test: test_operation_types_cpp
+16/20 Testing: test_operation_types_cpp
+16/20 Test: test_operation_types_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_operation_types_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_operation_types_cpp" start time: Jun 19 09:56 UTC
+"test_operation_types_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_operation_types_cpp" end time: Jun 19 09:56 UTC
+"test_operation_types_cpp" end time: Jun 19 10:01 UTC
 "test_operation_types_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-17/19 Testing: test_thread_fusion_cpp
-17/19 Test: test_thread_fusion_cpp
+17/20 Testing: test_thread_fusion_cpp
+17/20 Test: test_thread_fusion_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_thread_fusion_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_thread_fusion_cpp" start time: Jun 19 09:56 UTC
+"test_thread_fusion_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_thread_fusion_cpp" end time: Jun 19 09:56 UTC
+"test_thread_fusion_cpp" end time: Jun 19 10:01 UTC
 "test_thread_fusion_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-18/19 Testing: test_VBase_cpp
-18/19 Test: test_VBase_cpp
+18/20 Testing: test_VBase_cpp
+18/20 Test: test_VBase_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_VBase_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
-"test_VBase_cpp" start time: Jun 19 09:56 UTC
+"test_VBase_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.00 sec
 ----------------------------------------------------------
 Test Passed.
-"test_VBase_cpp" end time: Jun 19 09:56 UTC
+"test_VBase_cpp" end time: Jun 19 10:01 UTC
 "test_VBase_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-19/19 Testing: test_saturate_cpp
-19/19 Test: test_saturate_cpp
+19/20 Testing: test_constexpr_cmath_cpp
+19/20 Test: test_constexpr_cmath_cpp
+Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_constexpr_cmath_cpp"
+Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/tests
+"test_constexpr_cmath_cpp" start time: Jun 19 10:01 UTC
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_constexpr_cmath_cpp" end time: Jun 19 10:01 UTC
+"test_constexpr_cmath_cpp" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/20 Testing: test_saturate_cpp
+20/20 Test: test_saturate_cpp
 Command: "/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/bin/test_saturate_cpp"
 Directory: /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build/utests
-"test_saturate_cpp" start time: Jun 19 09:56 UTC
+"test_saturate_cpp" start time: Jun 19 10:01 UTC
 Output:
 ----------------------------------------------------------
 Running test for [1;33mTestfk::SaturateCast_char_char[1;33m: [32mSuccess!![0m
@@ -1003,8 +1018,8 @@ Running test for [1;33mTestfk::SaturateCast_ushort_ushort[1;33m: [32mSuccess!
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"test_saturate_cpp" end time: Jun 19 09:56 UTC
+"test_saturate_cpp" end time: Jun 19 10:01 UTC
 "test_saturate_cpp" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Jun 19 09:56 UTC
+End testing: Jun 19 10:01 UTC

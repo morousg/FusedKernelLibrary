@@ -139,8 +139,8 @@ namespace cxp {
         template <typename FirstType, typename... Types>
         FK_HOST_DEVICE_CNST auto min_helper(const FirstType& firstValue,
             const Types&... values) {
-            const auto previousMax = max_helper(values...);
-            return firstValue <= previousMax ? firstValue : previousMax;
+            const auto previousMin = min_helper(values...);
+            return firstValue <= previousMin ? firstValue : previousMin;
         }
     } // namespace internal
 

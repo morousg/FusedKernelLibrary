@@ -424,6 +424,20 @@ test_VBase_cpp/fast:
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_VBase_cpp.dir/build.make tests/CMakeFiles/test_VBase_cpp.dir/build
 .PHONY : test_VBase_cpp/fast
 
+# Convenience name for target.
+tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule:
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule
+.PHONY : tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule
+
+# Convenience name for target.
+test_constexpr_cmath_cpp: tests/CMakeFiles/test_constexpr_cmath_cpp.dir/rule
+.PHONY : test_constexpr_cmath_cpp
+
+# fast build rule for target.
+test_constexpr_cmath_cpp/fast:
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build
+.PHONY : test_constexpr_cmath_cpp/fast
+
 basic_test_cpp/launcher.o: basic_test_cpp/launcher.cpp.o
 .PHONY : basic_test_cpp/launcher.o
 
@@ -471,6 +485,7 @@ main.cpp.o:
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_types_cpp.dir/build.make tests/CMakeFiles/test_operation_types_cpp.dir/main.cpp.o
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_thread_fusion_cpp.dir/build.make tests/CMakeFiles/test_thread_fusion_cpp.dir/main.cpp.o
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_VBase_cpp.dir/build.make tests/CMakeFiles/test_VBase_cpp.dir/main.cpp.o
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -496,6 +511,7 @@ main.cpp.i:
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_types_cpp.dir/build.make tests/CMakeFiles/test_operation_types_cpp.dir/main.cpp.i
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_thread_fusion_cpp.dir/build.make tests/CMakeFiles/test_thread_fusion_cpp.dir/main.cpp.i
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_VBase_cpp.dir/build.make tests/CMakeFiles/test_VBase_cpp.dir/main.cpp.i
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -521,6 +537,7 @@ main.cpp.s:
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_operation_types_cpp.dir/build.make tests/CMakeFiles/test_operation_types_cpp.dir/main.cpp.s
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_thread_fusion_cpp.dir/build.make tests/CMakeFiles/test_thread_fusion_cpp.dir/main.cpp.s
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_VBase_cpp.dir/build.make tests/CMakeFiles/test_VBase_cpp.dir/main.cpp.s
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 readme_test_code_cpp/launcher.o: readme_test_code_cpp/launcher.cpp.o
@@ -618,6 +635,30 @@ test_border_reader_cpp/launcher.s: test_border_reader_cpp/launcher.cpp.s
 test_border_reader_cpp/launcher.cpp.s:
 	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_border_reader_cpp.dir/build.make tests/CMakeFiles/test_border_reader_cpp.dir/test_border_reader_cpp/launcher.cpp.s
 .PHONY : test_border_reader_cpp/launcher.cpp.s
+
+test_constexpr_cmath_cpp/launcher.o: test_constexpr_cmath_cpp/launcher.cpp.o
+.PHONY : test_constexpr_cmath_cpp/launcher.o
+
+# target to build an object file
+test_constexpr_cmath_cpp/launcher.cpp.o:
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/test_constexpr_cmath_cpp/launcher.cpp.o
+.PHONY : test_constexpr_cmath_cpp/launcher.cpp.o
+
+test_constexpr_cmath_cpp/launcher.i: test_constexpr_cmath_cpp/launcher.cpp.i
+.PHONY : test_constexpr_cmath_cpp/launcher.i
+
+# target to preprocess a source file
+test_constexpr_cmath_cpp/launcher.cpp.i:
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/test_constexpr_cmath_cpp/launcher.cpp.i
+.PHONY : test_constexpr_cmath_cpp/launcher.cpp.i
+
+test_constexpr_cmath_cpp/launcher.s: test_constexpr_cmath_cpp/launcher.cpp.s
+.PHONY : test_constexpr_cmath_cpp/launcher.s
+
+# target to generate assembly for a file
+test_constexpr_cmath_cpp/launcher.cpp.s:
+	cd /home/runner/work/FusedKernelLibrary/FusedKernelLibrary/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_constexpr_cmath_cpp.dir/build.make tests/CMakeFiles/test_constexpr_cmath_cpp.dir/test_constexpr_cmath_cpp/launcher.cpp.s
+.PHONY : test_constexpr_cmath_cpp/launcher.cpp.s
 
 test_crop_cpp/launcher.o: test_crop_cpp/launcher.cpp.o
 .PHONY : test_crop_cpp/launcher.o
@@ -949,6 +990,7 @@ help:
 	@echo "... test_VBase_cpp"
 	@echo "... test_batchresize_build_cpp"
 	@echo "... test_border_reader_cpp"
+	@echo "... test_constexpr_cmath_cpp"
 	@echo "... test_crop_cpp"
 	@echo "... test_filtered_index_sequence_cpp"
 	@echo "... test_fused_operation_cpp"
@@ -980,6 +1022,9 @@ help:
 	@echo "... test_border_reader_cpp/launcher.o"
 	@echo "... test_border_reader_cpp/launcher.i"
 	@echo "... test_border_reader_cpp/launcher.s"
+	@echo "... test_constexpr_cmath_cpp/launcher.o"
+	@echo "... test_constexpr_cmath_cpp/launcher.i"
+	@echo "... test_constexpr_cmath_cpp/launcher.s"
 	@echo "... test_crop_cpp/launcher.o"
 	@echo "... test_crop_cpp/launcher.i"
 	@echo "... test_crop_cpp/launcher.s"
