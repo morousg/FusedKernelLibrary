@@ -30,6 +30,7 @@ constexpr bool test_isnan() {
     static_assert(!cxp::isnan(T(-1.0)), "-1.0 should not be NaN");
     static_assert(!cxp::isnan(std::numeric_limits<T>::max()), "max value should not be NaN");
     static_assert(!cxp::isnan(std::numeric_limits<T>::min()), "min value should not be NaN");
+    static_assert(!cxp::isnan(std::numeric_limits<T>::lowest()), "lowest value should not be NaN");
     static_assert(!cxp::isnan(std::numeric_limits<T>::infinity()), "infinity should not be NaN");
     static_assert(!cxp::isnan(-std::numeric_limits<T>::infinity()), "-infinity should not be NaN");
     
@@ -231,6 +232,7 @@ bool runtime_tests() {
     if (cxp::isinf(1.0f)) return false;
     if (cxp::isinf(std::numeric_limits<float>::max())) return false;
     if (cxp::isinf(std::numeric_limits<float>::min())) return false;
+    if (cxp::isinf(std::numeric_limits<float>::lowest())) return false;
     
     // Test comparison functions with runtime values
     if (!cxp::cmp_equal(5, 5)) return false;
