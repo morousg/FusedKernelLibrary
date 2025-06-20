@@ -16,8 +16,7 @@ function(add_cuda_to_test TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE CUDA::nppc CUDA::nppial CUDA::nppidei CUDA::nppig) 
 endfunction()
 
-function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
-                       
+function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)                       
         set(TEST_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${EXTENSION}/launcher.${EXTENSION}") #use the same name as the target	)			
        
         configure_file(${CMAKE_SOURCE_DIR}/tests/launcher.in ${TEST_GENERATED_SOURCE} @ONLY) #replace variables in the test source file                 
@@ -43,45 +42,17 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
         
         add_optimization_flags(${TARGET_NAME_EXT})
         
-        add_test(NAME  ${TARGET_NAME_EXT} COMMAND ${TARGET_NAME_EXT})    
-        
+        add_test(NAME  ${TARGET_NAME_EXT} COMMAND ${TARGET_NAME_EXT})          
         cmake_path(SET path2 "${DIR}")
 		cmake_path(GET path2 FILENAME DIR_NAME)   
-  
-        set_property(TARGET "${TARGET_NAME_EXT}" PROPERTY FOLDER "${ROOT_TEST_DIR}/${EXTENSION}/${DIR_NAME}")    
+        cmake_path(GET path2 PARENT_PATH DIR_PARENT_PATH)       
+        if (${EXTENSION} STREQUAL "cu")
+            set(FKL_BACKEND "cuda")
+        elseif(${EXTENSION} STREQUAL "cpp")  
+            set(FKL_BACKEND "cpu")
+        else()
+            message(FATAL_ERROR "Unknown extension: ${EXTENSION}") 
+        endif()
+        set_property(TARGET "${TARGET_NAME_EXT}" PROPERTY FOLDER "${DIR_PARENT_PATH}/${FKL_BACKEND}/")    
         
 endfunction()
-
-function (discover_tests DIR)    
-    file(
-        GLOB_RECURSE
-        TEST_SOURCES
-        CONFIGURE_DEPENDS
-        "${DIR}/*.h"        
-    )
-     
-    foreach(test_source ${TEST_SOURCES})
-         
-        get_filename_component(TARGET_NAME ${test_source} NAME_WE)           
-        file (READ ${test_source} TEST_SOURCE_CONTENTS ) #read the contents of the test source file
-       
-        string(FIND "${TEST_SOURCE_CONTENTS}" "ONLY_CU"  POS_ONLY_CU)
-        string(FIND "${TEST_SOURCE_CONTENTS}" "ONLY_CPU"  POS_ONLY_CPU)        
-        
-        if (${POS_ONLY_CU} EQUAL -1) #if the source file does not contain "__ONLY_CU__"    
-            if (${ENABLE_CPU})                    
-                add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR}")                
-            endif()
-        endif()
-
-        if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
-            if (${POS_ONLY_CPU} EQUAL -1) #if the source file does not contain "__ONLY_CPU__"
-                add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR}")
-                add_cuda_to_test("${TARGET_NAME}_cu")                           
-            endif()
-        endif()
-         
-      
-    endforeach()
-endfunction()
- 
