@@ -21,7 +21,7 @@ function (discover_tests DIR)
 
         string(FIND "${TEST_SOURCE}" ".in"  IS_CMAKE_GENERATED_SOURCE)
         if (${IS_CMAKE_GENERATED_SOURCE} GREATER -1)            
-            set (FUNDAMENTAL_TYPES_COUNT 12) 
+            set (FUNDAMENTAL_TYPES_COUNT 11) 
             foreach(FUNDALMENTAL_TYPE_OFFSET RANGE 0 ${FUNDAMENTAL_TYPES_COUNT})                
                 set(TEST_GENERATED_SOURCE_N "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}/${TARGET_NAME}${FUNDALMENTAL_TYPE_OFFSET}.h") #use the same name as the target	)
                 message(STATUS "The test source file ${TEST_SOURCE} --->${TEST_GENERATED_SOURCE_N} ")
