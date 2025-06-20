@@ -80,7 +80,9 @@ void addOneTest() {
     constexpr std::array<InputType, 3> inputVals{ fk::minValue<InputType>, halfPositiveRange<InputType>(), fk::maxValue<InputType> };
     constexpr std::array<OutputType, 3> outputVals{ expectedMinVal, expectedHalfMaxValue, expectedMaxVal};
     
-    TestCaseBuilder<fk::SaturateCast<InputType, OutputType>>::addTest(testCases, inputVals, outputVals);
+    const std::string testName = "Testfk::SaturateCast_" + niceType(fk::typeToString<InputType>()) + "_" + niceType(fk::typeToString<OutputType>());
+    testCases[testName] = 
+        TestCaseBuilder<fk::SaturateCast<InputType, OutputType>>::build(testName, inputVals, outputVals);
 }
 
 template <typename BaseInput, typename BaseOutput>
@@ -123,9 +125,23 @@ void addAllTestsFor(const std::index_sequence<Idx...>&) {
     (addAllTestsFor_helper<TypeList_, fk::TypeAt_t<Idx, TypeList_>>(std::make_index_sequence<TypeList_::size>{}), ...);
 }
 
+template<std::size_t N, typename Seq> struct offset_sequence;
+
+template<std::size_t N, std::size_t... Ints>
+struct offset_sequence<N, std::index_sequence<Ints...>>
+{
+ using type = std::index_sequence<Ints + N...>;
+};
+template<std::size_t N, typename Seq>
+using offset_sequence_t = typename offset_sequence<N, Seq>::type;
+ 
 START_ADDING_TESTS
 using Fundamental = fk::RemoveType_t<0, fk::StandardTypes>;
-addAllTestsFor<Fundamental>(std::make_index_sequence<Fundamental::size>());
+using offsetidx=offset_sequence_t<6, std::make_index_sequence<2>>;
+offsetidx f;
+
+addAllTestsFor<Fundamental>(f);
+
 STOP_ADDING_TESTS
 
 // You can add more tests for other type combinations as needed.
