@@ -135,9 +135,10 @@ struct offset_sequence<N, std::index_sequence<Ints...>>
 template<std::size_t N, typename Seq>
 using offset_sequence_t = typename offset_sequence<N, Seq>::type;
  
+
 START_ADDING_TESTS
 using Fundamental = fk::RemoveType_t<0, fk::StandardTypes>;
-using offsetidx=offset_sequence_t<6, std::make_index_sequence<2>>;
+using offsetidx=offset_sequence_t<@FUNDALMENTAL_TYPE_OFFSET@, std::make_index_sequence<1>>;
 offsetidx f;
 
 addAllTestsFor<Fundamental>(f);
