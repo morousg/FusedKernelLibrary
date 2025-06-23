@@ -17,21 +17,19 @@ function (discover_tests DIR)
         cmake_path(GET TEST_SOURCE RELATIVE_PART DIR_RELATIVE_PATH)     
         string(REPLACE "${PROJECT_NAME}/" " " DIR_RELATIVE_PATH "${DIR_RELATIVE_PATH}") #remove the project name from the relative path
          
-        message(STATUS "Adding test:  ${test_source}")
+ 
 
         string(FIND "${TEST_SOURCE}" ".in"  IS_CMAKE_GENERATED_SOURCE)
         if (${IS_CMAKE_GENERATED_SOURCE} GREATER -1)            
-            set (FUNDAMENTAL_TYPES_COUNT 11) 
-            foreach(FUNDALMENTAL_TYPE_OFFSET RANGE 0 ${FUNDAMENTAL_TYPES_COUNT})                
-                set(TEST_GENERATED_SOURCE_N "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}/${TARGET_NAME}${FUNDALMENTAL_TYPE_OFFSET}.h") #use the same name as the target	)
-                message(STATUS "The test source file ${TEST_SOURCE} --->${TEST_GENERATED_SOURCE_N} ")
+            set (FUNDAMENTAL_TYPES uchar char ushort short uint int ulong long ulonglong longlong float double) 
+            foreach(FUNDAMENTAL_TYPE ${FUNDAMENTAL_TYPES})                
+                set(TEST_GENERATED_SOURCE_N "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}/${TARGET_NAME}_${FUNDAMENTAL_TYPE}.h") #use the same name as the target	)       
                 configure_file(${TEST_SOURCE} ${TEST_GENERATED_SOURCE_N} @ONLY) #replace variables in the test source file                                                                         
-           
-               add_generated_test("${TARGET_NAME}${FUNDALMENTAL_TYPE_OFFSET}" "${TEST_GENERATED_SOURCE_N}" "cpp" "${DIR_RELATIVE_PATH}")   
-               if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
-               
-                   add_generated_test("${TARGET_NAME}${FUNDALMENTAL_TYPE_OFFSET}"  "${TEST_GENERATED_SOURCE_N}" "cu"  "${DIR_RELATIVE_PATH}")
-                   add_cuda_to_test("${TARGET_NAME}${FUNDALMENTAL_TYPE_OFFSET}_cu")                       
+             #   message(STATUS   "Adding test: ${TARGET_NAME}_${FUNDAMENTAL_TYPE} from ${TEST_GENERATED_SOURCE_N} and ${TEST_SOURCE}")
+               add_generated_test("${TARGET_NAME}_${FUNDAMENTAL_TYPE}" "${TEST_GENERATED_SOURCE_N}" "cpp" "${DIR_RELATIVE_PATH}")   
+               if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)               
+                   add_generated_test("${TARGET_NAME}_${FUNDAMENTAL_TYPE}"  "${TEST_GENERATED_SOURCE_N}" "cu"  "${DIR_RELATIVE_PATH}")
+                   add_cuda_to_test("${TARGET_NAME}_${FUNDAMENTAL_TYPE}_cu")                       
                endif()
             endforeach()
         else()
