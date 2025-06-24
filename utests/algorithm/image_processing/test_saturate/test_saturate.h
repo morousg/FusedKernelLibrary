@@ -21,7 +21,7 @@
 #include <fused_kernel/core/utils/vlimits.h>
 #include <tests/operation_test_utils.h>
 
-
+#define AUX_HEADER 1
 inline std::string niceType(const std::string& input) {
     // Map "unsigned type" to specific type names
     static const std::unordered_map<std::string, std::string> unsignedTypeMap = {
@@ -135,12 +135,3 @@ void addAllOutputTestsForInput(const std::index_sequence<Idx...>&) {
 
  
 
-START_ADDING_TESTS
-using Fundamental = fk::RemoveType_t<0, fk::StandardTypes>;
-addAllOutputTestsForInput<Fundamental,@FUNDAMENTAL_TYPE@>(std::make_index_sequence<Fundamental::size>{});
-STOP_ADDING_TESTS
-
-// You can add more tests for other type combinations as needed.
-int launch() {
-    RUN_ALL_TESTS
-};
