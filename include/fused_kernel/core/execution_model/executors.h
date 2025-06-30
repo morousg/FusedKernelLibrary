@@ -52,23 +52,23 @@ namespace fk {
 
     template <typename Child>
     struct BaseExecutor {
-        FK_STATIC_STRUCT_SELFTYPE(BaseExecutor, BaseExecutor)
+        FK_STATIC_STRUCT(BaseExecutor, BaseExecutor)
         template <enum ParArch PA, typename... IOps>
         FK_HOST_FUSE void executeOperations(Stream_<PA>& stream, const IOps&... iOps) {
             Child::executeOperations_helper(stream, iOps...);
         }
 
-        template <enum ParArch PA, typename I, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_<PA>& stream,
+        template <enum ParArch PA, enum ND D, typename I, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, Stream_<PA>& stream,
                                             const IOps&... iOps) {
             Child::executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
         }
 
-        template <enum ParArch PA, typename I, typename O, typename... IOps>
-        FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output,
+        template <enum ParArch PA, enum ND D, typename I, typename O, typename... IOps>
+        FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, const Ptr<D, O>& output,
                                             Stream_<PA>& stream, const IOps&... iOps) {
             Child::executeOperations_helper(stream,
-            PerThreadRead<_2D, I>::build({ input }), iOps..., PerThreadWrite<_2D, O>::build({ output }));
+            PerThreadRead<D, I>::build({ input }), iOps..., PerThreadWrite<D, O>::build({ output }));
         }
 
         template <enum ParArch PA, typename I, size_t BATCH, typename... IOps>
@@ -108,12 +108,12 @@ template <enum ParArch PA, typename... IOps> \
 FK_HOST_FUSE void executeOperations(Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(stream, iOps...); \
 } \
-template <enum ParArch PA, typename I, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, Stream_<PA>& stream, const IOps&... iOps) { \
+template <enum ParArch PA, enum ND D, typename I, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, stream, iOps...); \
 } \
-template <enum ParArch PA, typename I, typename O, typename... IOps> \
-FK_HOST_FUSE void executeOperations(const Ptr2D<I>& input, const Ptr2D<O>& output, Stream_<PA>& stream, const IOps&... iOps) { \
+template <enum ParArch PA, enum ND D, typename I, typename O, typename... IOps> \
+FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, const Ptr<D, O>& output, Stream_<PA>& stream, const IOps&... iOps) { \
     Parent::executeOperations(input, output, stream, iOps...); \
 } \
 template <enum ParArch PA, typename I, size_t BATCH, typename... IOps> \
@@ -138,7 +138,7 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
 
     template <typename DataParallelPattern>
     struct Executor {
-        FK_STATIC_STRUCT_SELFTYPE(Executor, Executor)
+        FK_STATIC_STRUCT(Executor, Executor)
         static_assert(DataParallelPattern::PAR_ARCH == ParArch::GPU_NVIDIA ||
                       DataParallelPattern::PAR_ARCH == ParArch::CPU ||
                       DataParallelPattern::PAR_ARCH == ParArch::GPU_NVIDIA_JIT, "Only GPU_NVIDIA, CPU and GPU_NVIDIA_JIT are supported for now");
@@ -146,7 +146,7 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
 
     template <enum TF TFEN>
     struct Executor<TransformDPP<ParArch::CPU, TFEN, void>> {
-        FK_STATIC_STRUCT_SELFTYPE(Executor, Executor)
+        FK_STATIC_STRUCT(Executor, Executor)
     private:
         using Child = Executor<TransformDPP<ParArch::CPU, TFEN>>;
         using Parent = BaseExecutor<Child>;
@@ -244,7 +244,7 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
 #if defined(__NVCC__) || defined(__HIP__)
     template <enum TF TFEN>
     struct Executor<TransformDPP<ParArch::GPU_NVIDIA, TFEN>> {
-        FK_STATIC_STRUCT_SELFTYPE(Executor, Executor)
+        FK_STATIC_STRUCT(Executor, Executor)
     private:
         using Child = Executor<TransformDPP<ParArch::GPU_NVIDIA, TFEN>>;
         using Parent = BaseExecutor<Child>;

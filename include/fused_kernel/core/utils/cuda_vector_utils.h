@@ -1,4 +1,4 @@
-/* Copyright 2023-2025 Oscar Amoros Huguet
+﻿/* Copyright 2023-2025 Oscar Amoros Huguet
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,13 +29,13 @@ namespace fk {
 
 #define VECTOR_TYPE(BaseType) \
     template <> \
-    struct VectorType<BaseType, 1> { using type = BaseType; }; \
+    struct VectorType<BaseType, 1> { using type = BaseType; using type_v = BaseType ## 1; }; \
     template <> \
-    struct VectorType<BaseType, 2> { using type = BaseType ## 2; }; \
+    struct VectorType<BaseType, 2> { using type = BaseType ## 2; using type_v = type; }; \
     template <> \
-    struct VectorType<BaseType, 3> { using type = BaseType ## 3; }; \
+    struct VectorType<BaseType, 3> { using type = BaseType ## 3; using type_v = type; }; \
     template <> \
-    struct VectorType<BaseType, 4> { using type = BaseType ## 4; };
+    struct VectorType<BaseType, 4> { using type = BaseType ## 4; using type_v = type; };
 
     VECTOR_TYPE(uchar)
     VECTOR_TYPE(char)
@@ -62,8 +62,9 @@ namespace fk {
                                     VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
                                     VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
                                     VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
-
-    using StandardTypes = TypeList<bool, uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong, float, double>;
+    using FloatingTypes = TypeList<float, double>;
+    using IntegralTypes = TypeList<uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
+    using StandardTypes = TypeListCat_t<TypeListCat_t<TypeList<bool>, IntegralTypes>, FloatingTypes>;
     using VOne = TypeList<bool1, uchar1, char1, ushort1, short1, uint1, int1, ulong1, long1, ulonglong1, longlong1, float1, double1>;
     using VTwo = VectorTypeList<2>;
     using VThree = VectorTypeList<3>;
@@ -570,72 +571,72 @@ VEC_BINARY_OP(== , float, bool)
 VEC_BINARY_OP(== , double, bool)
 VEC_BINARY_OP(== , bool, bool)
 
-VEC_BINARY_OP(!= , uchar, uchar)
-VEC_BINARY_OP(!= , char, uchar)
-VEC_BINARY_OP(!= , ushort, uchar)
-VEC_BINARY_OP(!= , short, uchar)
-VEC_BINARY_OP(!= , int, uchar)
-VEC_BINARY_OP(!= , uint, uchar)
-VEC_BINARY_OP(!= , float, uchar)
-VEC_BINARY_OP(!= , double, uchar)
+VEC_BINARY_OP(!= , uchar, bool)
+VEC_BINARY_OP(!= , char, bool)
+VEC_BINARY_OP(!= , ushort, bool)
+VEC_BINARY_OP(!= , short, bool)
+VEC_BINARY_OP(!= , int, bool)
+VEC_BINARY_OP(!= , uint, bool)
+VEC_BINARY_OP(!= , float, bool)
+VEC_BINARY_OP(!= , double, bool)
 VEC_BINARY_OP(!= , bool, bool)
 
 
-VEC_BINARY_OP(> , uchar, uchar)
-VEC_BINARY_OP(> , char, uchar)
-VEC_BINARY_OP(> , ushort, uchar)
-VEC_BINARY_OP(> , short, uchar)
-VEC_BINARY_OP(> , int, uchar)
-VEC_BINARY_OP(> , uint, uchar)
-VEC_BINARY_OP(> , float, uchar)
-VEC_BINARY_OP(> , double, uchar)
+VEC_BINARY_OP(> , uchar, bool)
+VEC_BINARY_OP(> , char, bool)
+VEC_BINARY_OP(> , ushort, bool)
+VEC_BINARY_OP(> , short, bool)
+VEC_BINARY_OP(> , int, bool)
+VEC_BINARY_OP(> , uint, bool)
+VEC_BINARY_OP(> , float, bool)
+VEC_BINARY_OP(> , double, bool)
 
-VEC_BINARY_OP(< , uchar, uchar)
-VEC_BINARY_OP(< , char, uchar)
-VEC_BINARY_OP(< , ushort, uchar)
-VEC_BINARY_OP(< , short, uchar)
-VEC_BINARY_OP(< , int, uchar)
-VEC_BINARY_OP(< , uint, uchar)
-VEC_BINARY_OP(< , float, uchar)
-VEC_BINARY_OP(< , double, uchar)
+VEC_BINARY_OP(< , uchar, bool)
+VEC_BINARY_OP(< , char, bool)
+VEC_BINARY_OP(< , ushort, bool)
+VEC_BINARY_OP(< , short, bool)
+VEC_BINARY_OP(< , int, bool)
+VEC_BINARY_OP(< , uint, bool)
+VEC_BINARY_OP(< , float, bool)
+VEC_BINARY_OP(< , double, bool)
 
-VEC_BINARY_OP(>= , uchar, uchar)
-VEC_BINARY_OP(>= , char, uchar)
-VEC_BINARY_OP(>= , ushort, uchar)
-VEC_BINARY_OP(>= , short, uchar)
-VEC_BINARY_OP(>= , int, uchar)
-VEC_BINARY_OP(>= , uint, uchar)
-VEC_BINARY_OP(>= , float, uchar)
-VEC_BINARY_OP(>= , double, uchar)
+VEC_BINARY_OP(>= , uchar, bool)
+VEC_BINARY_OP(>= , char, bool)
+VEC_BINARY_OP(>= , ushort, bool)
+VEC_BINARY_OP(>= , short, bool)
+VEC_BINARY_OP(>= , int, bool)
+VEC_BINARY_OP(>= , uint, bool)
+VEC_BINARY_OP(>= , float, bool)
+VEC_BINARY_OP(>= , double, bool)
 
-VEC_BINARY_OP(<= , uchar, uchar)
-VEC_BINARY_OP(<= , char, uchar)
-VEC_BINARY_OP(<= , ushort, uchar)
-VEC_BINARY_OP(<= , short, uchar)
-VEC_BINARY_OP(<= , int, uchar)
-VEC_BINARY_OP(<= , uint, uchar)
-VEC_BINARY_OP(<= , float, uchar)
-VEC_BINARY_OP(<= , double, uchar)
+VEC_BINARY_OP(<= , uchar, bool)
+VEC_BINARY_OP(<= , char, bool)
+VEC_BINARY_OP(<= , ushort, bool)
+VEC_BINARY_OP(<= , short, bool)
+VEC_BINARY_OP(<= , int, bool)
+VEC_BINARY_OP(<= , uint, bool)
+VEC_BINARY_OP(<= , float, bool)
+VEC_BINARY_OP(<= , double, bool)
 
-VEC_BINARY_OP(&&, uchar, uchar)
-VEC_BINARY_OP(&&, char, uchar)
-VEC_BINARY_OP(&&, ushort, uchar)
-VEC_BINARY_OP(&&, short, uchar)
-VEC_BINARY_OP(&&, int, uchar)
-VEC_BINARY_OP(&&, uint, uchar)
-VEC_BINARY_OP(&&, float, uchar)
-VEC_BINARY_OP(&&, double, uchar)
+VEC_BINARY_OP(&&, uchar, bool)
+VEC_BINARY_OP(&&, char, bool)
+VEC_BINARY_OP(&&, ushort, bool)
+VEC_BINARY_OP(&&, short, bool)
+VEC_BINARY_OP(&&, int, bool)
+VEC_BINARY_OP(&&, uint, bool)
+VEC_BINARY_OP(&&, float, bool)
+VEC_BINARY_OP(&&, double, bool)
 VEC_BINARY_OP(&&, bool, bool)
 
 
-VEC_BINARY_OP(|| , uchar, uchar)
-VEC_BINARY_OP(|| , char, uchar)
-VEC_BINARY_OP(|| , ushort, uchar)
-VEC_BINARY_OP(|| , short, uchar)
-VEC_BINARY_OP(|| , int, uchar)
-VEC_BINARY_OP(|| , uint, uchar)
-VEC_BINARY_OP(|| , float, uchar)
-VEC_BINARY_OP(|| , double, uchar)
+VEC_BINARY_OP(||, uchar, bool)
+VEC_BINARY_OP(||, char, bool)
+VEC_BINARY_OP(||, ushort, bool)
+VEC_BINARY_OP(||, short, bool)
+VEC_BINARY_OP(||, int, bool)
+VEC_BINARY_OP(||, uint, bool)
+VEC_BINARY_OP(||, float, bool)
+VEC_BINARY_OP(||, double, bool)
 VEC_BINARY_OP(|| , bool, bool)
 
 
@@ -665,35 +666,35 @@ VEC_BINARY_OP(^, uint, uint)
     // binary operators (vec & scalar)
 
 #define SCALAR_BINARY_OP(op, input_type, scalar_type, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 1>(a.x op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(scalar_type s, const input_type ## 1 & b) \
+FK_HOST_DEVICE_CNST output_type ## 1 operator op(const scalar_type& s, const input_type ## 1 & b) \
 { \
     return fk::make::type<output_type ## 1>(s op b.x); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 2>(a.x op s, a.y op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(scalar_type s, const input_type ## 2 & b) \
+FK_HOST_DEVICE_CNST output_type ## 2 operator op(const scalar_type& s, const input_type ## 2 & b) \
 { \
     return fk::make::type<output_type ## 2>(s op b.x, s op b.y); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 3>(a.x op s, a.y op s, a.z op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(scalar_type s, const input_type ## 3 & b) \
+FK_HOST_DEVICE_CNST output_type ## 3 operator op(const scalar_type& s, const input_type ## 3 & b) \
 { \
     return fk::make::type<output_type ## 3>(s op b.x, s op b.y, s op b.z); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a, scalar_type s) \
+FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 4>(a.x op s, a.y op s, a.z op s, a.w op s); \
 } \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(scalar_type s, const input_type ## 4 & b) \
+FK_HOST_DEVICE_CNST output_type ## 4 operator op(const scalar_type& s, const input_type ## 4 & b) \
 { \
     return fk::make::type<output_type ## 4>(s op b.x, s op b.y, s op b.z, s op b.w); \
 }
@@ -884,5 +885,12 @@ SCALAR_BINARY_OP(^, int, int, int)
 SCALAR_BINARY_OP(^, uint, uint, uint)
 #undef SCALAR_BINARY_OP
 // ######################## VECTOR OPERATORS ##########################
+
+namespace fk {
+    template <typename T, typename = void>
+    struct IsVectorType : std::false_type {};
+    template <typename T>
+    struct IsVectorType<T, std::void_t<decltype(T::x)>> : std::true_type {};
+} // namespace fk
 
 #endif

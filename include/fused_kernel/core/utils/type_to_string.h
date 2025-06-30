@@ -57,10 +57,10 @@ namespace fk {
         return getTypeNamePretty_helper(signature, prefix, suffix);
 #else
         return "unknown (unsupported compiler)";
-#endif
+#endif // __clang__ __GNUC__ _MSC_VER
     }
 } // namespace fk
-#endif
+#endif // __NVCC__ __CUDACC__
 
 #include <vector>
 #include <map>

@@ -29,7 +29,7 @@ else()
     message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
 endif()
 
-include (cmake/discover_tests.cmake)
+
 
 option (BUILD_UTEST "build standard unit tests" ON)
 option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
@@ -61,12 +61,15 @@ endif()
 add_subdirectory(include)
 add_subdirectory(lib)
 
-if (${BUILD_UTEST})
+if (${BUILD_UTEST})    
+    include (cmake/tests/discover_tests.cmake)
     enable_testing()  
-    add_subdirectory(tests)      
+    add_subdirectory(tests)
+    add_subdirectory(utests)         
 endif()
 
 if (${ENABLE_BENCHMARK})
+    include (cmake/tests/discover_tests.cmake)
     enable_testing()
     add_subdirectory(benchmarks)
 endif()

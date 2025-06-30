@@ -35,7 +35,7 @@ namespace fk {
     private:
         using SelfType = MxVFloat3<BinaryType>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(MxVFloat3, SelfType)
+        FK_STATIC_STRUCT(MxVFloat3, SelfType)
         using Parent = BinaryOperation<float3, M3x3Float, float3, MxVFloat3<BinaryType>>;
         DECLARE_BINARY_PARENT
 
@@ -53,7 +53,7 @@ namespace fk {
     private:
         using SelfType = MxVFloat3<UnaryType>;
     public:
-        FK_STATIC_STRUCT_SELFTYPE(MxVFloat3, SelfType)
+        FK_STATIC_STRUCT(MxVFloat3, SelfType)
         using Parent = UnaryOperation<Tuple<float3, M3x3Float>, float3, MxVFloat3<UnaryType>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {

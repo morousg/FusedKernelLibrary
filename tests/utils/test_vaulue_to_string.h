@@ -228,25 +228,12 @@ constexpr inline bool test_getDigitAt_helper() {
 }
 
 template <typename ListOfTypes, size_t... Idx>
-constexpr inline bool test_getDigitAt_helper(const std::index_sequence<Idx...>&) {
+constexpr inline bool test_getDigitAt_iterator(const std::index_sequence<Idx...>&) {
     return ((test_getDigitAt_helper<fk::TypeAt_t<Idx, ListOfTypes>>()) && ...);
 }
 
 constexpr inline bool test_getDigitAt() {
-    /*using ArithmeticTypes = fk::Remove
-    test_getDigitAt_helper<fk::StandardTypes>(std::make_index_sequence<fk::StandardTypes::size>{});*/
-    // Test different integral types
-    test_getDigitAt_helper<uchar>();
-    test_getDigitAt_helper<ushort>();
-    test_getDigitAt_helper<uint>();
-    test_getDigitAt_helper<ulong>();
-    test_getDigitAt_helper<ulonglong>();
-
-    test_getDigitAt_helper<char>();
-    test_getDigitAt_helper<short>();
-    test_getDigitAt_helper<int>();
-    test_getDigitAt_helper<long>();
-    test_getDigitAt_helper<longlong>();
+    test_getDigitAt_iterator<fk::IntegralTypes>(std::make_index_sequence<fk::IntegralTypes::size>{});
 
     return true;
 }

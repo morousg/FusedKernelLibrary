@@ -1,4 +1,4 @@
-option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
+ 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
 
 MACRO(SUBDIRLIST result curdir)
@@ -11,12 +11,13 @@ FOREACH(child ${children})
 ENDFOREACH()
 SET(${result} ${dirlist} )
 ENDMACRO()
-
+ 
 set (LIST_OF_DIRS "")
 SUBDIRLIST(LIST_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-set (ROOT_TEST_DIR "tests")
+
 
 foreach(DIR ${LIST_DIRS})
+    set (ROOT_TEST_DIR "utests")
     discover_tests(${DIR})    
 endforeach()
  

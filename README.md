@@ -1,6 +1,6 @@
 # Fused Kernel Library (FKL)
 
-The Fused Kernel Library is a C++17 + CUDA implementation of a methodology (publication pending) that allows to define a set of GPU code elements that need to be executed inside a CUDA kernel, in the same order that they are expressed.
+The Fused Kernel Library is a C++17  implementation of a methodology (publication pending) that allows to define a set of  code elements that need to be executed inside a kernel, in the same order that they are expressed. The library currently has CPU and CUDA backends, but other GPU language implemenations (such as HIP)  are possible
 
 It automatically implements Vertical and Horizontal fusion, and also implements two new Fusion techniques, Backwards Vertical Fusion (akin to OpenCV Filters, but with an standard generic API), and Divergent Horizontal Fusion.
 
@@ -18,8 +18,7 @@ You can view and run a similar code in this [FKL Playground](https://colab.resea
 
 using namespace fk;
 
-cudaStream_t stream;
-gpuErrchk(cudaStreamCreate(&stream));
+Stream stream;
 
 // We set all outputs to the same size
 const Size outputSize(60, 60);
@@ -67,8 +66,8 @@ const auto myReceiver = TensorWrite<float3>::build(output);
 executeOperations(stream, mySender, myReceiver);
 
 // Use the Tensor for inference
+stream.sync()
 
-gpuErrchk(cudaStreamSynchronize(stream));
 ```
 Let's see a bit more in detail what is going on in the code.
 
