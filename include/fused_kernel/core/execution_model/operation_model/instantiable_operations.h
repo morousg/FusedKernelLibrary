@@ -31,6 +31,10 @@ namespace fk { // namespace FusedKernel
 #define FK_TO_STRING(...) \
 FK_HOST_CNST auto toString() const { \
     return serialize(make_tuple(__VA_ARGS__)); \
+} \
+template <typename... Args> \
+FK_HOST_FUSE auto toString(const Args&... args) { \
+    return serialize(make_tuple(__VA_ARGS__)); \
 }
 
     struct ActiveThreads {
