@@ -556,7 +556,7 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
 
     template <enum TF TFEN>
     struct Executor<TransformDPP<ParArch::GPU_NVIDIA_JIT, TFEN, void>> {
-        FK_STATIC_STRUCT_SELFTYPE(Executor, Executor)
+        FK_STATIC_STRUCT(Executor, Executor)
     private:
         using Child = Executor<TransformDPP<ParArch::GPU_NVIDIA_JIT, TFEN>>;
         using Parent = BaseExecutor<Child>;

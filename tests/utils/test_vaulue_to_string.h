@@ -242,13 +242,6 @@ int launch() {
     static_assert(test_count_digits_integral(), "count_digits_integral failed");
     static_assert(test_getDigitAt(), "getDigitAt failed");
 
-    constexpr float value{ 123456.045f };
-    constexpr size_t stringThing = fk::count_fractional_digits(value);
-
-    constexpr char myDigit = fk::getDigitAt<0>(45);
-
-    constexpr bool correct = myDigit == '4';
-    
     return 0;
 }
 
