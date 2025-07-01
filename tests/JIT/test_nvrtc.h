@@ -1,4 +1,4 @@
-/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
+/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Huguet)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <fused_kernel/fused_kernel.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/core/utils/type_to_string.h>
+#include <fused_kernel/core/execution_model/executors.h>
 
 #include <iostream>
 #include <string>
@@ -32,142 +33,12 @@
 #include <cuda.h>
 #include <nvrtc.h>
 
-// Helper macro for CUDA error checking
-#define CUDA_CHECK(result) { \
-    if (result != CUDA_SUCCESS) { \
-        const char* error_name; \
-        cuGetErrorName(result, &error_name); \
-        std::cerr << "CUDA Error: " << error_name << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-        throw std::runtime_error("CUDA API call failed."); \
-    } \
-}
-
 // Helper macro for NVRTC error checking
 #define NVRTC_CHECK(result) { \
     if (result != NVRTC_SUCCESS) { \
         std::cerr << "NVRTC Error: " << nvrtcGetErrorString(result) << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
         throw std::runtime_error("NVRTC API call failed."); \
     } \
-}
-
-// --- Host-side Structs (must match device-side definitions) ---
-/*struct Op1 { float factor; };
-struct Op2 { float offset; };*/
-
-// --- Abstract Operation Definition (Hybrid C++ class) ---
-class JIT_Operation_pp {
-private:
-    std::string opType; // The C++ typename of the operation struct
-    void* opData;       // A pointer to an internal copy of the data (owned)
-    size_t dataSize;    // The size of the data block
-
-public:
-    // Constructor: Performs a deep copy of the provided data.
-    JIT_Operation_pp(std::string type, const void* data, size_t size)
-        : opType(type), dataSize(size) { // Changed std::move(type) to type
-        // Allocate memory and copy the parameter data
-        opData = new char[dataSize];
-        memcpy(opData, data, dataSize);
-    }
-
-    // Copy Constructor: Essential for use in std::vector.
-    JIT_Operation_pp(const JIT_Operation_pp& other)
-        : opType(other.opType), dataSize(other.dataSize) {
-        // Allocate and copy data for the new object
-        opData = new char[dataSize];
-        memcpy(opData, other.opData, dataSize);
-    }
-
-    // Move Constructor
-    JIT_Operation_pp(JIT_Operation_pp&& other) noexcept
-        : opType(std::move(other.opType)), opData(other.opData), dataSize(other.dataSize) {
-        // Take ownership of the other object's resources
-        other.opData = nullptr;
-        other.dataSize = 0;
-    }
-
-    // Copy Assignment Operator
-    JIT_Operation_pp& operator=(const JIT_Operation_pp& other) {
-        if (this == &other) {
-            return *this;
-        }
-        // Free old resources
-        delete[] static_cast<char*>(opData);
-
-        // Copy new resources
-        opType = other.opType;
-        dataSize = other.dataSize;
-        opData = new char[dataSize];
-        memcpy(opData, other.opData, dataSize);
-
-        return *this;
-    }
-
-    // Move Assignment Operator
-    JIT_Operation_pp& operator=(JIT_Operation_pp&& other) noexcept {
-        if (this == &other) {
-            return *this;
-        }
-        delete[] static_cast<char*>(opData);
-
-        opType = std::move(other.opType);
-        opData = other.opData;
-        dataSize = other.dataSize;
-
-        other.opData = nullptr;
-        other.dataSize = 0;
-
-        return *this;
-    }
-
-
-    // Destructor: Frees the owned memory using RAII.
-    ~JIT_Operation_pp() {
-        // Cast to char* to ensure correct byte-wise deletion with delete[]
-        delete[] static_cast<char*>(opData);
-    }
-
-    // Public accessors
-    const std::string& getType() const { return opType; }
-    void* getData() const { return opData; }
-};
-
-// --- Helper Functions for Dynamic Pipeline Construction ---
-std::string buildNameExpression(const std::vector<JIT_Operation_pp>& pipeline) {
-    std::stringstream ss;
-    ss << "&genericKernel<";
-    for (size_t i = 0; i < pipeline.size(); ++i) {
-        ss << pipeline[i].getType();
-        if (i < pipeline.size() - 1) {
-            ss << ", ";
-        }
-    }
-    ss << ">";
-    return ss.str();
-}
-
-std::vector<void*> buildKernelArguments(CUdeviceptr& d_data_in, CUdeviceptr& d_data_out, const std::vector<JIT_Operation_pp>& pipeline) {
-    std::vector<void*> args;
-    args.push_back(&d_data_in);
-    args.push_back(&d_data_out);
-    for (const auto& op : pipeline) {
-        args.push_back(op.getData());
-    }
-    return args;
-}
-std::vector<void*> buildKernelArgumentsFKL(const std::vector<JIT_Operation_pp>& pipeline) {
-    std::vector<void*> args;
-    for (const auto& op : pipeline) {
-        args.push_back(op.getData());
-    }
-    return args;
-}
-
-template <typename... IOps>
-std::vector<JIT_Operation_pp> buildOperationPipeline(const IOps&... iOps) {
-    std::vector<JIT_Operation_pp> pipeline;
-    (pipeline.emplace_back(fk::typeToString<IOps>(), &iOps, sizeof(IOps)), ...);
-    return pipeline;
 }
 
 int launch() {
@@ -192,7 +63,7 @@ int launch() {
     const auto add_op = fk::Add<float>::build(5.f);
     const auto write_op = fk::PerThreadWrite<fk::_1D, float>::build(d_data_out);
 
-    std::vector<JIT_Operation_pp> pipeline = buildOperationPipeline(
+    std::vector<fk::JIT_Operation_pp> pipeline = buildOperationPipeline(
         read_op, // Read operation
         mul_op,  // First operation (Op1)
         add_op,  // Second operation (Op2)
@@ -205,11 +76,11 @@ int launch() {
     std::cout << "Dynamically generated name expression: " << name_expression << std::endl;
 
     // --- 4. CUDA Init & NVRTC Setup ---
-    CUDA_CHECK(cuInit(0));
+    gpuErrchk(cuInit(0));
     CUdevice device;
-    CUDA_CHECK(cuDeviceGet(&device, 0));
+    gpuErrchk(cuDeviceGet(&device, 0));
     CUcontext context;
-    CUDA_CHECK(cuCtxCreate(&context, 0, device));
+    gpuErrchk(cuCtxCreate(&context, 0, device));
 
     nvrtcProgram prog;
     NVRTC_CHECK(nvrtcCreateProgram(&prog, main_source_content, "pipeline.cu", 2, nullptr, nullptr));
@@ -238,24 +109,24 @@ int launch() {
     NVRTC_CHECK(nvrtcGetPTX(prog, ptx.data()));
     CUmodule module;
     CUfunction kernel_func;
-    CUDA_CHECK(cuModuleLoadData(&module, ptx.data()));
-    CUDA_CHECK(cuModuleGetFunction(&kernel_func, module, mangled_name));
+    gpuErrchk(cuModuleLoadData(&module, ptx.data()));
+    gpuErrchk(cuModuleGetFunction(&kernel_func, module, mangled_name));
 
     // --- 7. Prepare Data and Launch ---
     const int N = 256;
     std::vector<void*> kernel_args_vec = buildKernelArgumentsFKL(pipeline);//buildKernelArguments(d_data_in, d_data_out, pipeline);
 
     std::cout << "Launching dynamically constructed kernel..." << std::endl;
-    CUDA_CHECK(cuLaunchKernel(kernel_func, 1, 1, 1, N, 1, 1, 0, reinterpret_cast<CUstream>(stream.getCUDAStream()), kernel_args_vec.data(), nullptr));
+    gpuErrchk(cuLaunchKernel(kernel_func, 1, 1, 1, N, 1, 1, 0, reinterpret_cast<CUstream>(stream.getCUDAStream()), kernel_args_vec.data(), nullptr));
 
     // --- 8. Verify & Cleanup ---
     d_data_out.download(stream);
     stream.sync();
     std::cout << "Result of op1(factor=2.0) then op2(offset=5.0) on data[3]: " << d_data_out.at(fk::Point(3)) << " (expected 11)" << std::endl;
 
-    CUDA_CHECK(cuModuleUnload(module));
+    gpuErrchk(cuModuleUnload(module));
     NVRTC_CHECK(nvrtcDestroyProgram(&prog));
-    CUDA_CHECK(cuCtxDestroy(context));
+    gpuErrchk(cuCtxDestroy(context));
 
     // --- 9. No manual cleanup needed! The vector's and JIT_Operation_pp's destructors handle it. ---
     std::cout << "Cleanup handled automatically by C++ destructors." << std::endl;
