@@ -23,6 +23,7 @@
 #include <fused_kernel/core/execution_model/operation_model/operation_types.h>
 #include <fused_kernel/core/execution_model/operation_model/iop_fuser.h>
 #include <fused_kernel/core/execution_model/data_parallel_patterns.h>
+#include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
 
 #ifdef ENABLE_CPU_JIT
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -42,17 +43,7 @@
 
 namespace fk {
 
-    /**
-     * @brief JIT_Operation_pp: Runtime polymorphic wrapper for operations
-     * Contains type-erased operation data and type information for runtime compilation
-     */
-    struct JIT_Operation_pp {
-        void* opData;           // Pointer to the actual operation data
-        std::string opType;     // String representation of the operation type
-        
-        JIT_Operation_pp(void* data, const std::string& type) 
-            : opData(data), opType(type) {}
-    };
+
 
     // Forward declarations for functions that will be called from fuseBack
     template <typename... IOps>
@@ -263,7 +254,7 @@ namespace fk {
      */
     template <typename T>
     JIT_Operation_pp createJITOperation(const T& operation) {
-        return JIT_Operation_pp(const_cast<void*>(static_cast<const void*>(&operation)), typeid(T).name());
+        return JIT_Operation_pp(typeid(T).name(), &operation, sizeof(T));
     }
 
 } // namespace fk

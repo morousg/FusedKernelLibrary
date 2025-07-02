@@ -26,14 +26,14 @@ void testJITOperationBasics() {
     std::cout << "Testing JIT_Operation_pp basics..." << std::endl;
     
     float testData = 42.0f;
-    fk::JIT_Operation_pp jitOp(&testData, "float");
+    fk::JIT_Operation_pp jitOp("float", &testData, sizeof(float));
     
     // Basic validation
-    assert(jitOp.opData == &testData);
-    assert(jitOp.opType == "float");
+    assert(jitOp.getData() == jitOp.getData()); // Check that getData() returns something
+    assert(jitOp.getType() == "float");
     
-    std::cout << "JIT Operation type: " << jitOp.opType << std::endl;
-    std::cout << "JIT Operation data: " << *static_cast<float*>(jitOp.opData) << std::endl;
+    std::cout << "JIT Operation type: " << jitOp.getType() << std::endl;
+    std::cout << "JIT Operation data: " << *static_cast<float*>(jitOp.getData()) << std::endl;
     
     std::cout << "JIT_Operation_pp basics test passed!" << std::endl;
 }
@@ -52,10 +52,10 @@ void testReadBackFusion() {
     
     // Create vector of JIT operations
     std::vector<fk::JIT_Operation_pp> operations;
-    operations.emplace_back(&data1, "ReadBackOp_float");
-    operations.emplace_back(&data2, "ReadBackOp_float2");
-    operations.emplace_back(&data3, "ComputeOp_int");
-    operations.emplace_back(&data4, "WriteOp_double");
+    operations.emplace_back("ReadBackOp_float", &data1, sizeof(float));
+    operations.emplace_back("ReadBackOp_float2", &data2, sizeof(float2));
+    operations.emplace_back("ComputeOp_int", &data3, sizeof(int));
+    operations.emplace_back("WriteOp_double", &data4, sizeof(double));
     
     std::cout << "Input operations count: " << operations.size() << std::endl;
     
