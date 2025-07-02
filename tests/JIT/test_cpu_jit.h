@@ -16,6 +16,10 @@
 
 #include <tests/main.h>
 #include <fused_kernel/core/execution_model/executor_details/cpu_jit_details.h>
+#include <fused_kernel/algorithms/image_processing/crop.h>
+#include <fused_kernel/algorithms/image_processing/resize.h>
+#include <fused_kernel/core/data/rect.h>
+#include <fused_kernel/core/data/size.h>
 #include <iostream>
 #include <cassert>
 
@@ -44,18 +48,14 @@ void testJITOperationBasics() {
 void testReadBackFusion() {
     std::cout << "Testing ReadBack operations fusion..." << std::endl;
     
-    // Create some test data
-    float data1 = 1.0f;
-    float data2 = 2.0f;
-    int data3 = 3;
-    double data4 = 4.0;
+    // Create proper ReadBack operations 
+    auto readback1 = fk::Crop<>::build(fk::Rect(0, 0, 64, 64));
+    auto readback2 = fk::Crop<>::build(fk::Rect(10, 10, 32, 32));
+    // For demonstration, create more operations of different types
+    auto readback3 = fk::Crop<>::build(fk::Rect(5, 5, 20, 20));
     
-    // Create vector of JIT operations
-    std::vector<fk::JIT_Operation_pp> operations;
-    operations.emplace_back("ReadBackOp_float", &data1, sizeof(float));
-    operations.emplace_back("ReadBackOp_float2", &data2, sizeof(float2));
-    operations.emplace_back("ComputeOp_int", &data3, sizeof(int));
-    operations.emplace_back("WriteOp_double", &data4, sizeof(double));
+    // Create vector of JIT operations using buildOperationPipeline  
+    std::vector<fk::JIT_Operation_pp> operations = fk::buildOperationPipeline(readback1, readback2, readback3);
     
     std::cout << "Input operations count: " << operations.size() << std::endl;
     

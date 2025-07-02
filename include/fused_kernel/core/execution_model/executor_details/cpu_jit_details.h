@@ -24,6 +24,7 @@
 #include <fused_kernel/core/execution_model/operation_model/iop_fuser.h>
 #include <fused_kernel/core/execution_model/data_parallel_patterns.h>
 #include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
+#include <fused_kernel/core/utils/type_to_string.h>
 
 #ifdef ENABLE_CPU_JIT
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -55,9 +56,9 @@ namespace fk {
 
     template <typename... IOps>
     std::vector<JIT_Operation_pp> buildOperationPipeline(const IOps&... iOps) {
-        // Placeholder implementation - would build operation pipeline
-        // This would be properly implemented to build the operation pipeline
-        return std::vector<JIT_Operation_pp>();
+        std::vector<JIT_Operation_pp> pipeline;
+        (pipeline.emplace_back(typeToString<IOps>(), &iOps, sizeof(IOps)), ...);
+        return pipeline;
     }
 
     /**
