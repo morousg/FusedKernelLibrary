@@ -314,6 +314,25 @@ namespace fk {
             return getCUfunction(completeKernelExpression);
         }
     };
+
+    template <typename Read, typename Next, typename... IOps>
+    constexpr inline std::vector<JIT_Operation_pp> fuseBack(const Read& read, const Next& nextOp, const IOps&... iOps) {
+        static_assert(!isReadType<Next>, "A Read Operation can not go after another Read Operation, it has to be ReadBack");
+        if constexpr (sizeof...(iOps) > 0) {
+            constexpr bool nextIsReadBack = isReadBackType<Next>;
+            constexpr bool iOpsContainsReadBack = (isReadBackType<IOps> || ...);
+            constexpr bool nextIsComputeOrMidWrite = isComputeType<Next> || isMidWriteType<Next>;
+            if constexpr (nextIsReadBack || (nextIsComputeOrMidWrite && iOpsContainsReadBack)) {
+                return fuseBack(tDPPDetails, fuse(read, nextOp), iOps...);
+            } else {
+                return buildOperationPipeline(read, nextOp, iOps...);
+            }
+        } else {
+            static_assert(isWriteType<Next>, "Last IOp must be WriteType");
+            return buildOperationPipeline(read, nextOp);
+        }
+    }
+
 } // namespace fk
 #endif // NVRTC_ENABLED
 
