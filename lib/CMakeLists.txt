@@ -10,21 +10,12 @@ target_include_directories(
     INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-# Always build CPU JIT library with basic functionality
-add_library(FKL_CPU_JIT STATIC cpu_jit_details.cpp)
-
-target_include_directories(FKL_CPU_JIT PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>)
-
-# Add CPU JIT library features if enabled
+# Add CPU JIT library features if enabled  
 if (${ENABLE_CPU_JIT})
-    target_include_directories(FKL_CPU_JIT PUBLIC ${LLVM_INCLUDE_DIRS})
-    target_compile_definitions(FKL_CPU_JIT PUBLIC ${LLVM_DEFINITIONS})
-    target_link_libraries(FKL_CPU_JIT ${llvm_libs})
+    target_include_directories(${LIB_NAME} INTERFACE ${LLVM_INCLUDE_DIRS})
+    target_compile_definitions(${LIB_NAME} INTERFACE ${LLVM_DEFINITIONS})
+    target_link_libraries(${LIB_NAME} INTERFACE ${llvm_libs})
 endif()
-
-# Link the JIT library to the main interface library
-target_link_libraries(${LIB_NAME} INTERFACE FKL_CPU_JIT)
 # locations are provided by GNUInstallDirs
 install(
     TARGETS ${LIB_NAME}

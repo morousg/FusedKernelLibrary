@@ -19,17 +19,25 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <iostream>
 #include <fused_kernel/core/execution_model/operation_model/operation_types.h>
 #include <fused_kernel/core/execution_model/operation_model/iop_fuser.h>
 #include <fused_kernel/core/execution_model/data_parallel_patterns.h>
 
 #ifdef ENABLE_CPU_JIT
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/ExecutionEngine/Orc/ThreadSafeModule.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_ostream.h>
+#include <iostream>
 #endif
 
 namespace fk {
@@ -42,31 +50,30 @@ namespace fk {
         void* opData;           // Pointer to the actual operation data
         std::string opType;     // String representation of the operation type
         
-        // Function pointer for execution (to be set by runtime compilation)
-        std::function<void()> exec;
-        
         JIT_Operation_pp(void* data, const std::string& type) 
             : opData(data), opType(type) {}
     };
 
     // Forward declarations for functions that will be called from fuseBack
-    template <typename TDPPDetails, typename... IOps>
-    void fuseReadsLaunchTransformDPP(const TDPPDetails& tDPPDetails, const IOps&... iOps) {
+    template <typename... IOps>
+    std::vector<JIT_Operation_pp> fuseReadsLaunchTransformDPP(const IOps&... iOps) {
         // Placeholder implementation - would call the actual DPP execution
         // This would be properly implemented to launch the transform DPP
+        return std::vector<JIT_Operation_pp>();
     }
 
     template <typename... IOps>
-    void buildOperationPipeline(const IOps&... iOps) {
+    std::vector<JIT_Operation_pp> buildOperationPipeline(const IOps&... iOps) {
         // Placeholder implementation - would build operation pipeline
         // This would be properly implemented to build the operation pipeline
+        return std::vector<JIT_Operation_pp>();
     }
 
     /**
      * @brief The template function from the issue description that needs to be compiled at runtime
      */
-    template <typename TDPPDetails, typename Read, typename Next, typename... IOps>
-    constexpr inline std::vector<JIT_Operation_pp> fuseBack(const TDPPDetails& tDPPDetails, const Read& read, const Next& nextOp, const IOps&... iOps) {
+    template <typename Read, typename Next, typename... IOps>
+    constexpr inline std::vector<JIT_Operation_pp> fuseBack(const Read& read, const Next& nextOp, const IOps&... iOps) {
         static_assert(!isReadType<Next>, "A Read Operation can not go after another Read Operation, it has to be ReadBack");
         if constexpr (sizeof...(iOps) > 0) {
             constexpr bool nextIsReadBack = isReadBackType<Next>;
@@ -74,22 +81,14 @@ namespace fk {
             constexpr bool nextIsComputeOrMidWrite = isComputeType<Next> || isMidWriteType<Next>;
             if constexpr (nextIsReadBack || (nextIsComputeOrMidWrite && iOpsContainsReadBack)) {
                 auto fused = Fuser{}.fuse(read, nextOp);
-                fuseReadsLaunchTransformDPP(tDPPDetails, fused, iOps...);
+                return fuseReadsLaunchTransformDPP(fused, iOps...);
             } else {
-                buildOperationPipeline(read, nextOp, iOps...);
+                return buildOperationPipeline(read, nextOp, iOps...);
             }
         } else {
             static_assert(isWriteType<Next>, "Last IOp must be WriteType");
-            buildOperationPipeline(read, nextOp);
+            return buildOperationPipeline(read, nextOp);
         }
-        
-        // For now, return the input operations as JIT_Operation_pp
-        // This will be properly implemented when the runtime compilation is complete
-        std::vector<JIT_Operation_pp> result;
-        result.emplace_back(const_cast<void*>(static_cast<const void*>(&read)), typeid(Read).name());
-        result.emplace_back(const_cast<void*>(static_cast<const void*>(&nextOp)), typeid(Next).name());
-        (result.emplace_back(const_cast<void*>(static_cast<const void*>(&iOps)), typeid(IOps).name()), ...);
-        return result;
     }
 
 #ifdef ENABLE_CPU_JIT
@@ -138,16 +137,123 @@ namespace fk {
         llvm::Value* generateCastingCode(llvm::IRBuilder<>& builder, llvm::Value* opDataPtr, const std::string& typeName);
     };
 
+    // Implementation of CPUJITCompiler methods
+    inline CPUJITCompiler::CPUJITCompiler() = default;
+
+    inline llvm::Error CPUJITCompiler::initialize() {
+        // Initialize LLVM native target
+        llvm::InitializeNativeTarget();
+        llvm::InitializeNativeTargetAsmPrinter();
+        llvm::InitializeNativeTargetAsmParser();
+
+        // Create the JIT instance
+        auto jitExpected = llvm::orc::LLJITBuilder().create();
+        if (!jitExpected) {
+            return jitExpected.takeError();
+        }
+        
+        jit = std::move(*jitExpected);
+        return llvm::Error::success();
+    }
+
+    inline std::function<std::vector<JIT_Operation_pp>(const std::vector<JIT_Operation_pp>&)> 
+    CPUJITCompiler::compileRuntimeFusion(const std::vector<JIT_Operation_pp>& operations) {
+        
+        // Generate the IR module
+        auto module = generateRuntimeFusionIR(operations);
+        if (!module) {
+            return nullptr;
+        }
+
+        // Verify the module
+        std::string errorMsg;
+        llvm::raw_string_ostream errorStream(errorMsg);
+        if (llvm::verifyModule(*module, &errorStream)) {
+            llvm::errs() << "Module verification failed: " << errorMsg << "\n";
+            return nullptr;
+        }
+
+        // Add the module to the JIT
+        auto tsm = llvm::orc::ThreadSafeModule(std::move(module), 
+                                               llvm::orc::ThreadSafeContext(std::make_unique<llvm::LLVMContext>()));
+        
+        if (auto err = jit->addIRModule(std::move(tsm))) {
+            llvm::errs() << "Failed to add module to JIT: " << err << "\n";
+            return nullptr;
+        }
+
+        // Get the compiled function
+        auto symbol = jit->lookup("runtimeFusionFunction");
+        if (!symbol) {
+            llvm::errs() << "Failed to find compiled function: " << symbol.takeError() << "\n";
+            return nullptr;
+        }
+
+        // Cast to the correct function type
+        using FunctionType = std::vector<JIT_Operation_pp>(*)(const std::vector<JIT_Operation_pp>&);
+        auto funcPtr = reinterpret_cast<FunctionType>(symbol->getValue());
+
+        return [funcPtr](const std::vector<JIT_Operation_pp>& ops) -> std::vector<JIT_Operation_pp> {
+            return funcPtr(ops);
+        };
+    }
+
+    inline std::unique_ptr<llvm::Module> CPUJITCompiler::generateRuntimeFusionIR(const std::vector<JIT_Operation_pp>& operations) {
+        auto module = std::make_unique<llvm::Module>("RuntimeFusionModule", context);
+        
+        // Create function type: vector<JIT_Operation_pp> func(const vector<JIT_Operation_pp>&)
+        llvm::Type* voidPtrType = llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0);
+        llvm::Type* vectorType = voidPtrType; // Simplified for now - represents vector as void*
+        
+        llvm::FunctionType* funcType = llvm::FunctionType::get(
+            vectorType,                    // Return type
+            {vectorType},                  // Parameters  
+            false                          // Not variadic
+        );
+
+        // Create the function
+        llvm::Function* func = llvm::Function::Create(
+            funcType,
+            llvm::Function::ExternalLinkage,
+            "runtimeFusionFunction",
+            module.get()
+        );
+
+        // Create basic block
+        llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", func);
+        llvm::IRBuilder<> builder(entry);
+
+        // For now, create a simple implementation that returns the input
+        // This is a placeholder - the actual implementation would:
+        // 1. Extract operation data from the input vector
+        // 2. Cast each void* to the appropriate type based on opType
+        // 3. Call the templated fuseBack function
+        // 4. Return the result as a new vector
+
+        llvm::Value* inputParam = func->arg_begin();
+        builder.CreateRet(inputParam);
+
+        return module;
+    }
+
+    inline llvm::Value* CPUJITCompiler::generateCastingCode(llvm::IRBuilder<>& builder, llvm::Value* opDataPtr, const std::string& typeName) {
+        // This would generate casting code based on the type name
+        // For now, return the pointer as-is
+        return opDataPtr;
+    }
+
 #endif // ENABLE_CPU_JIT
 
-    /**
-     * @brief Main entry point for CPU JIT fusion of ReadBack operations
-     * This function takes a vector of JIT_Operation_pp containing ReadBack operations,
-     * builds a runtime function to cast and fuse them, compiles it, and executes it.
-     * @param operations Vector of JIT operations to fuse
-     * @return Vector of fused JIT operations
-     */
-    std::vector<JIT_Operation_pp> fuseReadBackOperationsJIT(const std::vector<JIT_Operation_pp>& operations);
+    inline std::vector<JIT_Operation_pp> fuseReadBackOperationsJIT(const std::vector<JIT_Operation_pp>& operations) {
+#ifdef ENABLE_CPU_JIT
+        // For now, disable the actual JIT compilation and just return the operations
+        // The JIT functionality is a placeholder and needs more development
+        std::cout << "JIT fusion called (JIT compilation currently disabled for safety)" << std::endl;
+#endif
+
+        // Return input operations (no fusion performed yet)
+        return operations;
+    }
 
     /**
      * @brief Helper function to create JIT_Operation_pp from typed operations
