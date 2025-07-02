@@ -18,6 +18,8 @@ HOMEPAGE_URL "https://github.com/morousg/FusedKernelLibrary" )
 
 #cuda is optional, but if it is found, it will be used
 option(ENABLE_CPU "Enable CPU support" ON)
+option(ENABLE_CPU_JIT "Enable CPU JIT runtime compilation support" ON)
+
 include(CheckLanguage)
 check_language(CUDA)
 if (CMAKE_CUDA_COMPILER)
@@ -29,7 +31,18 @@ else()
     message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
 endif()
 
-
+# LLVM/Clang for CPU JIT compilation
+if (${ENABLE_CPU_JIT})
+    find_package(LLVM REQUIRED CONFIG)
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    
+    # Find the libraries that correspond to the LLVM components we need
+    llvm_map_components_to_libnames(llvm_libs support core irreader orcjit native)
+    
+    add_definitions(${LLVM_DEFINITIONS})
+    add_definitions(-DENABLE_CPU_JIT)
+endif()
 
 option (BUILD_UTEST "build standard unit tests" ON)
 option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
