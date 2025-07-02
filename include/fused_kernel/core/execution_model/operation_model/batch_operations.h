@@ -42,7 +42,8 @@ namespace fk {
 
     struct BatchOperation {
         FK_STATIC_STRUCT(BatchOperation, BatchOperation)
-        template <typename InstantiableType> FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
+        template <typename InstantiableType>
+        FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
             static_assert(isBatchOperation<typename InstantiableType::Operation>,
                 "The IOp passed as parameter is not a batch operation");
             constexpr size_t BATCH = InstantiableType::Operation::BATCH;

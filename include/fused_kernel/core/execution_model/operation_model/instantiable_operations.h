@@ -25,7 +25,6 @@
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.h>
 #include <fused_kernel/core/execution_model/operation_model/vector_operations.h>
 #include <fused_kernel/algorithms/basic_ops/cast_base.h>
-#include <fused_kernel/core/utils/value_to_string.h>
 
 namespace fk { // namespace FusedKernel
     struct ActiveThreads {
