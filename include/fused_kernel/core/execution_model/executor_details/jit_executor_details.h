@@ -128,10 +128,7 @@ namespace fk {
             constexpr bool iOpsContainsReadBack = (isReadBackType<IOps> || ...);
             constexpr bool nextIsComputeOrMidWrite = isComputeType<Next> || isMidWriteType<Next>;
             if constexpr (nextIsReadBack || (nextIsComputeOrMidWrite && iOpsContainsReadBack)) {
-                // For runtime compilation, we need to handle this differently
-                // The tDPPDetails and fuse() calls are compile-time concepts
-                // For now, just build the pipeline - the actual fusion happens at runtime
-                return buildOperationPipeline(read, nextOp, iOps...);
+                return fuseBack(fuse(read, nextOp), iOps...);
             } else {
                 return buildOperationPipeline(read, nextOp, iOps...);
             }

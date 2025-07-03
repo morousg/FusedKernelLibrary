@@ -19,6 +19,8 @@
 #include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/core/utils/type_to_string.h>
+#include <fused_kernel/core/execution_model/memory_operations.h>
+#include <fused_kernel/algorithms/image_processing/border_reader.h>
 
 #include <iostream>
 #include <string>
@@ -50,9 +52,11 @@ namespace test {
             // Test the fuseBackCPU function
             auto result = cpu_jit::fuseBackCPU(pipeline);
             
-            // Basic validation - result should be same size or smaller (if fused)
-            if (result.size() > pipeline.size()) {
-                std::cerr << "Error: Result pipeline is larger than input pipeline" << std::endl;
+            // This test should always return the same, because the functions used are not ReadBack
+            // Since Mul and Add are BinaryType operations, not ReadBackType, no fusion should occur
+            if (result.size() != pipeline.size()) {
+                std::cerr << "Error: Expected same size for non-ReadBack operations, got " 
+                         << result.size() << " instead of " << pipeline.size() << std::endl;
                 return false;
             }
             
@@ -71,19 +75,25 @@ namespace test {
         std::cout << "Testing CPU JIT with ReadBack operations..." << std::endl;
         
         try {
-            // Create a pipeline that simulates ReadBack operations
-            // Note: This is a simplified test as we don't have actual ReadBack operations here
+            // Create a pipeline that includes actual ReadBack operations
+            // Use BorderReader which creates ReadBack operations
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
+                fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
+            
+            constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<uchar3>(0));
+            
+            // Verify this is indeed a ReadBack operation
+            static_assert(fk::isReadBackType<decltype(borderIOp)>, "borderIOp should be ReadBackType");
+            
+            // Create additional operations for the pipeline
             const auto mul_op = fk::Mul<float>::build(3.0f);
-            const auto add_op = fk::Add<float>::build(7.0f);
             
             std::vector<JIT_Operation_pp> pipeline;
             
-            // Create mock operations with ReadBack in the type name to trigger fusion logic
-            std::string readBackType = "MockReadBack<float>";
-            JIT_Operation_pp mockReadBack(readBackType, &mul_op, sizeof(mul_op));
-            
-            pipeline.push_back(std::move(mockReadBack));
-            pipeline.push_back(createMockOperation(add_op));
+            // Add the ReadBack operation
+            pipeline.push_back(createMockOperation(borderIOp));
+            // Add compute operation after ReadBack
+            pipeline.push_back(createMockOperation(mul_op));
             
             // Test the fuseBackCPU function with ReadBack operations
             auto result = cpu_jit::fuseBackCPU(pipeline);
@@ -119,22 +129,19 @@ namespace test {
                 return false;
             }
             
-#if defined(LLVM_JIT_ENABLED)
-            // Test case 2: ReadBack with compute operations - should require fusion (only when LLVM is enabled)
+            // Test case 2: ReadBack with compute operations - should require fusion
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
+                fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
+            constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<uchar3>(0));
+            
             std::vector<JIT_Operation_pp> pipeline2;
-            std::string readBackType = "MockReadBack<float>";
-            JIT_Operation_pp mockReadBack(readBackType, &mul_op, sizeof(mul_op));
-            pipeline2.push_back(std::move(mockReadBack));
+            pipeline2.push_back(createMockOperation(borderIOp));
             pipeline2.push_back(createMockOperation(add_op));
             
             if (!compiler.requiresFusion(pipeline2)) {
-                std::cerr << "Error: Pipeline with ReadBack and compute should require fusion" << std::endl;
+                std::cerr << "Error: Pipeline with ReadBack operations should require fusion" << std::endl;
                 return false;
             }
-#else
-            // When LLVM is disabled, fusion analysis always returns false
-            std::cout << "Note: LLVM JIT is disabled, fusion analysis always returns false" << std::endl;
-#endif
             
             std::cout << "Fusion analysis test passed." << std::endl;
             return true;
