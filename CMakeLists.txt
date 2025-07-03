@@ -34,6 +34,7 @@ endif()
 option (BUILD_UTEST "build standard unit tests" ON)
 option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
 option(NVRTC_ENABLE "Enable NVRTC for runtime compilation" OFF)
+option(LLVM_JIT_ENABLE "Enable LLVM ORC JIT for CPU runtime compilation" OFF)
 
 if (NVRTC_ENABLE)
 	if (CUDAToolkit_FOUND)
@@ -55,6 +56,51 @@ if (NVRTC_ENABLE)
 		endif()
 	else()
 		set(NVRTC_ENABLE OFF CACHE BOOL "NVRTC support was disabled because the CUDA Toolkit could not be found." FORCE)
+	endif()
+endif()
+
+# LLVM ORC JIT support configuration
+if (LLVM_JIT_ENABLE)
+	find_package(LLVM REQUIRED CONFIG)
+	if (LLVM_FOUND)
+		message(STATUS "LLVM support is enabled.")
+		message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+		message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+		
+		# Find the libraries that correspond to the LLVM components
+		# that we wish to use
+		llvm_map_components_to_libnames(llvm_libs
+			Core
+			OrcJIT
+			native
+			RISCV
+			Support
+			ExecutionEngine
+			MCJIT
+			Target
+			RuntimeDyld
+			Object
+			InstCombine
+			AggressiveInstCombine
+			TransformUtils
+			Analysis
+			ipo
+			MC
+		)
+		
+		message(STATUS "LLVM libraries: ${llvm_libs}")
+		set(LLVM_JIT_LIBRARIES ${llvm_libs})
+		
+		# Add preprocessor definitions for LLVM JIT
+		add_definitions(-DLLVM_JIT_ENABLED)
+		
+		# Set up include directories
+		include_directories(${LLVM_INCLUDE_DIRS})
+		separate_arguments(LLVM_DEFINITIONS_LIST UNIX_COMMAND "${LLVM_DEFINITIONS}")
+		add_definitions(${LLVM_DEFINITIONS_LIST})
+	else()
+		message(WARNING "LLVM not found, disabling LLVM JIT support")
+		set(LLVM_JIT_ENABLE OFF CACHE BOOL "LLVM JIT support was disabled because LLVM could not be found." FORCE)
 	endif()
 endif()
 	
