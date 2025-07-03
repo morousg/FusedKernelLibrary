@@ -18,6 +18,8 @@
 #include <array>
 #include <chrono>
 #include <unordered_map>
+#include <sstream>
+#include <fstream>
 #include <iostream>
 
 #include <fused_kernel/core/utils/vlimits.h>

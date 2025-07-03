@@ -28,29 +28,6 @@ __global__ void launchTransformDPP_Kernel(const __grid_constant__ TDPPDetails tD
     TransformDPP<PA, TFEN, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
 }
 
-template <typename TDPPDetails, typename Read, typename Next, typename... IOps>
-constexpr __device__ __forceinline__ void fuseReadsLaunchTransformDPP(const TDPPDetails& tDPPDetails, const Read& read, const Next& nextOp, const IOps&... iOps) {
-    static_assert(!isReadType<Next>, "A Read Operation can not go after another Read Operation, it has to be ReadBack");
-    if constexpr (sizeof...(iOps) > 0) {
-        constexpr bool nextIsReadBack = isReadBackType<Next>;
-        constexpr bool iOpsContainsReadBack = (isReadBackType<IOps> || ...);
-        constexpr bool nextIsComputeOrMidWrite = isComputeType<Next> || isMidWriteType<Next>;
-        if constexpr (nextIsReadBack || (nextIsComputeOrMidWrite && iOpsContainsReadBack)) {
-            fuseReadsLaunchTransformDPP(tDPPDetails, fuse(read, nextOp), iOps...);
-        } else {
-            TransformDPP<PA, TFEN, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, read, nextOp, iOps...);
-        }
-    } else {
-        static_assert(isWriteType<Next>, "Last IOp must be WriteType");
-        TransformDPP<PA, TFEN, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, read, nextOp);
-    }
-}
-
-template <enum ParArch PA, enum TF TFEN, bool THREAD_DIVISIBLE, typename TDPPDetails, typename Read, typename AfterRead, typename... IOps>
-__global__ void launchTransformDPP_Kernel_fuse_back(const __grid_constant__ TDPPDetails tDPPDetails,
-                                                    const __grid_constant__ IOps... operations) {
-    TransformDPP<PA, TFEN, TDPPDetails, THREAD_DIVISIBLE>::exec(tDPPDetails, operations...);
-}
 } // namespace fk
 #endif
 

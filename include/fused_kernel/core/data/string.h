@@ -47,7 +47,13 @@ namespace fk {
 
         // Constructor from a String literal
         constexpr String(const char(&str)[N]) {
+#ifdef __NVCC__
+#pragma nv_diag_suppress 186
+#endif    
             for (size_t i = 0; i < N - 1; ++i) {
+#ifdef __NVCC__
+#pragma nv_diag_default 186
+#endif
                 data[i] = str[i];
             }
             length = N - 1;
