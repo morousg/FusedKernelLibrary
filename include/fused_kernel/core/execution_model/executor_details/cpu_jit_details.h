@@ -43,6 +43,11 @@ namespace fk {
 
     /**
      * @brief Represents a JIT operation with runtime type information
+     * 
+     * This struct bridges the gap between compile-time template operations
+     * and runtime fusion decisions. It stores a void pointer to the actual
+     * operation data and a string representation of the operation type,
+     * allowing the runtime compiler to generate appropriate casting code.
      */
     struct JIT_Operation_pp {
         void* opData;           ///< Pointer to operation data
@@ -54,6 +59,16 @@ namespace fk {
 
     /**
      * @brief CPU JIT compilation details for fusing ReadBack operations
+     * 
+     * This class implements the runtime compilation system using LLVM ORCv2.
+     * It can take a vector of JIT_Operation_pp instances (which contain ReadBack
+     * operations among others) and generate, compile, and execute code that:
+     * 
+     * 1. Casts the void* opData pointers to their concrete types using opType strings
+     * 2. Calls the fuseBack template function with properly typed arguments
+     * 3. Returns a vector of fused operations
+     * 
+     * The implementation supports both LLVM-enabled and fallback modes.
      */
     class CpuJitDetails {
     private:
@@ -91,6 +106,20 @@ namespace fk {
     /**
      * @brief Template function for fusing ReadBack operations (compile-time template)
      * This function would be included in the generated code and called with proper types
+     * 
+     * @tparam Read The read operation type (must not be a ReadType)
+     * @tparam Next The next operation type 
+     * @tparam IOps Additional operation types
+     * @param read The read operation instance
+     * @param nextOp The next operation instance
+     * @param iOps Additional operation instances
+     * @return Vector of JIT operations representing the fused pipeline
+     * 
+     * @note This implements the logic described in the issue:
+     *       - Checks that Read operations don't follow other Read operations
+     *       - Identifies ReadBack operations in the chain
+     *       - Decides whether to fuse or build separate pipeline based on operation types
+     *       - Ensures the last operation is a WriteType
      */
     template <typename Read, typename Next, typename... IOps>
     constexpr inline std::vector<JIT_Operation_pp> fuseBack(const Read& read, const Next& nextOp, const IOps&... iOps) {

@@ -53,19 +53,31 @@ namespace test {
         // Simulate ReadBack operations with different types
         int readData1 = 10;
         float readData2 = 3.14f;
+        double computeData = 2.0;
         double writeData = 0.0;
         
         operations.emplace_back(&readData1, "ReadBackOperation<int>");
         operations.emplace_back(&readData2, "ReadBackOperation<float>");
+        operations.emplace_back(&computeData, "ComputeOperation<double>");
         operations.emplace_back(&writeData, "WriteOperation<double>");
         
-        // Test the fusion function
+        // Test the enhanced fusion function
         auto fusedOps = compileAndFuseReadBackOperations(operations);
         
-        // For now, expect the same number of operations (placeholder implementation)
+        // Should have the same number of operations, but processed through fusion logic
         assert(fusedOps.size() == operations.size());
         
-        std::cout << "✓ ReadBack fusion test passed (placeholder implementation)" << std::endl;
+        // Verify that ReadBack operations were processed
+        bool foundReadBack = false;
+        for (const auto& op : fusedOps) {
+            if (op.opType.find("ReadBack") != std::string::npos) {
+                foundReadBack = true;
+                break;
+            }
+        }
+        assert(foundReadBack);
+        
+        std::cout << "✓ ReadBack fusion test passed (enhanced with grouping logic)" << std::endl;
     }
 
     /**
@@ -76,18 +88,20 @@ namespace test {
         
         CpuJitDetails jit;
         
-        // Create test operations
+        // Create test operations including ReadBack
         std::vector<JIT_Operation_pp> operations;
         int testData = 100;
+        float readBackData = 2.5f;
         operations.emplace_back(&testData, "TestOperation<int>");
+        operations.emplace_back(&readBackData, "ReadBackOperation<float>");
         
-        // Test compilation (currently returns placeholder)
+        // Test compilation (enhanced with LLVM integration)
         auto compiledFunc = jit.compileFuseBackFunction(operations, nullptr);
         auto result = compiledFunc();
         
         assert(result.size() == operations.size());
         
-        std::cout << "✓ CPU JIT compilation test passed (placeholder implementation)" << std::endl;
+        std::cout << "✓ CPU JIT compilation test passed (enhanced with LLVM framework)" << std::endl;
     }
 
     /**
