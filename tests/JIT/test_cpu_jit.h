@@ -99,6 +99,51 @@ namespace test {
         }
     }
     
+    // Test CPU JIT fusion analysis
+    bool testFusionAnalysis() {
+        std::cout << "Testing CPU JIT fusion analysis..." << std::endl;
+        
+        try {
+            auto& compiler = cpu_jit::CPUJITCompiler::getInstance();
+            
+            // Test case 1: No ReadBack operations - should not require fusion
+            const auto mul_op = fk::Mul<float>::build(2.0f);
+            const auto add_op = fk::Add<float>::build(5.0f);
+            
+            std::vector<JIT_Operation_pp> pipeline1;
+            pipeline1.push_back(createMockOperation(mul_op));
+            pipeline1.push_back(createMockOperation(add_op));
+            
+            if (compiler.requiresFusion(pipeline1)) {
+                std::cerr << "Error: Pipeline without ReadBack should not require fusion" << std::endl;
+                return false;
+            }
+            
+#if defined(LLVM_JIT_ENABLED)
+            // Test case 2: ReadBack with compute operations - should require fusion (only when LLVM is enabled)
+            std::vector<JIT_Operation_pp> pipeline2;
+            std::string readBackType = "MockReadBack<float>";
+            JIT_Operation_pp mockReadBack(readBackType, &mul_op, sizeof(mul_op));
+            pipeline2.push_back(std::move(mockReadBack));
+            pipeline2.push_back(createMockOperation(add_op));
+            
+            if (!compiler.requiresFusion(pipeline2)) {
+                std::cerr << "Error: Pipeline with ReadBack and compute should require fusion" << std::endl;
+                return false;
+            }
+#else
+            // When LLVM is disabled, fusion analysis always returns false
+            std::cout << "Note: LLVM JIT is disabled, fusion analysis always returns false" << std::endl;
+#endif
+            
+            std::cout << "Fusion analysis test passed." << std::endl;
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in testFusionAnalysis: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
     // Test empty pipeline handling
     bool testEmptyPipeline() {
         std::cout << "Testing empty pipeline handling..." << std::endl;
@@ -175,6 +220,7 @@ int launch() {
     // Run all tests
     allTestsPassed &= fk::test::testBasicCPUJIT();
     allTestsPassed &= fk::test::testCPUJITWithReadBack();
+    allTestsPassed &= fk::test::testFusionAnalysis();
     allTestsPassed &= fk::test::testEmptyPipeline();
     allTestsPassed &= fk::test::testSingleOperation();
     

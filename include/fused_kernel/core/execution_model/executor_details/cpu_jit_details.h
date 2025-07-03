@@ -38,6 +38,7 @@
 #include <memory>
 #include <unordered_map>
 #include <sstream>
+#include <iostream>
 
 namespace fk {
 namespace cpu_jit {
@@ -74,62 +75,24 @@ namespace cpu_jit {
             return ss.str();
         }
         
-        // Generate C++ source code for the runtime function
-        std::string generateFuseBackSource(const std::vector<std::string>& typeNames) {
-            std::stringstream source;
+        // Simplified implementation: Rather than full C++ compilation,
+        // we'll implement a runtime dispatching mechanism based on type strings
+        FuseBackFunctionPtr createRuntimeDispatcher(const std::vector<std::string>& typeNames) {
+            // For the initial implementation, we return a function that performs
+            // runtime type checking and calls appropriate template instantiations
+            // In a complete implementation, this would generate and compile LLVM IR
             
-            source << R"(
-#include <vector>
-#include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
-#include <fused_kernel/core/execution_model/operation_model/operation_types.h>
-#include <fused_kernel/core/execution_model/operation_model/iop_fuser.h>
-
-extern "C" {
-
-std::vector<fk::JIT_Operation_pp>* fuseBackRuntime(void** opDataPtrs, size_t numOps) {
-    if (numOps < 2) {
-        return nullptr;
-    }
-    
-    // Cast the void pointers to their actual types
-)";
-            
-            // Generate casting code for each operation
-            for (size_t i = 0; i < typeNames.size(); ++i) {
-                source << "    const " << typeNames[i] << "& op" << i 
-                      << " = *reinterpret_cast<const " << typeNames[i] << "*>(opDataPtrs[" << i << "]);\n";
-            }
-            
-            source << "\n    // Call the original fuseBack function\n";
-            source << "    auto result = fk::fuseBack(";
-            
-            for (size_t i = 0; i < typeNames.size(); ++i) {
-                source << "op" << i;
-                if (i < typeNames.size() - 1) {
-                    source << ", ";
-                }
-            }
-            
-            source << ");\n";
-            source << "    \n    // Return the result as a heap-allocated vector\n";
-            source << "    return new std::vector<fk::JIT_Operation_pp>(std::move(result));\n";
-            source << "}\n\n}";
-            
-            return source.str();
-        }
-        
-        // Compile the generated source using LLVM JIT
-        FuseBackFunctionPtr compileFunction(const std::string& source) {
-            context_ = std::make_unique<llvm::LLVMContext>();
-            auto module = std::make_unique<llvm::Module>("cpu_jit_module", *context_);
-            
-            // For simplicity, we'll use a mock compilation here
-            // In a real implementation, you would parse the C++ source using Clang
-            // and generate LLVM IR, then compile it with the JIT
-            
-            // This is a simplified mock implementation that returns nullptr
-            // A full implementation would require integrating Clang frontend
-            return nullptr;
+            // This is a simplified mock that demonstrates the concept
+            return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
+                // In a real implementation, this would:
+                // 1. Cast void* pointers to their actual types based on stored type info
+                // 2. Call the appropriate template instantiation of fuseBack
+                // 3. Return the fused operations
+                
+                // For now, return empty vector to indicate no fusion occurred
+                std::vector<JIT_Operation_pp> result;
+                return result;
+            };
         }
         
     public:
@@ -146,10 +109,42 @@ std::vector<fk::JIT_Operation_pp>* fuseBackRuntime(void** opDataPtrs, size_t num
         
         ~CPUJITCompiler() = default;
         
+        // Analyze the pipeline to determine if ReadBack fusion is needed
+        bool requiresFusion(const std::vector<JIT_Operation_pp>& pipeline) {
+            if (pipeline.size() < 2) return false;
+            
+            // Look for patterns that require fusion
+            bool hasReadBack = false;
+            bool hasComputeAfterReadBack = false;
+            
+            for (size_t i = 0; i < pipeline.size(); ++i) {
+                const std::string& opType = pipeline[i].getType();
+                
+                // Check if this is a ReadBack operation
+                if (opType.find("ReadBack") != std::string::npos) {
+                    hasReadBack = true;
+                    
+                    // Check if there are compute operations after this ReadBack
+                    for (size_t j = i + 1; j < pipeline.size(); ++j) {
+                        const std::string& nextType = pipeline[j].getType();
+                        if (nextType.find("Mul") != std::string::npos ||
+                            nextType.find("Add") != std::string::npos ||
+                            nextType.find("Sub") != std::string::npos ||
+                            nextType.find("Div") != std::string::npos) {
+                            hasComputeAfterReadBack = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            return hasReadBack && hasComputeAfterReadBack;
+        }
+        
         // Compile and execute fuseBack for the given operation pipeline
         std::vector<JIT_Operation_pp> compileFuseBack(const std::vector<JIT_Operation_pp>& pipeline) {
-            if (pipeline.size() < 2) {
-                return pipeline; // Nothing to fuse
+            if (!requiresFusion(pipeline)) {
+                return pipeline; // No fusion needed
             }
             
             // Extract type names
@@ -171,11 +166,15 @@ std::vector<fk::JIT_Operation_pp>* fuseBackRuntime(void** opDataPtrs, size_t num
                 }
                 
                 auto result = it->second(opDataPtrs.data(), opDataPtrs.size());
-                return result;
+                return result.empty() ? pipeline : result;
             }
             
-            // For now, return a fallback implementation
-            // In a complete implementation, this would compile and execute the runtime function
+            // Create new runtime dispatcher
+            auto dispatcher = createRuntimeDispatcher(typeNames);
+            compiledFunctions_[signature] = dispatcher;
+            
+            // For now, return the original pipeline
+            // In a complete implementation, this would execute the compiled function
             return pipeline;
         }
         
@@ -191,29 +190,34 @@ std::vector<fk::JIT_Operation_pp>* fuseBackRuntime(void** opDataPtrs, size_t num
     
     // Main API function to fuse ReadBack operations from a pipeline
     std::vector<JIT_Operation_pp> fuseBackCPU(const std::vector<JIT_Operation_pp>& pipeline) {
-        // Check if pipeline contains ReadBack operations that need fusing
-        bool hasReadBack = false;
-        for (const auto& op : pipeline) {
-            // This is a simplified check - in reality you'd need to parse the type string
-            // to determine if it's a ReadBack type
-            if (op.getType().find("ReadBack") != std::string::npos) {
-                hasReadBack = true;
-                break;
-            }
+        // Get the JIT compiler instance
+        auto& compiler = CPUJITCompiler::getInstance();
+        
+        // Check if the pipeline requires fusion
+        if (!compiler.requiresFusion(pipeline)) {
+            return pipeline; // No ReadBack operations that need fusing
         }
         
-        if (!hasReadBack) {
-            return pipeline; // No ReadBack operations to fuse
+        // Use the JIT compiler to analyze and potentially fuse the operations
+        auto result = compiler.compileFuseBack(pipeline);
+        
+        // Log the fusion decision for debugging
+        if (result.size() != pipeline.size()) {
+            // Some fusion occurred
+            std::cout << "CPU JIT: Fused " << pipeline.size() << " operations into " 
+                     << result.size() << " operations" << std::endl;
         }
         
-        // Use the JIT compiler to fuse the operations
-        return CPUJITCompiler::getInstance().compileFuseBack(pipeline);
+        return result;
     }
 
 } // namespace cpu_jit
 } // namespace fk
 
 #else
+
+#include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
+#include <vector>
 
 namespace fk {
 namespace cpu_jit {
@@ -223,6 +227,24 @@ namespace cpu_jit {
         // Just return the original pipeline without fusion
         return pipeline;
     }
+
+    // Mock compiler class for API compatibility
+    class CPUJITCompiler {
+    public:
+        static CPUJITCompiler& getInstance() {
+            static CPUJITCompiler instance;
+            return instance;
+        }
+        
+        bool requiresFusion(const std::vector<JIT_Operation_pp>& pipeline) {
+            // Always return false in fallback mode
+            return false;
+        }
+        
+        std::vector<JIT_Operation_pp> compileFuseBack(const std::vector<JIT_Operation_pp>& pipeline) {
+            return pipeline;
+        }
+    };
 
 } // namespace cpu_jit
 } // namespace fk
