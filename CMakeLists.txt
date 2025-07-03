@@ -29,6 +29,8 @@ else()
     message(STATUS "CUDA compiler not found, CUDA support will be disabled.")     
 endif()
 
+include (cmake/llvm_jit.cmake)
+
 
 
 option (BUILD_UTEST "build standard unit tests" ON)
