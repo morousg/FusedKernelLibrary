@@ -62,8 +62,9 @@ namespace fk {
                                     VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
                                     VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
                                     VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
-
-    using StandardTypes = TypeList<bool, uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong, float, double>;
+    using FloatingTypes = TypeList<float, double>;
+    using IntegralTypes = TypeList<uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
+    using StandardTypes = TypeListCat_t<TypeListCat_t<TypeList<bool>, IntegralTypes>, FloatingTypes>;
     using VOne = TypeList<bool1, uchar1, char1, ushort1, short1, uint1, int1, ulong1, long1, ulonglong1, longlong1, float1, double1>;
     using VTwo = VectorTypeList<2>;
     using VThree = VectorTypeList<3>;
@@ -72,6 +73,9 @@ namespace fk {
 
     template <typename T>
     constexpr bool validCUDAVec = one_of<T, VAll>::value;
+
+    template <typename T>
+    struct IsCudaVector : std::conditional_t<validCUDAVec<T>, std::true_type, std::false_type> {};
 
     template <typename T>
     FK_HOST_DEVICE_CNST int Channels() {

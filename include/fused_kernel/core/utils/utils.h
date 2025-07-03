@@ -15,12 +15,21 @@
 #ifndef FK_UTILS
 #define FK_UTILS
 
+#if !defined(NVRTC_COMPILER)
 #include <string>
 #include <stdexcept>
-#if defined(__CUDACC__) || defined(__CUDA_ARCH__)
-#include <cuda.h>
-#include <cuda_runtime.h>
 
+#if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
+#include <cuda_runtime.h>
+#endif
+
+#if defined(NVRTC_ENABLED)
+#include <cuda.h>
+#include <nvrtc.h>
+#endif
+#endif // NVRTC_COMPILER
+
+#if defined(__CUDACC__) || defined(__NVCC__) || defined(NVRTC_COMPILER) || defined(__HIPCC__)
 #define FK_DEVICE_FUSE static constexpr __device__ __forceinline__
 #define FK_DEVICE_CNST constexpr __device__ __forceinline__
 #define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE __host__
@@ -28,6 +37,7 @@
 #define FK_HOST_FUSE static constexpr __forceinline__ __host__
 #define FK_HOST_CNST constexpr __forceinline__ __host__
 #define FK_HOST_STATIC static __forceinline__ __host__
+#define FK_HOST_INLINE __forceinline__ __host__
 #define FK_HOST_DEVICE_STATIC static __forceinline__ __host__ __device__
 #define FK_RESTRICT __restrict__
 #else
@@ -38,13 +48,14 @@
 #define FK_HOST_FUSE static constexpr inline
 #define FK_HOST_CNST constexpr inline
 #define FK_HOST_STATIC static inline
+#define FK_HOST_INLINE inline
 #define FK_HOST_DEVICE_STATIC static inline
 #ifdef _MSC_VER
 #define FK_RESTRICT __restrict
 #else
 #define FK_RESTRICT __restrict__
-#endif
-#endif
+#endif // _MSC_VER
+#endif // __CUDACC__ || __NVCC__ || NVRTC_COMPILER || __HIPCC__
 
 #ifdef CUDART_VERSION
 #define CUDART_MAJOR_VERSION CUDART_VERSION/1000
@@ -68,29 +79,65 @@ using ulonglong = unsigned long long;
 using ushort = unsigned short;
 using ulong = unsigned long;
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if (defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)) && !defined(NVRTC_COMPILER)
 namespace fk {
     inline void gpuAssert(cudaError_t code,
-        const char *file,
-        int line,
-        bool abort = true) {
+                          const char *file,
+                          int line,
+                          bool abort = true) {
         if (code != cudaSuccess) {
-            std::string message = "GPUassert: ";
+            std::string message = "GPU Error: ";
             message.append(cudaGetErrorString(code));
             message.append(" File: ");
             message.append(file);
             message.append(" Line:");
             message.append(std::to_string(line).c_str());
-            message.append("/n");
+            message.append("\n");
             if (abort) throw std::runtime_error(message.c_str());
         }
     }
+#if defined(NVRTC_ENABLED)
+    inline void gpuAssert(CUresult code,
+                          const char* file,
+                          int line,
+                          bool abort = true) {
+        if (code != CUDA_SUCCESS) {
+            std::string message = "GPU Error: ";
+            const char* error_str{""};
+            cuGetErrorString(code, &error_str);
+            message.append(error_str);
+            message.append(" File: ");
+            message.append(file);
+            message.append(" Line:");
+            message.append(std::to_string(line).c_str());
+            message.append("\n");
+            if (abort) throw std::runtime_error(message.c_str());
+        }
+    }
+    inline void gpuAssert(nvrtcResult code,
+                          const char* file,
+                          int line,
+                          bool abort = true) {
+        if (code != NVRTC_SUCCESS) {
+            std::string message = "GPU Error: ";
+            const char* error_str = nvrtcGetErrorString(code);
+            message.append(error_str);
+            message.append(" File: ");
+            message.append(file);
+            message.append(" Line:");
+            message.append(std::to_string(line).c_str());
+            message.append("\n");
+            if (abort) throw std::runtime_error(message.c_str());
+        }
+    }
+#endif // NVRTC_ENABLED
 } // namespace fk
 
 #define gpuErrchk(ans) { fk::gpuAssert((ans), __FILE__, __LINE__, true); }
-#endif
+#endif // (__NVCC__) || __HIP__ || NVRTC_ENABLED) && !defined(NVRTC_COMPILER)
+
 // Null type, used for Operation required aliases that can not still be known, because they are deduced
 // from a backwards operation that is till not defined.
 struct NullType {};
 
-#endif
+#endif // FK_UTILS

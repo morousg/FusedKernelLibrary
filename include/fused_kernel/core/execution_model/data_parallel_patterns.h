@@ -15,7 +15,7 @@
 #ifndef FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 #define FK_INSTANTIABLE_DATA_PARALLEL_PATTERNS
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
 #include <cooperative_groups.h>
 namespace cooperative_groups {};
 namespace cg = cooperative_groups;
@@ -207,9 +207,33 @@ namespace fk { // namespace FusedKernel
                 return Details{};
             }
         }
+        template <typename FirstIOp, typename... IOps>
+        FK_DEVICE_FUSE auto build_details(const ActiveThreads& activeThreads, const uint& readRow, const uint& writeRow) {
+            using Details = TransformDPPDetails<static_cast<bool>(TFEN), FirstIOp, IOps...>;
+            using TFI = typename Details::TFI;
+            if constexpr (TFI::ENABLED) {
+                const ActiveThreads gridActiveThreads(static_cast<uint>(ceil(activeThreads.x / static_cast<float>(TFI::elems_per_thread))),
+                                                      activeThreads.y, activeThreads.z);
+                bool threadDivisible;
+                if constexpr (TFI::ENABLED) {
+                    using ReadOperation = typename FirstIOp::Operation;
+                    using WriteOperation = typename LastType_t<IOps...>::Operation;
+                    threadDivisible = (readRow % TFI::elems_per_thread == 0) && (writeRow % TFI::elems_per_thread == 0);
+                } else {
+                    threadDivisible = true;
+                }
+                const Details details{ gridActiveThreads, threadDivisible };
+                return details;
+            } else {
+                return Details{};
+            }
+        }
     };
 
-#if defined(__NVCC__) || defined(__HIP__)
+// Note: there are no ParArch::GPU_NVIDIA_JIT DPP implementaitons, because
+// the DPP's are going to be compiled by NVRTC, which uses ParArch::GPU_NVIDIA
+// That is why we include defined(__NVRTC__) in the ifdef below.
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     template <typename DPPDetails, enum TF TFEN, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::GPU_NVIDIA, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
     private:
@@ -239,7 +263,7 @@ namespace fk { // namespace FusedKernel
             }
         }
     };
-#endif // defined(__NVCC__) || defined(__HIPCC__)
+#endif // defined(__NVCC__) || defined(__HIPCC__) || defined(__NVRTC__)
 
     template <enum TF TFEN, typename DPPDetails, bool THREAD_DIVISIBLE>
     struct TransformDPP<ParArch::CPU, TFEN, DPPDetails, THREAD_DIVISIBLE, std::enable_if_t<!std::is_same_v<DPPDetails, void>, void>> {
@@ -295,7 +319,7 @@ namespace fk { // namespace FusedKernel
         }
     };
 
-#if defined(__NVCC__) || defined(__HIP__)
+#if defined(__NVCC__) || defined(__HIP__) || defined(__NVRTC__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::GPU_NVIDIA, SequenceSelector> {
     private:
@@ -309,7 +333,7 @@ namespace fk { // namespace FusedKernel
             Parent::template divergent_operate<1>(z, iOpSequences...);
         }
     };
-#endif // defined(__NVCC__) || defined(__HIPCC__)
+#endif // defined(__NVCC__) || defined(__HIPCC__) || defined(__NVRTC__)
     template <typename SequenceSelector>
     struct DivergentBatchTransformDPP<ParArch::CPU, SequenceSelector> {
     private:

@@ -128,14 +128,6 @@ namespace fk {
             }
         }
 
-        template <size_t BATCH, size_t... Idx, typename BackwardIOp, typename ForwardIOp>
-        FK_HOST_FUSE auto make_fusedArrayBack(const std::index_sequence<Idx...>&,
-            const std::array<BackwardIOp, BATCH>& bkArray,
-            const std::array<ForwardIOp, BATCH>& fwdArray) {
-            using ResultingType =
-                decltype(ForwardIOp::Operation::build(std::declval<BackwardIOp>(), std::declval<ForwardIOp>()));
-            return std::array<ResultingType, BATCH>{ForwardIOp::Operation::build(bkArray[Idx], fwdArray[Idx])...};
-        }
         template <size_t BATCH, size_t... Idx, typename ThisIOp, typename ForwardIOp>
         FK_HOST_FUSE auto make_fusedArray(const std::index_sequence<Idx...>&,
             const std::array<ThisIOp, BATCH>& thisArray,

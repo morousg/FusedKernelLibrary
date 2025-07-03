@@ -6,7 +6,7 @@ on:
   #push:
  #  branches: [ $default-branch ]
   pull_request:
-    branches: [ main]
+    branches: [ "main" , "54-add-a-runtime-compilation-version-of-the-library-for-nvidia-gpus" ]
 
 jobs:
   build:

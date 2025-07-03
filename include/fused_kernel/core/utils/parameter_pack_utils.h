@@ -17,6 +17,7 @@
 #define FK_PARAMETER_PACK_UTILS
 
 #include <fused_kernel/core/utils/utils.h>
+#include <utility>
 
 namespace fk { // namespace fused kernel
 

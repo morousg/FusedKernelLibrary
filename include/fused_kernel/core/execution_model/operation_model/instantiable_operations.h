@@ -29,9 +29,11 @@
 namespace fk { // namespace FusedKernel
     struct ActiveThreads {
         uint x, y, z;
-        FK_HOST_DEVICE_CNST ActiveThreads(const uint& vx = 1,
-            const uint& vy = 1,
-            const uint& vz = 1) : x(vx), y(vy), z(vz) {}
+        FK_HOST_DEVICE_CNST
+        ActiveThreads(const uint& vx = 1,
+                      const uint& vy = 1,
+                      const uint& vz = 1)
+                      : x(vx), y(vy), z(vz) {}
     };
 
 #define DEVICE_FUNCTION_DETAILS_IS(instance_type) \
