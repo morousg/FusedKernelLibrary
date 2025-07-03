@@ -67,7 +67,7 @@ namespace fk {
         Stream_(const Stream_<ParArch::GPU_NVIDIA>& other) : BaseStream(other) {
             initFromOther(other);
         }
-        explicit Stream_<ParArch::GPU_NVIDIA>(const cudaStream_t& stream) : m_stream(stream) {}
+        explicit Stream_<ParArch::GPU_NVIDIA>(const cudaStream_t& stream) : m_stream(stream), BaseStream() {}
 
         cudaStream_t operator()() const {
             return m_stream;
@@ -128,7 +128,7 @@ namespace fk {
         Stream_(const Stream_<ParArch::GPU_NVIDIA_JIT>& other) : BaseStream(other) {
             initFromOther(other);
         }
-        explicit Stream_<ParArch::GPU_NVIDIA_JIT>(const cudaStream_t& stream) : m_stream(stream) {}
+        explicit Stream_<ParArch::GPU_NVIDIA_JIT>(const cudaStream_t& stream) : m_stream(stream), BaseStream() {}
 
         cudaStream_t operator()() const {
             return m_stream;
