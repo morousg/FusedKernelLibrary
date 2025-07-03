@@ -130,7 +130,7 @@ namespace fk {
 
         template <size_t M>
         constexpr bool operator==(const char(&other)[M]) const noexcept {
-            return this == String(other);
+            return *this == String<M>(other);
         }
 
         // Less than operator
