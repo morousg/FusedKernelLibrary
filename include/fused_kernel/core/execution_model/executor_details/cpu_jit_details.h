@@ -12,6 +12,41 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+/**
+ * @file cpu_jit_details.h
+ * @brief CPU runtime compilation system using LLVM ORC JIT for fusing ReadBack operations
+ * 
+ * This header provides a CPU-based JIT compilation system that can fuse ReadBack operations
+ * present in an std::vector<JIT_Operation_pp> at runtime. The system uses LLVM ORC JIT v2
+ * to compile and execute optimized fusion code.
+ * 
+ * Usage example:
+ * @code
+ * #include <fused_kernel/core/execution_model/executor_details/cpu_jit_details.h>
+ * 
+ * // Create operations
+ * const auto read_op = fk::PerThreadRead<fk::_1D, float>::build(input_data);
+ * const auto mul_op = fk::Mul<float>::build(2.0f);
+ * const auto add_op = fk::Add<float>::build(5.0f);
+ * const auto write_op = fk::PerThreadWrite<fk::_1D, float>::build(output_data);
+ * 
+ * // Build pipeline with mixed ReadBack operations
+ * std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(
+ *     read_op, mul_op, add_op, write_op
+ * );
+ * 
+ * // Apply CPU JIT fusion
+ * auto fused_pipeline = fk::cpu_jit::fuseBackCPU(pipeline);
+ * 
+ * // The fused_pipeline now contains optimized operations where ReadBack operations
+ * // have been fused with subsequent compute operations
+ * @endcode
+ * 
+ * The system automatically detects patterns requiring fusion and compiles optimized
+ * runtime functions. When LLVM is not available, it gracefully falls back to
+ * returning the original pipeline without fusion.
+ */
+
 #ifndef FK_CPU_JIT_DETAILS_H
 #define FK_CPU_JIT_DETAILS_H
 
