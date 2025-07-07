@@ -29,12 +29,6 @@
 
 namespace fk {
 namespace test {
-
-    // Test helper function to create a mock JIT_Operation_pp
-    template<typename T>
-    JIT_Operation_pp createMockOperation(const T& op) {
-        return JIT_Operation_pp(typeToString<T>(), &op, sizeof(T));
-    }
     
     // Test basic CPU JIT functionality
     bool testBasicCPUJIT() {
@@ -45,9 +39,8 @@ namespace test {
             const auto mul_op = fk::Mul<float>::build(2.0f);
             const auto add_op = fk::Add<float>::build(5.0f);
             
-            std::vector<JIT_Operation_pp> pipeline;
-            pipeline.push_back(createMockOperation(mul_op));
-            pipeline.push_back(createMockOperation(add_op));
+            // Convert to JIT_Operation_pp using the fk namespace function
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(mul_op, add_op);
             
             // Test the fuseBackCPU function
             auto result = cpu_jit::fuseBackCPU(pipeline);
@@ -76,7 +69,7 @@ namespace test {
         
         try {
             // Create a pipeline that includes actual ReadBack operations
-            // Use BorderReader which creates ReadBack operations
+            // Use real operations: readIOp, borderIOp and mul_op
             constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
                 fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
             
@@ -88,12 +81,8 @@ namespace test {
             // Create additional operations for the pipeline
             const auto mul_op = fk::Mul<float>::build(3.0f);
             
-            std::vector<JIT_Operation_pp> pipeline;
-            
-            // Add the ReadBack operation
-            pipeline.push_back(createMockOperation(borderIOp));
-            // Add compute operation after ReadBack
-            pipeline.push_back(createMockOperation(mul_op));
+            // Convert them into JIT_Operation_pp with the function available in fk namespace
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, borderIOp, mul_op);
             
             // Test the fuseBackCPU function with ReadBack operations
             auto result = cpu_jit::fuseBackCPU(pipeline);
@@ -120,9 +109,8 @@ namespace test {
             const auto mul_op = fk::Mul<float>::build(2.0f);
             const auto add_op = fk::Add<float>::build(5.0f);
             
-            std::vector<JIT_Operation_pp> pipeline1;
-            pipeline1.push_back(createMockOperation(mul_op));
-            pipeline1.push_back(createMockOperation(add_op));
+            // Convert to JIT_Operation_pp using the fk namespace function
+            std::vector<fk::JIT_Operation_pp> pipeline1 = fk::buildOperationPipeline(mul_op, add_op);
             
             if (compiler.requiresFusion(pipeline1)) {
                 std::cerr << "Error: Pipeline without ReadBack should not require fusion" << std::endl;
@@ -134,9 +122,8 @@ namespace test {
                 fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
             constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<uchar3>(0));
             
-            std::vector<JIT_Operation_pp> pipeline2;
-            pipeline2.push_back(createMockOperation(borderIOp));
-            pipeline2.push_back(createMockOperation(add_op));
+            // Convert to JIT_Operation_pp using the fk namespace function
+            std::vector<fk::JIT_Operation_pp> pipeline2 = fk::buildOperationPipeline(borderIOp, add_op);
             
             if (!compiler.requiresFusion(pipeline2)) {
                 std::cerr << "Error: Pipeline with ReadBack operations should require fusion" << std::endl;
@@ -178,8 +165,9 @@ namespace test {
         
         try {
             const auto mul_op = fk::Mul<float>::build(4.0f);
-            std::vector<JIT_Operation_pp> pipeline;
-            pipeline.push_back(createMockOperation(mul_op));
+            
+            // Convert to JIT_Operation_pp using the fk namespace function
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(mul_op);
             
             auto result = cpu_jit::fuseBackCPU(pipeline);
             
