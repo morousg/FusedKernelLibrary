@@ -88,8 +88,24 @@ if (LLVM_JIT_ENABLE)
 			MC
 		)
 		
+		# Add clang libraries for C++ compilation
+		set(clang_libs
+			/usr/lib/llvm-18/lib/libclangFrontend.a
+			/usr/lib/llvm-18/lib/libclangDriver.a
+			/usr/lib/llvm-18/lib/libclangSerialization.a
+			/usr/lib/llvm-18/lib/libclangCodeGen.a
+			/usr/lib/llvm-18/lib/libclangParse.a
+			/usr/lib/llvm-18/lib/libclangSema.a
+			/usr/lib/llvm-18/lib/libclangAnalysis.a
+			/usr/lib/llvm-18/lib/libclangEdit.a
+			/usr/lib/llvm-18/lib/libclangAST.a
+			/usr/lib/llvm-18/lib/libclangLex.a
+			/usr/lib/llvm-18/lib/libclangBasic.a
+		)
+		
 		message(STATUS "LLVM libraries: ${llvm_libs}")
-		set(LLVM_JIT_LIBRARIES ${llvm_libs})
+		message(STATUS "Clang libraries: ${clang_libs}")
+		set(LLVM_JIT_LIBRARIES ${llvm_libs} ${clang_libs})
 		
 		# Add preprocessor definitions for LLVM JIT
 		add_definitions(-DLLVM_JIT_ENABLED)

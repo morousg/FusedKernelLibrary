@@ -64,6 +64,24 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Verifier.h>
 
+// Clang includes for C++ compilation
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/FrontendActions.h>
+#include <clang/Basic/DiagnosticOptions.h>
+#include <clang/Basic/TargetInfo.h>
+#include <clang/Basic/SourceManager.h>
+#include <clang/Basic/FileManager.h>
+#include <clang/Lex/Preprocessor.h>
+#include <clang/AST/ASTContext.h>
+#include <clang/CodeGen/ModuleBuilder.h>
+#include <clang/Parse/ParseAST.h>
+#include <clang/Basic/LangOptions.h>
+#include <clang/Basic/CodeGenOptions.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/VirtualFileSystem.h>
+#include <llvm/TargetParser/Triple.h>
+
 #include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
 #include <fused_kernel/core/execution_model/operation_model/operation_types.h>
 #include <fused_kernel/core/execution_model/operation_model/iop_fuser.h>
@@ -135,28 +153,15 @@ namespace cpu_jit {
                 // Log the generated C++ source that will be compiled
                 llvm::errs() << "Compiling C++ dispatch function:\n" << cppSource << "\n";
                 
-                // Create LLVM module and compile the C++ source
+                // Use clang to compile the C++ source code to LLVM IR
                 auto ctx = std::make_unique<llvm::LLVMContext>();
-                auto module = std::make_unique<llvm::Module>("cpu_jit_dispatch", *ctx);
-                
-                // In a full implementation, this would use clang to compile the C++ source
-                // For now, we'll create a stub function that can be called
-                
-                // Create function type: std::vector<JIT_Operation_pp>* (void**, size_t)
-                auto voidPtrTy = llvm::Type::getInt8PtrTy(*ctx);
-                auto voidPtrPtrTy = llvm::PointerType::get(voidPtrTy, 0);
-                auto sizeTy = llvm::Type::getInt64Ty(*ctx);
-                auto retTy = llvm::Type::getInt8PtrTy(*ctx); // Return as void* for simplicity
-                
-                llvm::FunctionType* funcType = llvm::FunctionType::get(retTy, {voidPtrPtrTy, sizeTy}, false);
-                llvm::Function* func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, functionName, module.get());
-                
-                // Create basic block and simple return
-                llvm::BasicBlock* bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-                llvm::IRBuilder<> builder(bb);
-                
-                // For now, return null pointer (indicating no fusion)
-                builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(*ctx)));
+                auto module = compileCppToLLVMIR(cppSource, functionName, *ctx);
+                if (!module) {
+                    llvm::errs() << "Failed to compile C++ source to LLVM IR\n";
+                    return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
+                        return {};
+                    };
+                }
                 
                 // Add the module to JIT
                 auto tsm = llvm::orc::ThreadSafeModule(std::move(module), std::move(ctx));
@@ -244,6 +249,101 @@ namespace cpu_jit {
             cpp << "}\n";
             
             return cpp.str();
+        }
+        
+        // Compile C++ source code to LLVM IR using clang
+        std::unique_ptr<llvm::Module> compileCppToLLVMIR(const std::string& cppSource, 
+                                                        const std::string& functionName,
+                                                        llvm::LLVMContext& context) {
+            try {
+                // Create compiler instance
+                auto compiler = std::make_unique<clang::CompilerInstance>();
+                
+                // Set up diagnostics
+                clang::DiagnosticOptions diagOpts;
+                auto diagPrinter = std::make_unique<clang::TextDiagnosticPrinter>(llvm::errs(), &diagOpts);
+                compiler->createDiagnostics(diagPrinter.release());
+                
+                // Set up language options for C++17
+                clang::LangOptions& langOpts = compiler->getLangOpts();
+                langOpts.CPlusPlus = true;
+                langOpts.CPlusPlus17 = true;
+                langOpts.Bool = true;
+                langOpts.WChar = true;
+                langOpts.Exceptions = true;
+                langOpts.CXXExceptions = true;
+                langOpts.RTTI = true;
+                
+                // Create target info
+                auto targetOpts = std::make_shared<clang::TargetOptions>();
+                targetOpts->Triple = "x86_64-unknown-linux-gnu"; // Use a hardcoded triple for now
+                compiler->setTarget(clang::TargetInfo::CreateTargetInfo(
+                    compiler->getDiagnostics(), targetOpts));
+                
+                // Set up file manager and source manager
+                compiler->createFileManager();
+                compiler->createSourceManager(compiler->getFileManager());
+                
+                // Create memory buffer for the C++ source
+                auto buffer = llvm::MemoryBuffer::getMemBuffer(cppSource, "dispatch.cpp");
+                
+                // Add the buffer to the source manager
+                auto fileId = compiler->getSourceManager().createFileID(std::move(buffer));
+                compiler->getSourceManager().setMainFileID(fileId);
+                
+                // Set up preprocessor
+                compiler->createPreprocessor(clang::TU_Complete);
+                
+                // Add include paths for fused_kernel headers
+                clang::HeaderSearchOptions& headerOpts = compiler->getHeaderSearchOpts();
+                headerOpts.AddPath("/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/include",
+                                 clang::frontend::Angled, false, false);
+                
+                // Set up AST context
+                compiler->createASTContext();
+                
+                // Create code generator
+                clang::CodeGenOptions codeGenOpts;
+                codeGenOpts.OptimizationLevel = 2; // O2 optimization
+                codeGenOpts.setDebugInfo(llvm::codegenoptions::NoDebugInfo);
+                
+                auto codeGen = std::unique_ptr<clang::CodeGenerator>(
+                    clang::CreateLLVMCodeGen(
+                        compiler->getDiagnostics(),
+                        "cpu_jit_dispatch",
+                        &compiler->getVirtualFileSystem(),
+                        compiler->getHeaderSearchOpts(),
+                        compiler->getPreprocessorOpts(),
+                        codeGenOpts,
+                        context
+                    )
+                );
+                
+                // Initialize code generator
+                codeGen->Initialize(compiler->getASTContext());
+                
+                // Parse the C++ source
+                clang::ParseAST(compiler->getPreprocessor(), codeGen.get(), compiler->getASTContext());
+                
+                // Get the generated module
+                auto module = codeGen->ReleaseModule();
+                if (!module) {
+                    llvm::errs() << "Failed to generate LLVM module from C++ source\n";
+                    return nullptr;
+                }
+                
+                // Verify the module
+                if (llvm::verifyModule(*module, &llvm::errs())) {
+                    llvm::errs() << "Generated LLVM module is invalid\n";
+                    return nullptr;
+                }
+                
+                return std::unique_ptr<llvm::Module>(module);
+                
+            } catch (const std::exception& e) {
+                llvm::errs() << "Exception during C++ compilation: " << e.what() << "\n";
+                return nullptr;
+            }
         }
         
     public:
