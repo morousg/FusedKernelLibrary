@@ -141,7 +141,7 @@ namespace test {
             constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
                 fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 256, 256, 256 * sizeof(uchar3) }});
             
-            constexpr auto cropIOp = readIOp.then(fk::Crop<>::build(fk::Rect{50, 50, 128, 128}));
+            constexpr auto cropIOp = fk::Crop<decltype(readIOp)>::build(readIOp, fk::Rect{50, 50, 128, 128});
             
             // Verify this is indeed a ReadBack operation
             static_assert(fk::isReadBackType<decltype(cropIOp)>, "cropIOp should be ReadBackType");
@@ -191,7 +191,7 @@ namespace test {
             constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float3>::build(
                 fk::RawPtr<fk::_2D, float3>{ nullptr, { 512, 512, 512 * sizeof(float3) }});
             
-            constexpr auto resizeIOp = readIOp.then(fk::Resize<fk::InterpolationType::INTER_LINEAR>::build(fk::Size{256, 256}));
+            constexpr auto resizeIOp = fk::Resize<fk::InterpolationType::INTER_LINEAR>::build(fk::Size{256, 256});
             
             // Verify this is indeed a ReadBack operation
             static_assert(fk::isReadBackType<decltype(resizeIOp)>, "resizeIOp should be ReadBackType");
@@ -241,8 +241,8 @@ namespace test {
             constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float4>::build(
                 fk::RawPtr<fk::_2D, float4>{ nullptr, { 320, 240, 320 * sizeof(float4) }});
             
-            constexpr auto warpIOp = readIOp.then(fk::Warping<fk::WarpType::Perspective>::build(
-                fk::WarpingParameters<fk::WarpType::Perspective>{}));
+            constexpr auto warpIOp = fk::Warping<fk::WarpType::Perspective>::build(
+                fk::WarpingParameters<fk::WarpType::Perspective>{});
             
             // Verify this is indeed a ReadBack operation
             static_assert(fk::isReadBackType<decltype(warpIOp)>, "warpIOp should be ReadBackType");
