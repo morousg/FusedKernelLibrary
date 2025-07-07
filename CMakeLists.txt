@@ -86,9 +86,11 @@ if (LLVM_JIT_ENABLE)
 			Analysis
 			ipo
 			MC
+			Coverage
+			ProfileData
 		)
 		
-		# Add clang libraries for C++ compilation (using shared libraries)
+		# Add clang libraries for C++ compilation (using shared libraries for now)
 		set(clang_libs
 			/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18
 		)
@@ -98,7 +100,7 @@ if (LLVM_JIT_ENABLE)
 		set(LLVM_JIT_LIBRARIES ${llvm_libs} ${clang_libs})
 		
 		# Add preprocessor definitions for LLVM JIT
-		add_definitions(-DLLVM_JIT_ENABLED)
+		add_definitions(-DLLVM_JIT_ENABLE)
 		
 		# Set up include directories
 		include_directories(${LLVM_INCLUDE_DIRS})

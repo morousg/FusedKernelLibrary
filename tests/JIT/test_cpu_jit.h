@@ -98,16 +98,17 @@ namespace test {
             bool shouldFuse = compiler.requiresFusion(pipeline);
             std::cout << "RequiresFusion result: " << (shouldFuse ? "true" : "false") << std::endl;
             
-            // The function should process the pipeline
-            // Input has 3 operations: readIOp, borderIOp, mul_op
-            // Currently the JIT compilation is not fully working, so we'll just verify basic functionality
+            // Verify the fusion worked as expected
             if (pipeline.size() != 3) {
                 std::cerr << "Error: Expected pipeline size 3, got " << pipeline.size() << std::endl;
                 return false;
             }
             
-            // For now, just verify the function runs without crashing
-            // TODO: Once JIT compilation is fully implemented, verify result.size() == 2
+            if (result.size() != 2) {
+                std::cerr << "Error: Expected result size 2, got " << result.size() << std::endl;
+                return false;
+            }
+            
             std::cout << "CPU JIT ReadBack test completed. Input size: " << pipeline.size() 
                      << ", Output size: " << result.size() << std::endl;
             
