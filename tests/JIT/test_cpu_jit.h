@@ -21,6 +21,9 @@
 #include <fused_kernel/core/utils/type_to_string.h>
 #include <fused_kernel/core/execution_model/memory_operations.h>
 #include <fused_kernel/algorithms/image_processing/border_reader.h>
+#include <fused_kernel/algorithms/image_processing/crop.h>
+#include <fused_kernel/algorithms/image_processing/resize.h>
+#include <fused_kernel/algorithms/image_processing/warping.h>
 
 #include <iostream>
 #include <string>
@@ -29,6 +32,16 @@
 
 namespace fk {
 namespace test {
+
+    // Utility function to print pipeline details in the requested format
+    void printPipelineDetails(const std::vector<JIT_Operation_pp>& pipeline, const std::string& label) {
+        std::cout << label << ": ";
+        for (size_t i = 0; i < pipeline.size(); ++i) {
+            if (i > 0) std::cout << ", ";
+            std::cout << pipeline[i].getType();
+        }
+        std::cout << std::endl;
+    }
     
     // Test basic CPU JIT functionality
     bool testBasicCPUJIT() {
@@ -84,14 +97,14 @@ namespace test {
             // Convert them into JIT_Operation_pp with the function available in fk namespace
             std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, borderIOp, mul_op);
             
+            // Print original pipeline details
+            printPipelineDetails(pipeline, "Original pipeline");
+            
             // Test the fuseBackCPU function with ReadBack operations
             auto result = cpu_jit::fuseBackCPU(pipeline);
             
-            // Debug: Print operation types to understand what we're working with
-            std::cout << "Pipeline operation types:" << std::endl;
-            for (size_t i = 0; i < pipeline.size(); ++i) {
-                std::cout << "  [" << i << "] " << pipeline[i].getType() << std::endl;
-            }
+            // Print fused result details
+            printPipelineDetails(result, "Fused result");
             
             // Test if requiresFusion works correctly for this pipeline
             auto& compiler = cpu_jit::CPUJITCompiler::getInstance();
@@ -115,6 +128,157 @@ namespace test {
             return true;
         } catch (const std::exception& e) {
             std::cerr << "Exception in testCPUJITWithReadBack: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
+    // Test CPU JIT with Crop operations
+    bool testCPUJITWithCrop() {
+        std::cout << "Testing CPU JIT with Crop operations..." << std::endl;
+        
+        try {
+            // Create a pipeline with Crop ReadBack operation
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
+                fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 256, 256, 256 * sizeof(uchar3) }});
+            
+            constexpr auto cropIOp = readIOp.then(fk::Crop<>::build(fk::Rect{50, 50, 128, 128}));
+            
+            // Verify this is indeed a ReadBack operation
+            static_assert(fk::isReadBackType<decltype(cropIOp)>, "cropIOp should be ReadBackType");
+            
+            // Create additional operations for the pipeline
+            const auto mul_op = fk::Mul<float>::build(2.5f);
+            
+            // Convert them into JIT_Operation_pp - put ReadBack operation in middle position
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, cropIOp, mul_op);
+            
+            // Print original pipeline details  
+            printPipelineDetails(pipeline, "Original pipeline");
+            
+            // Test the fuseBackCPU function with Crop operations
+            auto result = cpu_jit::fuseBackCPU(pipeline);
+            
+            // Print fused result details
+            printPipelineDetails(result, "Fused result");
+            
+            // Verify the fusion worked as expected
+            if (pipeline.size() != 3) {
+                std::cerr << "Error: Expected pipeline size 3, got " << pipeline.size() << std::endl;
+                return false;
+            }
+            
+            if (result.size() != 2) {
+                std::cerr << "Error: Expected result size 2, got " << result.size() << std::endl;
+                return false;
+            }
+            
+            std::cout << "CPU JIT Crop test completed. Input size: " << pipeline.size() 
+                     << ", Output size: " << result.size() << std::endl;
+            
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in testCPUJITWithCrop: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
+    // Test CPU JIT with Resize operations  
+    bool testCPUJITWithResize() {
+        std::cout << "Testing CPU JIT with Resize operations..." << std::endl;
+        
+        try {
+            // Create a pipeline with Resize ReadBack operation
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float3>::build(
+                fk::RawPtr<fk::_2D, float3>{ nullptr, { 512, 512, 512 * sizeof(float3) }});
+            
+            constexpr auto resizeIOp = readIOp.then(fk::Resize<fk::InterpolationType::INTER_LINEAR>::build(fk::Size{256, 256}));
+            
+            // Verify this is indeed a ReadBack operation
+            static_assert(fk::isReadBackType<decltype(resizeIOp)>, "resizeIOp should be ReadBackType");
+            
+            // Create additional operations for the pipeline
+            const auto add_op = fk::Add<float>::build(1.5f);
+            
+            // Convert them into JIT_Operation_pp - put ReadBack operation in middle position
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, resizeIOp, add_op);
+            
+            // Print original pipeline details
+            printPipelineDetails(pipeline, "Original pipeline");
+            
+            // Test the fuseBackCPU function with Resize operations
+            auto result = cpu_jit::fuseBackCPU(pipeline);
+            
+            // Print fused result details
+            printPipelineDetails(result, "Fused result");
+            
+            // Verify the fusion worked as expected
+            if (pipeline.size() != 3) {
+                std::cerr << "Error: Expected pipeline size 3, got " << pipeline.size() << std::endl;
+                return false;
+            }
+            
+            if (result.size() != 2) {
+                std::cerr << "Error: Expected result size 2, got " << result.size() << std::endl;
+                return false;
+            }
+            
+            std::cout << "CPU JIT Resize test completed. Input size: " << pipeline.size() 
+                     << ", Output size: " << result.size() << std::endl;
+            
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in testCPUJITWithResize: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
+    // Test CPU JIT with Warp operations
+    bool testCPUJITWithWarp() {
+        std::cout << "Testing CPU JIT with Warp operations..." << std::endl;
+        
+        try {
+            // Create a pipeline with Warp ReadBack operation
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float4>::build(
+                fk::RawPtr<fk::_2D, float4>{ nullptr, { 320, 240, 320 * sizeof(float4) }});
+            
+            constexpr auto warpIOp = readIOp.then(fk::Warping<fk::WarpType::Perspective>::build(
+                fk::WarpingParameters<fk::WarpType::Perspective>{}));
+            
+            // Verify this is indeed a ReadBack operation
+            static_assert(fk::isReadBackType<decltype(warpIOp)>, "warpIOp should be ReadBackType");
+            
+            // Create additional operations for the pipeline
+            const auto div_op = fk::Div<float>::build(2.0f);
+            
+            // Convert them into JIT_Operation_pp - put ReadBack operation in middle position
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, warpIOp, div_op);
+            
+            // Print original pipeline details
+            printPipelineDetails(pipeline, "Original pipeline");
+            
+            // Test the fuseBackCPU function with Warp operations
+            auto result = cpu_jit::fuseBackCPU(pipeline);
+            
+            // Print fused result details
+            printPipelineDetails(result, "Fused result");
+            
+            // Verify the fusion worked as expected
+            if (pipeline.size() != 3) {
+                std::cerr << "Error: Expected pipeline size 3, got " << pipeline.size() << std::endl;
+                return false;
+            }
+            
+            if (result.size() != 2) {
+                std::cerr << "Error: Expected result size 2, got " << result.size() << std::endl;
+                return false;
+            }
+            
+            std::cout << "CPU JIT Warp test completed. Input size: " << pipeline.size() 
+                     << ", Output size: " << result.size() << std::endl;
+            
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in testCPUJITWithWarp: " << e.what() << std::endl;
             return false;
         }
     }
@@ -246,6 +410,9 @@ int launch() {
     // Run all tests
     allTestsPassed &= fk::test::testBasicCPUJIT();
     allTestsPassed &= fk::test::testCPUJITWithReadBack();
+    allTestsPassed &= fk::test::testCPUJITWithCrop();
+    allTestsPassed &= fk::test::testCPUJITWithResize();
+    allTestsPassed &= fk::test::testCPUJITWithWarp();
     allTestsPassed &= fk::test::testFusionAnalysis();
     allTestsPassed &= fk::test::testEmptyPipeline();
     allTestsPassed &= fk::test::testSingleOperation();
