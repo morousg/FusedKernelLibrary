@@ -88,19 +88,9 @@ if (LLVM_JIT_ENABLE)
 			MC
 		)
 		
-		# Add clang libraries for C++ compilation
+		# Add clang libraries for C++ compilation (using shared libraries)
 		set(clang_libs
-			/usr/lib/llvm-18/lib/libclangFrontend.a
-			/usr/lib/llvm-18/lib/libclangDriver.a
-			/usr/lib/llvm-18/lib/libclangSerialization.a
-			/usr/lib/llvm-18/lib/libclangCodeGen.a
-			/usr/lib/llvm-18/lib/libclangParse.a
-			/usr/lib/llvm-18/lib/libclangSema.a
-			/usr/lib/llvm-18/lib/libclangAnalysis.a
-			/usr/lib/llvm-18/lib/libclangEdit.a
-			/usr/lib/llvm-18/lib/libclangAST.a
-			/usr/lib/llvm-18/lib/libclangLex.a
-			/usr/lib/llvm-18/lib/libclangBasic.a
+			/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18
 		)
 		
 		message(STATUS "LLVM libraries: ${llvm_libs}")
@@ -112,6 +102,7 @@ if (LLVM_JIT_ENABLE)
 		
 		# Set up include directories
 		include_directories(${LLVM_INCLUDE_DIRS})
+		include_directories(/usr/lib/llvm-18/include)
 		separate_arguments(LLVM_DEFINITIONS_LIST UNIX_COMMAND "${LLVM_DEFINITIONS}")
 		add_definitions(${LLVM_DEFINITIONS_LIST})
 	else()

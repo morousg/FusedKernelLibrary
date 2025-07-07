@@ -93,6 +93,8 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
+#include <filesystem>
+#include <cstdlib>
 
 namespace fk {
 namespace cpu_jit {
@@ -274,9 +276,37 @@ namespace cpu_jit {
                 langOpts.CXXExceptions = true;
                 langOpts.RTTI = true;
                 
-                // Create target info
+                // Create target info with platform detection
                 auto targetOpts = std::make_shared<clang::TargetOptions>();
-                targetOpts->Triple = "x86_64-unknown-linux-gnu"; // Use a hardcoded triple for now
+                
+                // Detect current platform and set appropriate target triple
+                std::string targetTriple;
+                #if defined(__x86_64__) || defined(_M_X64)
+                    #if defined(__linux__)
+                        targetTriple = "x86_64-unknown-linux-gnu";
+                    #elif defined(_WIN32)
+                        targetTriple = "x86_64-pc-windows-msvc";
+                    #elif defined(__APPLE__)
+                        targetTriple = "x86_64-apple-darwin";
+                    #else
+                        targetTriple = "x86_64-unknown-unknown";
+                    #endif
+                #elif defined(__aarch64__) || defined(_M_ARM64)
+                    #if defined(__linux__)
+                        targetTriple = "aarch64-unknown-linux-gnu";
+                    #elif defined(_WIN32)
+                        targetTriple = "aarch64-pc-windows-msvc";
+                    #elif defined(__APPLE__)
+                        targetTriple = "arm64-apple-darwin";
+                    #else
+                        targetTriple = "aarch64-unknown-unknown";
+                    #endif
+                #else
+                    // Fallback to host triple detection
+                    targetTriple = llvm::sys::getDefaultTargetTriple();
+                #endif
+                
+                targetOpts->Triple = targetTriple;
                 compiler->setTarget(clang::TargetInfo::CreateTargetInfo(
                     compiler->getDiagnostics(), targetOpts));
                 
@@ -296,16 +326,76 @@ namespace cpu_jit {
                 
                 // Add include paths for fused_kernel headers
                 clang::HeaderSearchOptions& headerOpts = compiler->getHeaderSearchOpts();
-                headerOpts.AddPath("/home/runner/work/FusedKernelLibrary/FusedKernelLibrary/include",
-                                 clang::frontend::Angled, false, false);
+                
+                // Try to find the include directory relative to this header file
+                std::string includePath;
+                
+                // Method 1: Use __FILE__ macro to get relative path
+                std::string currentFile = __FILE__;
+                size_t pos = currentFile.find("include/fused_kernel");
+                if (pos != std::string::npos) {
+                    includePath = currentFile.substr(0, pos) + "include";
+                } else {
+                    // Method 2: Try common project structure patterns
+                    const char* possiblePaths[] = {
+                        "../../../../../../../include",  // From deep nested location
+                        "../../../../../../include",     // One level up
+                        "../../../../../include",        // Two levels up
+                        "../../../../include",           // Three levels up
+                        "../../../include",              // Four levels up
+                        "../../include",                 // Five levels up
+                        "../include",                    // Six levels up
+                        "include",                       // Current directory
+                        "./include"                      // Explicit current
+                    };
+                    
+                    for (const char* path : possiblePaths) {
+                        std::filesystem::path testPath(path);
+                        testPath /= "fused_kernel";
+                        if (std::filesystem::exists(testPath)) {
+                            includePath = std::filesystem::canonical(std::filesystem::path(path)).string();
+                            break;
+                        }
+                    }
+                    
+                    // Method 3: Fallback to environment variable or current working directory
+                    if (includePath.empty()) {
+                        const char* projectRoot = std::getenv("FK_PROJECT_ROOT");
+                        if (projectRoot) {
+                            includePath = std::string(projectRoot) + "/include";
+                        } else {
+                            // Last resort: try current working directory
+                            std::filesystem::path cwd = std::filesystem::current_path();
+                            while (!cwd.empty() && cwd != cwd.root_path()) {
+                                std::filesystem::path testInclude = cwd / "include" / "fused_kernel";
+                                if (std::filesystem::exists(testInclude)) {
+                                    includePath = (cwd / "include").string();
+                                    break;
+                                }
+                                cwd = cwd.parent_path();
+                            }
+                        }
+                    }
+                }
+                
+                if (!includePath.empty()) {
+                    headerOpts.AddPath(includePath, clang::frontend::Angled, false, false);
+                } else {
+                    llvm::errs() << "Warning: Could not find fused_kernel include directory. "
+                                << "Set FK_PROJECT_ROOT environment variable if compilation fails.\n";
+                }
                 
                 // Set up AST context
                 compiler->createASTContext();
                 
                 // Create code generator
                 clang::CodeGenOptions codeGenOpts;
-                codeGenOpts.OptimizationLevel = 2; // O2 optimization
+                codeGenOpts.OptimizationLevel = 3; // O3 optimization
                 codeGenOpts.setDebugInfo(llvm::codegenoptions::NoDebugInfo);
+                
+                // Enable general vectorization options
+                codeGenOpts.VectorizeLoop = true;
+                codeGenOpts.VectorizeSLP = true;
                 
                 auto codeGen = std::unique_ptr<clang::CodeGenerator>(
                     clang::CreateLLVMCodeGen(
@@ -364,20 +454,18 @@ namespace cpu_jit {
         bool requiresFusion(const std::vector<JIT_Operation_pp>& pipeline) {
             if (pipeline.size() < 2) return false;
             
-            // Look for ReadBack operations in the pipeline
-            bool hasReadBack = false;
-            
-            for (size_t i = 0; i < pipeline.size(); ++i) {
+            // Back fusion is only necessary when there is a ReadBack operation 
+            // in the pipeline that is NOT the first operation
+            for (size_t i = 1; i < pipeline.size(); ++i) {  // Start from index 1, skip first
                 const std::string& opType = pipeline[i].getType();
                 
                 // Check if this is a ReadBack operation
                 if (opType.find("ReadBack") != std::string::npos) {
-                    hasReadBack = true;
-                    break;
+                    return true;  // Found ReadBack operation that's not first
                 }
             }
             
-            return hasReadBack;
+            return false;  // No ReadBack operations found after the first position
         }
         
         // Compile and execute fuseBack for the given operation pipeline
