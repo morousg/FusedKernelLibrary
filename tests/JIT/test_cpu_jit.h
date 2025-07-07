@@ -82,11 +82,11 @@ namespace test {
         
         try {
             // Create a pipeline that includes actual ReadBack operations
-            // Use real operations: readIOp, borderIOp and mul_op
-            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
-                fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
+            // Use real operations: readIOp, borderIOp and mul_op - types must match
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float>::build(
+                fk::RawPtr<fk::_2D, float>{ nullptr, { 128, 128, 128 * sizeof(float) }});
             
-            constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<uchar3>(0));
+            constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<float>(0.0f));
             
             // Verify this is indeed a ReadBack operation
             static_assert(fk::isReadBackType<decltype(borderIOp)>, "borderIOp should be ReadBackType");
@@ -138,10 +138,10 @@ namespace test {
         
         try {
             // Create a pipeline with Crop ReadBack operation
-            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, uchar3>::build(
-                fk::RawPtr<fk::_2D, uchar3>{ nullptr, { 256, 256, 256 * sizeof(uchar3) }});
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float>::build(
+                fk::RawPtr<fk::_2D, float>{ nullptr, { 256, 256, 256 * sizeof(float) }});
             
-            constexpr auto cropIOp = fk::Crop<decltype(readIOp)>::build(readIOp, fk::Rect{50, 50, 128, 128});
+            constexpr auto cropIOp = fk::Crop<>::build(fk::Rect{50, 50, 128, 128});
             
             // Verify this is indeed a ReadBack operation
             static_assert(fk::isReadBackType<decltype(cropIOp)>, "cropIOp should be ReadBackType");
@@ -188,8 +188,8 @@ namespace test {
         
         try {
             // Create a pipeline with Resize ReadBack operation
-            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float3>::build(
-                fk::RawPtr<fk::_2D, float3>{ nullptr, { 512, 512, 512 * sizeof(float3) }});
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float>::build(
+                fk::RawPtr<fk::_2D, float>{ nullptr, { 512, 512, 512 * sizeof(float) }});
             
             constexpr auto resizeIOp = fk::Resize<fk::InterpolationType::INTER_LINEAR>::build(fk::Size{256, 256});
             
@@ -238,8 +238,8 @@ namespace test {
         
         try {
             // Create a pipeline with Warp ReadBack operation
-            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float4>::build(
-                fk::RawPtr<fk::_2D, float4>{ nullptr, { 320, 240, 320 * sizeof(float4) }});
+            constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float>::build(
+                fk::RawPtr<fk::_2D, float>{ nullptr, { 320, 240, 320 * sizeof(float) }});
             
             constexpr auto warpIOp = fk::Warping<fk::WarpType::Perspective>::build(
                 fk::WarpingParameters<fk::WarpType::Perspective>{});
