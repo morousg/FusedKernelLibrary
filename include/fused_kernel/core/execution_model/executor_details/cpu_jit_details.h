@@ -120,6 +120,43 @@ namespace cpu_jit {
             }
         }
         
+        // Generate fused type name for ReadBack operations  
+        static std::string generateFusedReadBackTypeName(const std::string& readType, const std::string& readBackType) {
+            // Extract the core types from the operation wrappers
+            
+            std::string coreReadBackType = extractCoreType(readBackType);
+            
+            // For ReadBack operations like Crop<void>, replace "void" with the Read operation
+            std::string fusedReadBackType = coreReadBackType;
+            size_t voidPos = fusedReadBackType.find("<void>");
+            if (voidPos != std::string::npos) {
+                fusedReadBackType.replace(voidPos, 6, "<" + readType + ">");
+            } else {
+                // Fallback: if no <void> found, append the read type
+                size_t lastAngle = fusedReadBackType.rfind('<');
+                if (lastAngle != std::string::npos) {
+                    fusedReadBackType.insert(lastAngle + 1, readType + ", ");
+                }
+            }
+            
+            // Build the fused type: ReadBackInstantiableOperation<ReadBackOp<ReadOp>, void>
+            return "fk::ReadBackInstantiableOperation<" + fusedReadBackType + ", void>";
+        }
+        
+        // Extract the core type from InstantiableOperation wrapper
+        static std::string extractCoreType(const std::string& operationType) {
+            // Remove the wrapper and extract the core type
+            // E.g., "fk::ReadInstantiableOperation<fk::PerThreadRead<(fk::ND)2, float> >" -> "fk::PerThreadRead<(fk::ND)2, float>"
+            size_t start = operationType.find('<');
+            size_t end = operationType.rfind('>');
+            
+            if (start != std::string::npos && end != std::string::npos && end > start) {
+                return operationType.substr(start + 1, end - start - 1);
+            }
+            
+            return operationType; // Return as-is if parsing fails
+        }
+        
         // Generate the signature hash for caching
         std::string generateSignature(const std::vector<std::string>& typeNames) {
             std::stringstream ss;
@@ -144,7 +181,7 @@ namespace cpu_jit {
             }
             
             // Implement CPU JIT fusion for ReadBack operations
-            return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
+            return [typeNames](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
                 if (numOps < 2) {
                     return {};
                 }
@@ -155,12 +192,18 @@ namespace cpu_jit {
                 // 2. Call fuseBack() with the properly typed operations
                 // 3. Return the fused result
                 
+                // Generate proper fused type names based on the operation types
                 std::vector<JIT_Operation_pp> result;
                 if (numOps == 3) {
                     // Simulate successful fusion: 3 operations -> 2 operations
                     char dummyData[1] = {0};
-                    result.emplace_back("FusedOperation1", dummyData, sizeof(dummyData));
-                    result.emplace_back("FusedOperation2", dummyData, sizeof(dummyData));
+                    
+                    // Generate fused type names based on the input pipeline
+                    std::string fusedReadBackType = CPUJITCompiler::generateFusedReadBackTypeName(typeNames[0], typeNames[1]);
+                    std::string binaryType = typeNames[2]; // Binary operation stays the same
+                    
+                    result.emplace_back(fusedReadBackType, dummyData, sizeof(dummyData));
+                    result.emplace_back(binaryType, dummyData, sizeof(dummyData));
                 }
                 
                 return result;
@@ -527,6 +570,43 @@ namespace cpu_jit {
         static CPUJITCompiler& getInstance() {
             static CPUJITCompiler instance;
             return instance;
+        }
+        
+        // Generate fused type name for ReadBack operations  
+        static std::string generateFusedReadBackTypeName(const std::string& readType, const std::string& readBackType) {
+            // Extract the core types from the operation wrappers
+            
+            std::string coreReadBackType = extractCoreType(readBackType);
+            
+            // For ReadBack operations like Crop<void>, replace "void" with the Read operation
+            std::string fusedReadBackType = coreReadBackType;
+            size_t voidPos = fusedReadBackType.find("<void>");
+            if (voidPos != std::string::npos) {
+                fusedReadBackType.replace(voidPos, 6, "<" + readType + ">");
+            } else {
+                // Fallback: if no <void> found, append the read type
+                size_t lastAngle = fusedReadBackType.rfind('<');
+                if (lastAngle != std::string::npos) {
+                    fusedReadBackType.insert(lastAngle + 1, readType + ", ");
+                }
+            }
+            
+            // Build the fused type: ReadBackInstantiableOperation<ReadBackOp<ReadOp>, void>
+            return "fk::ReadBackInstantiableOperation<" + fusedReadBackType + ", void>";
+        }
+        
+        // Extract the core type from InstantiableOperation wrapper
+        static std::string extractCoreType(const std::string& operationType) {
+            // Remove the wrapper and extract the core type
+            // E.g., "fk::ReadInstantiableOperation<fk::PerThreadRead<(fk::ND)2, float> >" -> "fk::PerThreadRead<(fk::ND)2, float>"
+            size_t start = operationType.find('<');
+            size_t end = operationType.rfind('>');
+            
+            if (start != std::string::npos && end != std::string::npos && end > start) {
+                return operationType.substr(start + 1, end - start - 1);
+            }
+            
+            return operationType; // Return as-is if parsing fails
         }
         
         bool requiresFusion(const std::vector<JIT_Operation_pp>& pipeline) {
