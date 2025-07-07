@@ -448,7 +448,10 @@ namespace cpu_jit {
                 }
                 
                 auto result = it->second(opDataPtrs.data(), opDataPtrs.size());
-                return result.empty() ? pipeline : result;
+                if (result.empty()) {
+                    throw std::runtime_error("CPU JIT compilation failed: compiled function returned empty result");
+                }
+                return result;
             }
             
             // Create new runtime dispatcher
@@ -462,7 +465,10 @@ namespace cpu_jit {
             }
             
             auto result = dispatcher(opDataPtrs.data(), opDataPtrs.size());
-            return result.empty() ? pipeline : result;
+            if (result.empty()) {
+                throw std::runtime_error("CPU JIT compilation failed: newly compiled function returned empty result");
+            }
+            return result;
         }
         
         // Static method to get the singleton instance
@@ -526,8 +532,9 @@ namespace cpu_jit {
         bool requiresFusion(const std::vector<JIT_Operation_pp>& pipeline) {
             if (pipeline.size() < 2) return false;
             
-            // Look for ReadBack operations in the pipeline even in fallback mode
-            for (size_t i = 0; i < pipeline.size(); ++i) {
+            // Back fusion is only necessary when there is a ReadBack operation 
+            // in the pipeline that is NOT the first operation
+            for (size_t i = 1; i < pipeline.size(); ++i) {  // Start from index 1, skip first
                 const std::string& opType = pipeline[i].getType();
                 if (opType.find("ReadBack") != std::string::npos) {
                     return true;

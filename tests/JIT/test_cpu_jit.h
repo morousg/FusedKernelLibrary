@@ -86,16 +86,17 @@ namespace test {
             constexpr auto readIOp = fk::PerThreadRead<fk::_2D, float>::build(
                 fk::RawPtr<fk::_2D, float>{ nullptr, { 128, 128, 128 * sizeof(float) }});
             
-            constexpr auto borderIOp = fk::BorderReader<fk::BorderType::CONSTANT>::build(readIOp, fk::make_set<float>(0.0f));
+            // Use Crop as ReadBack operation instead of BorderReader
+            constexpr auto cropIOp = fk::Crop<>::build(fk::Rect{10, 10, 100, 100});
             
             // Verify this is indeed a ReadBack operation
-            static_assert(fk::isReadBackType<decltype(borderIOp)>, "borderIOp should be ReadBackType");
+            static_assert(fk::isReadBackType<decltype(cropIOp)>, "cropIOp should be ReadBackType");
             
             // Create additional operations for the pipeline
             const auto mul_op = fk::Mul<float>::build(3.0f);
             
             // Convert them into JIT_Operation_pp with the function available in fk namespace
-            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, borderIOp, mul_op);
+            std::vector<fk::JIT_Operation_pp> pipeline = fk::buildOperationPipeline(readIOp, cropIOp, mul_op);
             
             // Print original pipeline details
             printPipelineDetails(pipeline, "Original pipeline");
