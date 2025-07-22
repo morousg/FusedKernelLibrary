@@ -23,7 +23,7 @@
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Batch size" };
 
-constexpr size_t NUM_EXPERIMENTS = 120; // Used 120 in the paper
+constexpr size_t NUM_EXPERIMENTS = 10; // Used 120 in the paper
 constexpr size_t FIRST_VALUE = 1;
 constexpr size_t INCREMENT = 5;
 
