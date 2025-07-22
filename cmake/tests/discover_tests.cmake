@@ -19,8 +19,13 @@ function (discover_tests DIR)
         string(REPLACE "${PROJECT_NAME}/" " " DIR_RELATIVE_PATH "${DIR_RELATIVE_PATH}") #remove the project name from the relative path
         
         if (${POS_ONLY_CU} EQUAL -1) #if the source file does not contain "__ONLY_CU__"    
-            if (${ENABLE_CPU})                    
-                add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_RELATIVE_PATH}" ${POS_LLVM_JIT})                
+            if (${ENABLE_CPU})
+                # Check if test needs LLVM JIT and if LLVM JIT is enabled
+                if (POS_LLVM_JIT GREATER_EQUAL 0 AND NOT LLVM_JIT_ENABLE)
+                    message(STATUS "Skipping LLVM JIT test ${TARGET_NAME} because LLVM JIT is disabled")
+                else()
+                    add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_RELATIVE_PATH}" ${POS_LLVM_JIT})
+                endif()
             endif()
         endif()
 
