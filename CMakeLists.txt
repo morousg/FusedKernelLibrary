@@ -73,6 +73,25 @@ if (LLVM_JIT_ENABLE)
 		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs all OUTPUT_VARIABLE LLVM_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --system-libs OUTPUT_VARIABLE LLVM_SYSTEM_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 		
+		# Find Clang C++ library
+		find_library(CLANG_CPP_LIB 
+			NAMES clang-cpp.18.1 clang-cpp.18 clang-cpp
+			PATHS ${LLVM_LIB_DIR} /usr/lib/x86_64-linux-gnu /usr/lib
+			NO_DEFAULT_PATH)
+		if(CLANG_CPP_LIB)
+			set(CLANG_LIBRARIES ${CLANG_CPP_LIB})
+			message(STATUS "Found Clang C++ library: ${CLANG_CPP_LIB}")
+		else()
+			# Try direct path to the library
+			if(EXISTS "/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18.1")
+				set(CLANG_LIBRARIES "/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18.1")
+				message(STATUS "Using direct path to Clang C++ library: ${CLANG_LIBRARIES}")
+			else()
+				message(WARNING "libclang-cpp not found, trying individual Clang libraries")
+				set(CLANG_LIBRARIES -lclangFrontend -lclangCodeGen -lclangSema -lclangAnalysis -lclangAST -lclangParse -lclangLex -lclangBasic)
+			endif()
+		endif()
+		
 		message(STATUS "LLVM JIT compilation support is enabled.")
 		message(STATUS "LLVM version: ${LLVM_VERSION}")
 		message(STATUS "LLVM prefix: ${LLVM_PREFIX}")
@@ -81,8 +100,9 @@ if (LLVM_JIT_ENABLE)
 		message(STATUS "LLVM LD flags: ${LLVM_LD_FLAGS}")
 		message(STATUS "LLVM libs: ${LLVM_LIBS}")
 		message(STATUS "LLVM system libs: ${LLVM_SYSTEM_LIBS}")
+		message(STATUS "Clang libraries: ${CLANG_LIBRARIES}")
 		
-		set(LLVM_JIT_LIBRARIES ${LLVM_LD_FLAGS} ${LLVM_LIBS} ${LLVM_SYSTEM_LIBS})
+		set(LLVM_JIT_LIBRARIES ${LLVM_LD_FLAGS} ${LLVM_LIBS} ${CLANG_LIBRARIES} ${LLVM_SYSTEM_LIBS})
 		set(LLVM_JIT_INCLUDE_DIRS ${LLVM_INCLUDE_DIR})
 		set(LLVM_JIT_CXX_FLAGS ${LLVM_CXX_FLAGS})
 	else()
