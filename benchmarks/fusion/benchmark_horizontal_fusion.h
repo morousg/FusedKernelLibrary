@@ -311,11 +311,11 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD_CUDAGraphs(const size_t& NUM_EL
     if (!passed) {
         if (!exception) {
             std::stringstream ss;
-            ss << "benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD";
+            ss << "benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD_CUDAGraphs";
             std::cout << ss.str() << " failed!! RESULT ERROR: Some results do not match baseline." << std::endl;
         } else {
             std::stringstream ss;
-            ss << "benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD";
+            ss << "benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD_CUDAGraphs";
             std::cout << ss.str() << "> failed!! EXCEPTION: " << error_s.str() << std::endl;
         }
     }
