@@ -16,7 +16,7 @@
 #define FK_TEST_CLANG_RUNTIME_COMPILATION_H
 
 //__ONLY_CPU__
-//__LLVM_JIT__
+//__NVRTC__
 
 #include "clang/Interpreter/Interpreter.h"
 #include "clang/Frontend/CompilerInstance.h"

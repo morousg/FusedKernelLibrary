@@ -15,7 +15,7 @@ function(add_cuda_to_test TARGET_NAME)
     endif()
 endfunction()
 
-function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR LLVM_JIT_NEEDED)                       
+function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR NVRTC_NEEDED)                       
         set(TEST_GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${EXTENSION}/launcher.${EXTENSION}") #use the same name as the target	)			
        
         configure_file(${CMAKE_SOURCE_DIR}/tests/launcher.in ${TEST_GENERATED_SOURCE} @ONLY) #replace variables in the test source file                 
@@ -40,14 +40,14 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR LLVM_JIT_NEED
 					set_target_properties(${TARGET_NAME_EXT} PROPERTIES	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 				endif()
 			endif()
-		endif()
-		# Check if this test needs LLVM JIT support
-		if (LLVM_JIT_ENABLE AND LLVM_JIT_NEEDED GREATER_EQUAL 0)
-			target_include_directories(${TARGET_NAME_EXT} PRIVATE ${LLVM_JIT_INCLUDE_DIRS})
-			target_compile_options(${TARGET_NAME_EXT} PRIVATE ${LLVM_JIT_CXX_FLAGS})
-			target_link_libraries(${TARGET_NAME_EXT} PRIVATE ${LLVM_JIT_LIBRARIES})
-			target_compile_definitions(${TARGET_NAME_EXT} PRIVATE LLVM_JIT_ENABLED)
-			message(STATUS "Linking LLVM JIT libraries to test: ${TARGET_NAME_EXT}")
+			# Check if this test needs LLVM JIT support and NVRTC JIT is enabled
+			if (NVRTC_NEEDED GREATER_EQUAL 0 AND NVRTC_JIT_ENABLED)
+				target_include_directories(${TARGET_NAME_EXT} PRIVATE ${LLVM_JIT_INCLUDE_DIRS})
+				target_compile_options(${TARGET_NAME_EXT} PRIVATE ${LLVM_JIT_CXX_FLAGS})
+				target_link_libraries(${TARGET_NAME_EXT} PRIVATE ${LLVM_JIT_LIBRARIES})
+				target_compile_definitions(${TARGET_NAME_EXT} PRIVATE LLVM_JIT_ENABLED)
+				message(STATUS "Linking LLVM JIT libraries to NVRTC test: ${TARGET_NAME_EXT}")
+			endif()
 		endif()
         if (MSVC)
             target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)

@@ -14,24 +14,24 @@ function (discover_tests DIR)
        
         string(FIND "${TEST_SOURCE_CONTENTS}" "ONLY_CU"  POS_ONLY_CU)
         string(FIND "${TEST_SOURCE_CONTENTS}" "ONLY_CPU"  POS_ONLY_CPU)
-        string(FIND "${TEST_SOURCE_CONTENTS}" "LLVM_JIT"  POS_LLVM_JIT)
+        string(FIND "${TEST_SOURCE_CONTENTS}" "NVRTC"  POS_NVRTC)
         cmake_path(GET test_source RELATIVE_PART DIR_RELATIVE_PATH)     
         string(REPLACE "${PROJECT_NAME}/" " " DIR_RELATIVE_PATH "${DIR_RELATIVE_PATH}") #remove the project name from the relative path
         
         if (${POS_ONLY_CU} EQUAL -1) #if the source file does not contain "__ONLY_CU__"    
             if (${ENABLE_CPU})
-                # Check if test needs LLVM JIT and if LLVM JIT is enabled
-                if (POS_LLVM_JIT GREATER_EQUAL 0 AND NOT LLVM_JIT_ENABLE)
-                    message(STATUS "Skipping LLVM JIT test ${TARGET_NAME} because LLVM JIT is disabled")
+                # Check if test needs NVRTC and if NVRTC is enabled
+                if (POS_NVRTC GREATER_EQUAL 0 AND NOT NVRTC_ENABLE)
+                    message(STATUS "Skipping NVRTC test ${TARGET_NAME} because NVRTC is disabled")
                 else()
-                    add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_RELATIVE_PATH}" ${POS_LLVM_JIT})
+                    add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_RELATIVE_PATH}" ${POS_NVRTC})
                 endif()
             endif()
         endif()
 
         if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
             if (${POS_ONLY_CPU} EQUAL -1) #if the source file does not contain "__ONLY_CPU__"
-                add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_RELATIVE_PATH}" ${POS_LLVM_JIT})
+                add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_RELATIVE_PATH}" ${POS_NVRTC})
                 add_cuda_to_test("${TARGET_NAME}_cu")                           
             endif()
         endif()
