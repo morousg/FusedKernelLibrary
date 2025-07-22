@@ -34,6 +34,7 @@ endif()
 option (BUILD_UTEST "build standard unit tests" ON)
 option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
 option(NVRTC_ENABLE "Enable NVRTC for runtime compilation" OFF)
+option(LLVM_JIT_ENABLE "Enable LLVM ORC JIT for CPU runtime compilation" OFF)
 
 if (NVRTC_ENABLE)
 	if (CUDAToolkit_FOUND)
@@ -55,6 +56,21 @@ if (NVRTC_ENABLE)
 		endif()
 	else()
 		set(NVRTC_ENABLE OFF CACHE BOOL "NVRTC support was disabled because the CUDA Toolkit could not be found." FORCE)
+	endif()
+endif()
+
+# CPU JIT support configuration (using clang command line tool)
+if (LLVM_JIT_ENABLE)
+	# Check if clang is available
+	find_program(CLANG_EXECUTABLE clang++)
+	if (CLANG_EXECUTABLE)
+		message(STATUS "CPU JIT support is enabled using clang++: ${CLANG_EXECUTABLE}")
+		
+		# Add preprocessor definitions for CPU JIT
+		add_definitions(-DLLVM_JIT_ENABLED)
+	else()
+		message(WARNING "clang++ not found, disabling CPU JIT support")
+		set(LLVM_JIT_ENABLE OFF CACHE BOOL "CPU JIT support was disabled because clang++ could not be found." FORCE)
 	endif()
 endif()
 	
