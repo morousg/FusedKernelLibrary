@@ -59,57 +59,18 @@ if (NVRTC_ENABLE)
 	endif()
 endif()
 
-# LLVM ORC JIT support configuration
+# CPU JIT support configuration (using clang command line tool)
 if (LLVM_JIT_ENABLE)
-	find_package(LLVM REQUIRED CONFIG)
-	if (LLVM_FOUND)
-		message(STATUS "LLVM support is enabled.")
-		message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-		message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+	# Check if clang is available
+	find_program(CLANG_EXECUTABLE clang++)
+	if (CLANG_EXECUTABLE)
+		message(STATUS "CPU JIT support is enabled using clang++: ${CLANG_EXECUTABLE}")
 		
-		# Find the libraries that correspond to the LLVM components
-		# that we wish to use
-		llvm_map_components_to_libnames(llvm_libs
-			Core
-			OrcJIT
-			native
-			RISCV
-			Support
-			ExecutionEngine
-			MCJIT
-			Target
-			RuntimeDyld
-			Object
-			InstCombine
-			AggressiveInstCombine
-			TransformUtils
-			Analysis
-			ipo
-			MC
-			Coverage
-			ProfileData
-		)
-		
-		# Add clang libraries for C++ compilation (using shared libraries for now)
-		set(clang_libs
-			/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18
-		)
-		
-		message(STATUS "LLVM libraries: ${llvm_libs}")
-		message(STATUS "Clang libraries: ${clang_libs}")
-		set(LLVM_JIT_LIBRARIES ${llvm_libs} ${clang_libs})
-		
-		# Add preprocessor definitions for LLVM JIT
-		add_definitions(-DLLVM_JIT_ENABLE)
-		
-		# Set up include directories
-		include_directories(${LLVM_INCLUDE_DIRS})
-		include_directories(/usr/lib/llvm-18/include)
-		separate_arguments(LLVM_DEFINITIONS_LIST UNIX_COMMAND "${LLVM_DEFINITIONS}")
-		add_definitions(${LLVM_DEFINITIONS_LIST})
+		# Add preprocessor definitions for CPU JIT
+		add_definitions(-DLLVM_JIT_ENABLED)
 	else()
-		message(WARNING "LLVM not found, disabling LLVM JIT support")
-		set(LLVM_JIT_ENABLE OFF CACHE BOOL "LLVM JIT support was disabled because LLVM could not be found." FORCE)
+		message(WARNING "clang++ not found, disabling CPU JIT support")
+		set(LLVM_JIT_ENABLE OFF CACHE BOOL "CPU JIT support was disabled because clang++ could not be found." FORCE)
 	endif()
 endif()
 	

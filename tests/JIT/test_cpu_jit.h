@@ -398,6 +398,19 @@ namespace test {
             return false;
         }
     }
+    
+    // Test clang infrastructure by compiling and executing a simple function
+    bool testClangInfrastructure() {
+        std::cout << "Testing clang infrastructure..." << std::endl;
+        
+        try {
+            auto& compiler = cpu_jit::CPUJITCompiler::getInstance();
+            return compiler.testClangInfrastructure();
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in testClangInfrastructure: " << e.what() << std::endl;
+            return false;
+        }
+    }
 #endif
 
 } // namespace test
@@ -421,6 +434,7 @@ int launch() {
 #if defined(LLVM_JIT_ENABLED)
     std::cout << "LLVM JIT is enabled - running LLVM-specific tests..." << std::endl;
     allTestsPassed &= fk::test::testLLVMInitialization();
+    allTestsPassed &= fk::test::testClangInfrastructure();
 #else
     std::cout << "LLVM JIT is not enabled - skipping LLVM-specific tests." << std::endl;
 #endif
