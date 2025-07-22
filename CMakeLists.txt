@@ -73,7 +73,7 @@ if (LLVM_JIT_ENABLE)
 		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs all OUTPUT_VARIABLE LLVM_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --system-libs OUTPUT_VARIABLE LLVM_SYSTEM_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 		
-		# Find Clang C++ library
+		# Find Clang C++ library for interpreter support
 		find_library(CLANG_CPP_LIB 
 			NAMES clang-cpp.18.1 clang-cpp.18 clang-cpp
 			PATHS ${LLVM_LIB_DIR} /usr/lib/x86_64-linux-gnu /usr/lib
@@ -88,8 +88,15 @@ if (LLVM_JIT_ENABLE)
 				message(STATUS "Using direct path to Clang C++ library: ${CLANG_LIBRARIES}")
 			else()
 				message(WARNING "libclang-cpp not found, trying individual Clang libraries")
-				set(CLANG_LIBRARIES -lclangFrontend -lclangCodeGen -lclangSema -lclangAnalysis -lclangAST -lclangParse -lclangLex -lclangBasic)
+				set(CLANG_LIBRARIES -lclangInterpreter -lclangFrontend -lclangCodeGen -lclangSema -lclangAnalysis -lclangAST -lclangParse -lclangLex -lclangBasic)
 			endif()
+		endif()
+		
+		# Add Clang include directory for interpreter headers
+		set(CLANG_INCLUDE_DIR "${LLVM_PREFIX}/include")
+		if(NOT EXISTS "${CLANG_INCLUDE_DIR}/clang/Interpreter/Interpreter.h")
+			# Try alternative location for Clang headers
+			set(CLANG_INCLUDE_DIR "/usr/lib/llvm-18/include")
 		endif()
 		
 		message(STATUS "LLVM JIT compilation support is enabled.")
@@ -103,7 +110,7 @@ if (LLVM_JIT_ENABLE)
 		message(STATUS "Clang libraries: ${CLANG_LIBRARIES}")
 		
 		set(LLVM_JIT_LIBRARIES ${LLVM_LD_FLAGS} ${LLVM_LIBS} ${CLANG_LIBRARIES} ${LLVM_SYSTEM_LIBS})
-		set(LLVM_JIT_INCLUDE_DIRS ${LLVM_INCLUDE_DIR})
+		set(LLVM_JIT_INCLUDE_DIRS ${LLVM_INCLUDE_DIR} ${CLANG_INCLUDE_DIR})
 		set(LLVM_JIT_CXX_FLAGS ${LLVM_CXX_FLAGS})
 	else()
 		set(LLVM_JIT_ENABLE OFF CACHE BOOL "LLVM JIT support was disabled because llvm-config could not be found." FORCE)

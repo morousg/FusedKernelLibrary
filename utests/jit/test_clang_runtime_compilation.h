@@ -18,119 +18,90 @@
 //__ONLY_CPU__
 //__LLVM_JIT__
 
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/MCJIT.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IR/Verifier.h>
-#include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/raw_ostream.h>
+#include "clang/Interpreter/Interpreter.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Basic/DiagnosticOptions.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/raw_ostream.h"
 #include <memory>
 #include <iostream>
 #include <string>
+#include <vector>
 
 int launch() {
     // Initialize LLVM for JIT compilation
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
-    llvm::InitializeNativeTargetAsmParser();
 
-    // C++ source code to compile at runtime (as requested in comment)
+    // C++ source code to compile at runtime using clang::Interpreter
     std::string code = "int test() { return 23; }";
     std::cout << "C++ source code string: " << code << std::endl;
+
+    // Prepare compiler arguments
+    std::vector<const char *> args;
+
+    std::cout << "Creating compiler instance..." << std::endl;
+
+    // Create compiler instance using IncrementalCompilerBuilder
+    clang::IncrementalCompilerBuilder builder;
+    builder.SetCompilerArgs(args);
     
-    // NOTE: This is a demonstration of parsing C++ code as a string and compiling it.
-    // In a complete implementation, we would use Clang's frontend to parse this string.
-    // For now, we compile the equivalent LLVM IR to demonstrate the JIT concept.
-    
-    // Create LLVM context and module
-    auto context = std::make_unique<llvm::LLVMContext>();
-    auto module = std::make_unique<llvm::Module>("test_module", *context);
-
-    std::cout << "Created LLVM context and module" << std::endl;
-
-    // Parse and compile the C++ code string
-    // TODO: Use Clang frontend to compile: std::string code = "int test() { return 23; }";
-    // For now, we generate equivalent LLVM IR directly from the parsed intent
-    
-    // Create the function signature: int test()
-    llvm::FunctionType* funcType = llvm::FunctionType::get(
-        llvm::Type::getInt32Ty(*context), // return type: int
-        false  // not variadic
-    );
-
-    // Create the function
-    llvm::Function* testFunc = llvm::Function::Create(
-        funcType, 
-        llvm::Function::ExternalLinkage, 
-        "test", 
-        module.get()
-    );
-
-    // Create a basic block and IRBuilder
-    llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(*context, "entry", testFunc);
-    llvm::IRBuilder<> builder(entryBlock);
-
-    // Generate the function body equivalent to: return 23;
-    llvm::Value* returnValue = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 23);
-    builder.CreateRet(returnValue);
-
-    std::cout << "Generated LLVM IR equivalent to C++ code string" << std::endl;
-
-    // Verify the module
-    std::string error;
-    llvm::raw_string_ostream errorStream(error);
-    if (llvm::verifyModule(*module, &errorStream)) {
-        std::cerr << "Module verification failed: " << error << std::endl;
+    auto compilerInstanceExpected = builder.CreateCpp();
+    if (!compilerInstanceExpected) {
+        llvm::errs() << "Failed to create compiler instance: " 
+                     << llvm::toString(compilerInstanceExpected.takeError()) << "\n";
         return 1;
     }
 
-    std::cout << "Module verified successfully" << std::endl;
+    std::cout << "Compiler instance created successfully" << std::endl;
 
-    // Create execution engine for JIT compilation
-    std::string engineError;
-    llvm::ExecutionEngine* executionEngine = llvm::EngineBuilder(std::move(module))
-        .setErrorStr(&engineError)
-        .setEngineKind(llvm::EngineKind::JIT)
-        .create();
-
-    if (!executionEngine) {
-        std::cerr << "Failed to create execution engine: " << engineError << std::endl;
+    // Create interpreter from compiler instance
+    auto interpreterExpected = clang::Interpreter::create(std::move(*compilerInstanceExpected));
+    if (!interpreterExpected) {
+        llvm::errs() << "Failed to create Clang interpreter: " 
+                     << llvm::toString(interpreterExpected.takeError()) << "\n";
         return 1;
     }
 
-    std::cout << "Created execution engine" << std::endl;
+    auto& interpreter = *interpreterExpected;
+    std::cout << "Clang interpreter created successfully" << std::endl;
 
-    // Get pointer to the compiled function
-    uint64_t funcAddr = executionEngine->getFunctionAddress("test");
-    if (!funcAddr) {
-        std::cerr << "Failed to get function address" << std::endl;
-        delete executionEngine;
+    // Compile the C++ function using extern "C" for C linkage
+    std::string fullCode = "extern \"C\" " + code;
+    std::cout << "Compiling: " << fullCode << std::endl;
+    
+    if (auto err = interpreter->ParseAndExecute(fullCode)) {
+        llvm::errs() << "Failed to compile function: " 
+                     << llvm::toString(std::move(err)) << "\n";
         return 1;
     }
 
-    std::cout << "Got function address" << std::endl;
+    std::cout << "Function compiled successfully" << std::endl;
 
-    // Cast the function address to a callable function pointer
-    typedef int (*TestFuncPtr)();
-    TestFuncPtr testFuncPtr = reinterpret_cast<TestFuncPtr>(funcAddr);
+    // Lookup the symbol
+    auto symAddr = interpreter->getSymbolAddress("test");
+    if (!symAddr) {
+        llvm::errs() << "Failed to find symbol 'test': " 
+                     << llvm::toString(symAddr.takeError()) << "\n";
+        return 1;
+    }
 
-    // Execute the compiled function
-    int result = testFuncPtr();
+    std::cout << "Symbol 'test' found successfully" << std::endl;
+
+    // Cast to function pointer
+    using TestFunc = int (*)();
+    auto testFunc = reinterpret_cast<TestFunc>(symAddr->getValue());
+
+    // Call the function
+    int result = testFunc();
 
     std::cout << "Executed JIT compiled function from C++ string" << std::endl;
 
-    // Clean up
-    delete executionEngine;
-
     // Verify the result
     if (result == 23) {
-        std::cout << "SUCCESS: Function returned expected value 23" << std::endl;
+        std::cout << "SUCCESS: Function returned expected value " << result << std::endl;
         std::cout << "Successfully demonstrated runtime compilation of C++ code: " << code << std::endl;
         return 0;
     } else {
