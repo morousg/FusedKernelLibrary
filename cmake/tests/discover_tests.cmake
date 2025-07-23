@@ -25,6 +25,16 @@ function (discover_tests DIR)
                     message(STATUS "Skipping NVRTC test ${TARGET_NAME} because NVRTC is disabled")
                 else()
                     add_generated_test("${TARGET_NAME}" "${test_source}" "cpp" "${DIR_RELATIVE_PATH}" ${POS_NVRTC})
+                      target_include_directories("${TARGET_NAME}_cpp" PRIVATE ${CLANG_INCLUDE_DIRS})
+                    #  llvm_map_components_to_libnames(llvm_libs support core interpreter x86codegen  analysis)
+                     #   target_link_libraries("${TARGET_NAME}_cpp" PRIVATE ${llvm_libs})
+                     set(CLANG_LIBRARIES Interpreter Frontend CodeGen Sema Analysis AST Parse Lex Basic)
+                     list(TRANSFORM CLANG_LIBRARIES PREPEND  clang OUTPUT_VARIABLE  CLANG_LIBRARIES_WITH_PREFIX)
+                    
+                    
+                     target_link_libraries("${TARGET_NAME}_cpp" PRIVATE ${CLANG_LIBRARIES_WITH_PREFIX})
+
+
                 endif()
             endif()
         endif()
@@ -32,11 +42,21 @@ function (discover_tests DIR)
         if (CMAKE_CUDA_COMPILER AND ENABLE_CUDA)
             if (${POS_ONLY_CPU} EQUAL -1) #if the source file does not contain "__ONLY_CPU__"
                 add_generated_test("${TARGET_NAME}"  "${test_source}" "cu"  "${DIR_RELATIVE_PATH}" ${POS_NVRTC})
-                add_cuda_to_test("${TARGET_NAME}_cu")                           
+                add_cuda_to_test("${TARGET_NAME}_cu")    
+                
+                 if (POS_NVRTC GREATER_EQUAL 0 AND NOT NVRTC_ENABLED)
+                    message(STATUS "Skipping NVRTC test ${TARGET_NAME} because NVRTC is disabled")
+                else()                   
+                    target_link_libraries("${TARGET_NAME}_cu" PUBLIC clangInterpreter)
+                endif()
+
             endif()
         endif()
          
       
     endforeach()
+
+    get_property(importTargets DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
+	list(REMOVE_ITEM importTargetsAfter ${importTargets})
 endfunction()
  
