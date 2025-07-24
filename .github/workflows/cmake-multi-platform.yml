@@ -64,6 +64,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}        
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCUDA_ARCH="87;"
+        -DNVRTC_ENABLE="ON;"
         -S ${{ github.workspace }}
 
     - name: Build
