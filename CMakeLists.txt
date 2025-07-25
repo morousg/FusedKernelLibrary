@@ -164,10 +164,86 @@ if (NVRTC_ENABLE)
 					message(STATUS "Install error: ${INSTALL_ERROR}")
 				endif()
 			elseif(WIN32)
-				message(STATUS "Windows detected. Please install LLVM/Clang 18 manually:")
-				message(STATUS "1. Download LLVM 18 from https://github.com/llvm/llvm-project/releases")
-				message(STATUS "2. Install and add LLVM/bin to your PATH")
-				message(STATUS "3. Re-run CMake configuration")
+				set(INSTALL_SCRIPT_PATH "${CMAKE_CURRENT_BINARY_DIR}/install_llvm.ps1")
+				file(WRITE ${INSTALL_SCRIPT_PATH}
+					"# PowerShell script to install LLVM/Clang 18 on Windows\n"
+					"Write-Host 'Installing LLVM/Clang 18 on Windows...'\n"
+					"\n"
+					"# Check if Chocolatey is available\n"
+					"if (Get-Command choco -ErrorAction SilentlyContinue) {\n"
+					"    Write-Host 'Using Chocolatey to install LLVM 18...'\n"
+					"    choco install llvm --version=18.1.8 -y\n"
+					"    if ($LASTEXITCODE -eq 0) {\n"
+					"        Write-Host 'LLVM 18 installed successfully via Chocolatey.'\n"
+					"        exit 0\n"
+					"    } else {\n"
+					"        Write-Host 'Chocolatey installation failed, trying direct download...'\n"
+					"    }\n"
+					"}\n"
+					"\n"
+					"# Direct download and installation\n"
+					"Write-Host 'Downloading LLVM 18 from GitHub releases...'\n"
+					"$url = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/LLVM-18.1.8-win64.exe'\n"
+					"$installer = '$env:TEMP\\LLVM-18.1.8-win64.exe'\n"
+					"\n"
+					"try {\n"
+					"    Invoke-WebRequest -Uri $url -OutFile $installer -UseBasicParsing\n"
+					"    Write-Host 'Download completed. Installing LLVM 18...'\n"
+					"    \n"
+					"    # Run installer silently\n"
+					"    Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru\n"
+					"    \n"
+					"    # Add LLVM to PATH if not already there\n"
+					"    $llvmPath = 'C:\\Program Files\\LLVM\\bin'\n"
+					"    if (Test-Path $llvmPath) {\n"
+					"        $currentPath = [Environment]::GetEnvironmentVariable('PATH', 'Machine')\n"
+					"        if ($currentPath -notlike \"*$llvmPath*\") {\n"
+					"            Write-Host 'Adding LLVM to system PATH...'\n"
+					"            [Environment]::SetEnvironmentVariable('PATH', \"$currentPath;$llvmPath\", 'Machine')\n"
+					"        }\n"
+					"        Write-Host 'LLVM 18 installation completed successfully.'\n"
+					"        Remove-Item $installer -Force\n"
+					"        exit 0\n"
+					"    } else {\n"
+					"        Write-Error 'LLVM installation failed - LLVM directory not found.'\n"
+					"        exit 1\n"
+					"    }\n"
+					"} catch {\n"
+					"    Write-Error \"Installation failed: $($_.Exception.Message)\"\n"
+					"    if (Test-Path $installer) { Remove-Item $installer -Force }\n"
+					"    exit 1\n"
+					"}\n"
+				)
+				
+				message(STATUS "Attempting to install LLVM/Clang 18 automatically on Windows...")
+				message(STATUS "Running installation script: ${INSTALL_SCRIPT_PATH}")
+				
+				execute_process(
+					COMMAND powershell.exe -ExecutionPolicy Bypass -File ${INSTALL_SCRIPT_PATH}
+					RESULT_VARIABLE INSTALL_RESULT
+					OUTPUT_VARIABLE INSTALL_OUTPUT
+					ERROR_VARIABLE INSTALL_ERROR
+					TIMEOUT 600
+				)
+				
+				if(INSTALL_RESULT EQUAL 0)
+					message(STATUS "LLVM/Clang 18 installation successful. Re-running configuration...")
+					# Re-try finding llvm-config after installation
+					find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config.exe llvm-config DOC "llvm-config tool")
+					if(LLVM_CONFIG_EXECUTABLE)
+						message(STATUS "Found llvm-config after installation: ${LLVM_CONFIG_EXECUTABLE}")
+						# Set NVRTC_JIT_ENABLED to TRUE so configuration continues
+						set(NVRTC_JIT_ENABLED TRUE)
+					endif()
+				else()
+					message(WARNING "LLVM/Clang 18 installation failed. JIT compilation will be disabled.")
+					message(STATUS "Install output: ${INSTALL_OUTPUT}")
+					message(STATUS "Install error: ${INSTALL_ERROR}")
+					message(STATUS "Please install LLVM/Clang 18 manually:")
+					message(STATUS "1. Download LLVM 18 from https://github.com/llvm/llvm-project/releases")
+					message(STATUS "2. Install and add LLVM/bin to your PATH")
+					message(STATUS "3. Re-run CMake configuration")
+				endif()
 			else()
 				message(STATUS "Unsupported platform for automatic LLVM/Clang installation.")
 				message(STATUS "Please install LLVM/Clang 18 manually and re-run CMake configuration.")
