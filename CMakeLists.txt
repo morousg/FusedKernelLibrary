@@ -184,7 +184,7 @@ if (NVRTC_ENABLE)
 					"# Direct download and installation\n"
 					"Write-Host 'Downloading LLVM 18 from GitHub releases...'\n"
 					"$url = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/LLVM-18.1.8-win64.exe'\n"
-					"$installer = '$env:TEMP\\LLVM-18.1.8-win64.exe'\n"
+					"$installer = "$env:TEMP\\LLVM-18.1.8-win64.exe"\n"
 					"\n"
 					"try {\n"
 					"    Invoke-WebRequest -Uri $url -OutFile $installer -UseBasicParsing\n"
