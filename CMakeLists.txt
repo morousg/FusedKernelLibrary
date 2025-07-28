@@ -164,56 +164,7 @@ if (NVRTC_ENABLE)
 					message(STATUS "Install error: ${INSTALL_ERROR}")
 				endif()
 			elseif(WIN32)
-				set(INSTALL_SCRIPT_PATH "${CMAKE_CURRENT_BINARY_DIR}/install_llvm.ps1")
-				file(WRITE ${INSTALL_SCRIPT_PATH}
-					"# PowerShell script to install LLVM/Clang 18 on Windows\n"
-					"Write-Host 'Installing LLVM/Clang 18 on Windows...'\n"
-					"\n"
-					"# Check if Chocolatey is available\n"
-					"if (Get-Command choco -ErrorAction SilentlyContinue) {\n"
-					"    Write-Host 'Using Chocolatey to install LLVM 18...'\n"
-					"    choco install llvm --version=18.1.8 -y\n"
-					"    if ($LASTEXITCODE -eq 0) {\n"
-					"        Write-Host 'LLVM 18 installed successfully via Chocolatey.'\n"
-					"        exit 0\n"
-					"    } else {\n"
-					"        Write-Host 'Chocolatey installation failed, trying direct download...'\n"
-					"    }\n"
-					"}\n"
-					"\n"
-					"# Direct download and installation\n"
-					"Write-Host 'Downloading LLVM 18 from GitHub releases...'\n"
-					"$url = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/LLVM-18.1.8-win64.exe'\n"
-					"$installer = "$env:TEMP\\LLVM-18.1.8-win64.exe"\n"
-					"\n"
-					"try {\n"
-					"    Invoke-WebRequest -Uri $url -OutFile $installer -UseBasicParsing\n"
-					"    Write-Host 'Download completed. Installing LLVM 18...'\n"
-					"    \n"
-					"    # Run installer silently\n"
-					"    Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru\n"
-					"    \n"
-					"    # Add LLVM to PATH if not already there\n"
-					"    $llvmPath = 'C:\\Program Files\\LLVM\\bin'\n"
-					"    if (Test-Path $llvmPath) {\n"
-					"        $currentPath = [Environment]::GetEnvironmentVariable('PATH', 'Machine')\n"
-					"        if ($currentPath -notlike \"*$llvmPath*\") {\n"
-					"            Write-Host 'Adding LLVM to system PATH...'\n"
-					"            [Environment]::SetEnvironmentVariable('PATH', \"$currentPath;$llvmPath\", 'Machine')\n"
-					"        }\n"
-					"        Write-Host 'LLVM 18 installation completed successfully.'\n"
-					"        Remove-Item $installer -Force\n"
-					"        exit 0\n"
-					"    } else {\n"
-					"        Write-Error 'LLVM installation failed - LLVM directory not found.'\n"
-					"        exit 1\n"
-					"    }\n"
-					"} catch {\n"
-					"    Write-Error \"Installation failed: $($_.Exception.Message)\"\n"
-					"    if (Test-Path $installer) { Remove-Item $installer -Force }\n"
-					"    exit 1\n"
-					"}\n"
-				)
+				set(INSTALL_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/install_llvm_windows.ps1")
 				
 				message(STATUS "Attempting to install LLVM/Clang 18 automatically on Windows...")
 				message(STATUS "Running installation script: ${INSTALL_SCRIPT_PATH}")
