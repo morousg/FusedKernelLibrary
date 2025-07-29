@@ -323,7 +323,7 @@ namespace fk {
             constexpr bool iOpsContainsReadBack = (isReadBackType<IOps> || ...);
             constexpr bool nextIsComputeOrMidWrite = isComputeType<Next> || isMidWriteType<Next>;
             if constexpr (nextIsReadBack || (nextIsComputeOrMidWrite && iOpsContainsReadBack)) {
-                return fuseBack(tDPPDetails, fuse(read, nextOp), iOps...);
+                return fuseBack(fuse(read, nextOp), iOps...);
             } else {
                 return buildOperationPipeline(read, nextOp, iOps...);
             }
