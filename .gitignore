@@ -1,5 +1,6 @@
 build/
 build_llvm/
+build_*/
 *.o
 *.a
 *.so
