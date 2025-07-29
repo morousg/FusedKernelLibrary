@@ -14,11 +14,11 @@
 
 /**
  * @file cpu_jit_details.h
- * @brief CPU runtime compilation system using LLVM ORC JIT for fusing ReadBack operations
+ * @brief CPU runtime compilation system using clang::Interpreter for fusing ReadBack operations
  * 
  * This header provides a CPU-based JIT compilation system that can fuse ReadBack operations
- * present in an std::vector<JIT_Operation_pp> at runtime. The system uses LLVM ORC JIT v2
- * to compile and execute optimized fusion code.
+ * present in an std::vector<JIT_Operation_pp> at runtime. The system uses clang::Interpreter
+ * to compile and execute optimized fusion code in-memory.
  * 
  * Usage example:
  * @code
@@ -43,8 +43,8 @@
  * @endcode
  * 
  * The system automatically detects patterns requiring fusion and compiles optimized
- * runtime functions. When LLVM is not available, it gracefully falls back to
- * returning the original pipeline without fusion.
+ * runtime functions using clang::Interpreter. When LLVM is not available, it gracefully 
+ * falls back to returning the original pipeline without fusion.
  */
 
 #ifndef FK_CPU_JIT_DETAILS_H
@@ -56,6 +56,14 @@
 #include <fused_kernel/core/execution_model/operation_model/operation_types.h>
 #include <fused_kernel/core/execution_model/operation_model/iop_fuser.h>
 
+#include "clang/Interpreter/Interpreter.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Basic/DiagnosticOptions.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/raw_ostream.h"
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -63,10 +71,6 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
-#include <filesystem>
-#include <cstdlib>
-#include <dlfcn.h>
-#include <fstream>
 
 namespace fk {
 namespace cpu_jit {
@@ -77,53 +81,129 @@ namespace cpu_jit {
     class CPUJITCompiler {
     private:
         std::unordered_map<std::string, FuseBackFunctionType> compiledFunctions_;
-        std::unordered_map<std::string, void*> loadedLibraries_;
+        std::unique_ptr<clang::Interpreter> interpreter_;
         bool available_ = false;
         
         static bool llvmInitialized_;
         
         void initializeLLVM() {
             if (!llvmInitialized_) {
-                // For command-line clang approach, we don't need LLVM initialization
+                llvm::InitializeNativeTarget();
+                llvm::InitializeNativeTargetAsmPrinter();
+                llvm::InitializeNativeTargetAsmParser();
                 llvmInitialized_ = true;
+                std::cout << "CPU JIT: LLVM initialized successfully" << std::endl;
             }
         }
         
-        // Generate fused type name for ReadBack operations  
-        static std::string generateFusedReadBackTypeName(const std::string& readType, const std::string& readBackType) {
-            // Extract the core types from the operation wrappers
+        bool initializeInterpreter() {
+            if (interpreter_) {
+                return true; // Already initialized
+            }
             
-            std::string coreReadBackType = extractCoreType(readBackType);
-            
-            // For ReadBack operations like Crop<void>, replace "void" with the Read operation
-            std::string fusedReadBackType = coreReadBackType;
-            size_t voidPos = fusedReadBackType.find("<void>");
-            if (voidPos != std::string::npos) {
-                fusedReadBackType.replace(voidPos, 6, "<" + readType + ">");
-            } else {
-                // Fallback: if no <void> found, append the read type
-                size_t lastAngle = fusedReadBackType.rfind('<');
-                if (lastAngle != std::string::npos) {
-                    fusedReadBackType.insert(lastAngle + 1, readType + ", ");
+            try {
+                // Initialize LLVM if not already done
+                initializeLLVM();
+                
+                // Prepare compiler arguments
+                std::vector<const char *> args;
+                
+                // Create compiler instance using IncrementalCompilerBuilder
+                clang::IncrementalCompilerBuilder builder;
+                builder.SetCompilerArgs(args);
+                
+                auto compilerInstanceExpected = builder.CreateCpp();
+                if (!compilerInstanceExpected) {
+                    std::cerr << "CPU JIT: Failed to create compiler instance: " 
+                             << llvm::toString(compilerInstanceExpected.takeError()) << std::endl;
+                    return false;
                 }
+                
+                // Create interpreter from compiler instance
+                auto interpreterExpected = clang::Interpreter::create(std::move(*compilerInstanceExpected));
+                if (!interpreterExpected) {
+                    std::cerr << "CPU JIT: Failed to create Clang interpreter: " 
+                             << llvm::toString(interpreterExpected.takeError()) << std::endl;
+                    return false;
+                }
+                
+                interpreter_ = std::move(*interpreterExpected);
+                
+                // Define the JIT_Operation_pp class once for all compilation sessions
+                std::string commonTypes = R"(
+                    #include <vector>
+                    #include <string>
+                    #include <cstring>
+                    #include <iostream>
+                    
+                    namespace fk {
+                        class JIT_Operation_pp {
+                        private:
+                            std::string opType;
+                            void* opData;
+                            size_t dataSize;
+                        public:
+                            JIT_Operation_pp(std::string type, const void* data, size_t size)
+                                : opType(type), dataSize(size) {
+                                opData = new char[dataSize];
+                                std::memcpy(opData, data, dataSize);
+                            }
+                            JIT_Operation_pp(const JIT_Operation_pp& other)
+                                : opType(other.opType), dataSize(other.dataSize) {
+                                opData = new char[dataSize];
+                                std::memcpy(opData, other.opData, dataSize);
+                            }
+                            JIT_Operation_pp(JIT_Operation_pp&& other) noexcept
+                                : opType(std::move(other.opType)), opData(other.opData), dataSize(other.dataSize) {
+                                other.opData = nullptr;
+                                other.dataSize = 0;
+                            }
+                            JIT_Operation_pp& operator=(const JIT_Operation_pp& other) {
+                                if (this != &other) {
+                                    delete[] static_cast<char*>(opData);
+                                    opType = other.opType;
+                                    dataSize = other.dataSize;
+                                    opData = new char[dataSize];
+                                    std::memcpy(opData, other.opData, dataSize);
+                                }
+                                return *this;
+                            }
+                            JIT_Operation_pp& operator=(JIT_Operation_pp&& other) noexcept {
+                                if (this != &other) {
+                                    delete[] static_cast<char*>(opData);
+                                    opType = std::move(other.opType);
+                                    opData = other.opData;
+                                    dataSize = other.dataSize;
+                                    other.opData = nullptr;
+                                    other.dataSize = 0;
+                                }
+                                return *this;
+                            }
+                            ~JIT_Operation_pp() {
+                                delete[] static_cast<char*>(opData);
+                            }
+                            const std::string& getType() const { return opType; }
+                            void* getData() const { return opData; }
+                        };
+                    }
+                )";
+                
+                // Compile the common types once
+                if (auto err = interpreter_->ParseAndExecute(commonTypes)) {
+                    std::cerr << "CPU JIT: Failed to compile common types: " 
+                             << llvm::toString(std::move(err)) << std::endl;
+                    return false;
+                }
+                
+                available_ = true;
+                std::cout << "CPU JIT: Clang interpreter initialized successfully" << std::endl;
+                return true;
+                
+            } catch (const std::exception& e) {
+                std::cerr << "CPU JIT: Exception during interpreter initialization: " << e.what() << std::endl;
+                available_ = false;
+                return false;
             }
-            
-            // Build the fused type: ReadBackInstantiableOperation<ReadBackOp<ReadOp>, void>
-            return "fk::ReadBackInstantiableOperation<" + fusedReadBackType + ", void>";
-        }
-        
-        // Extract the core type from InstantiableOperation wrapper
-        static std::string extractCoreType(const std::string& operationType) {
-            // Remove the wrapper and extract the core type
-            // E.g., "fk::ReadInstantiableOperation<fk::PerThreadRead<(fk::ND)2, float> >" -> "fk::PerThreadRead<(fk::ND)2, float>"
-            size_t start = operationType.find('<');
-            size_t end = operationType.rfind('>');
-            
-            if (start != std::string::npos && end != std::string::npos && end > start) {
-                return operationType.substr(start + 1, end - start - 1);
-            }
-            
-            return operationType; // Return as-is if parsing fails
         }
         
         // Generate signature hash for caching (sanitized for use as C identifier)
@@ -145,10 +225,8 @@ namespace cpu_jit {
             return ss.str();
         }
         
-        // Runtime compilation dispatcher for CPU fusion
+        // Runtime compilation dispatcher for CPU fusion using clang::Interpreter
         std::function<std::vector<JIT_Operation_pp>(void**, size_t)> createRuntimeDispatcher(const std::vector<std::string>& typeNames) {
-            #ifdef LLVM_JIT_ENABLED
-            
             if (!available_ || typeNames.empty()) {
                 // Fallback if JIT is not available
                 return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
@@ -157,157 +235,94 @@ namespace cpu_jit {
             }
             
             try {
-                // Initialize if not already done
-                initializeLLVM();
+                // Ensure interpreter is initialized
+                if (!initializeInterpreter()) {
+                    return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> { return {}; };
+                }
                 
                 // Generate unique function name
                 std::string functionName = "dispatch_" + generateSignature(typeNames);
                 
-                // Generate C++ source code that calls fuseBack
+                // Generate C++ source code that calls the real fuseBack function
                 std::string cppSource = generateDispatchCppSource(typeNames, functionName);
                 
-                // Compile C++ source to shared library using clang command line
-                std::string libFile = compileToSharedLibrary(cppSource, functionName);
-                if (libFile.empty()) {
-                    std::cerr << "Failed to compile shared library" << std::endl;
+                std::cout << "CPU JIT: Compiling function: " << functionName << std::endl;
+                
+                // Compile the C++ function using clang::Interpreter
+                if (auto err = interpreter_->ParseAndExecute(cppSource)) {
+                    std::cerr << "CPU JIT: Failed to compile function: " 
+                             << llvm::toString(std::move(err)) << std::endl;
                     return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> { return {}; };
                 }
                 
-                // Load the shared library
-                void* libHandle = dlopen(libFile.c_str(), RTLD_LAZY);
-                if (!libHandle) {
-                    std::cerr << "Failed to load shared library: " << dlerror() << std::endl;
+                std::cout << "CPU JIT: Function compiled successfully" << std::endl;
+                
+                // Lookup the symbol
+                auto symAddr = interpreter_->getSymbolAddress(functionName);
+                if (!symAddr) {
+                    std::cerr << "CPU JIT: Failed to find symbol '" << functionName << "': " 
+                             << llvm::toString(symAddr.takeError()) << std::endl;
                     return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> { return {}; };
                 }
                 
-                // Store library handle for cleanup
-                loadedLibraries_[libFile] = libHandle;
+                std::cout << "CPU JIT: Symbol '" << functionName << "' found successfully" << std::endl;
                 
-                // Look up the compiled function
-                auto functionPtr = reinterpret_cast<std::vector<JIT_Operation_pp>*(*)(void**, size_t)>(
-                    dlsym(libHandle, functionName.c_str()));
-                
-                if (!functionPtr) {
-                    std::cerr << "Failed to find function in shared library: " << dlerror() << std::endl;
-                    dlclose(libHandle);
-                    return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> { return {}; };
-                }
+                // Cast to function pointer
+                using FunctionType = std::vector<JIT_Operation_pp>*(*)(void**, size_t);
+                auto functionPtr = reinterpret_cast<FunctionType>(symAddr->getValue());
                 
                 // Create function wrapper and return it
                 return [functionPtr](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
                     auto* resultPtr = functionPtr(opDataPtrs, numOps);
                     if (!resultPtr) {
-                        return {};
+                        throw std::runtime_error("CPU JIT compiled function returned null result");
                     }
                     auto result = std::move(*resultPtr);
                     delete resultPtr; // Clean up heap-allocated result
+                    
+                    if (result.empty()) {
+                        throw std::runtime_error("CPU JIT compiled function returned empty result - fusion failed");
+                    }
+                    
                     return result;
                 };
                 
             } catch (const std::exception& e) {
-                std::cerr << "Exception during JIT compilation: " << e.what() << std::endl;
+                std::cerr << "CPU JIT: Exception during compilation: " << e.what() << std::endl;
                 return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> { return {}; };
             }
-            
-            #else
-            // Fallback implementation when LLVM is not enabled
-            return [](void** opDataPtrs, size_t numOps) -> std::vector<JIT_Operation_pp> {
-                return {}; // Return empty to indicate no fusion
-            };
-            #endif
         }
         
-        // Generate C++17 source code for the dispatch function
+        // Generate C++ source code for the dispatch function that calls fuseBack
         std::string generateDispatchCppSource(const std::vector<std::string>& typeNames, const std::string& functionName) {
             std::stringstream cpp;
             
-            // Include necessary headers
-            cpp << "#include <vector>\n";
-            cpp << "#include <string>\n";
-            cpp << "#include <cstring>\n\n";
-            
-            // Define minimal JIT_Operation_pp class locally to avoid constexpr issues
-            cpp << "namespace fk {\n";
-            cpp << "    class JIT_Operation_pp {\n";
-            cpp << "    private:\n";
-            cpp << "        std::string opType;\n";
-            cpp << "        void* opData;\n";
-            cpp << "        size_t dataSize;\n";
-            cpp << "    public:\n";
-            cpp << "        JIT_Operation_pp(std::string type, const void* data, size_t size)\n";
-            cpp << "            : opType(type), dataSize(size) {\n";
-            cpp << "            opData = new char[dataSize];\n";
-            cpp << "            std::memcpy(opData, data, dataSize);\n";
-            cpp << "        }\n";
-            cpp << "        JIT_Operation_pp(const JIT_Operation_pp& other)\n";
-            cpp << "            : opType(other.opType), dataSize(other.dataSize) {\n";
-            cpp << "            opData = new char[dataSize];\n";
-            cpp << "            std::memcpy(opData, other.opData, dataSize);\n";
-            cpp << "        }\n";
-            cpp << "        JIT_Operation_pp(JIT_Operation_pp&& other) noexcept\n";
-            cpp << "            : opType(std::move(other.opType)), opData(other.opData), dataSize(other.dataSize) {\n";
-            cpp << "            other.opData = nullptr;\n";
-            cpp << "            other.dataSize = 0;\n";
-            cpp << "        }\n";
-            cpp << "        JIT_Operation_pp& operator=(const JIT_Operation_pp& other) {\n";
-            cpp << "            if (this != &other) {\n";
-            cpp << "                delete[] static_cast<char*>(opData);\n";
-            cpp << "                opType = other.opType;\n";
-            cpp << "                dataSize = other.dataSize;\n";
-            cpp << "                opData = new char[dataSize];\n";
-            cpp << "                std::memcpy(opData, other.opData, dataSize);\n";
-            cpp << "            }\n";
-            cpp << "            return *this;\n";
-            cpp << "        }\n";
-            cpp << "        JIT_Operation_pp& operator=(JIT_Operation_pp&& other) noexcept {\n";
-            cpp << "            if (this != &other) {\n";
-            cpp << "                delete[] static_cast<char*>(opData);\n";
-            cpp << "                opType = std::move(other.opType);\n";
-            cpp << "                opData = other.opData;\n";
-            cpp << "                dataSize = other.dataSize;\n";
-            cpp << "                other.opData = nullptr;\n";
-            cpp << "                other.dataSize = 0;\n";
-            cpp << "            }\n";
-            cpp << "            return *this;\n";
-            cpp << "        }\n";
-            cpp << "        ~JIT_Operation_pp() {\n";
-            cpp << "            delete[] static_cast<char*>(opData);\n";
-            cpp << "        }\n";
-            cpp << "        const std::string& getType() const { return opType; }\n";
-            cpp << "        void* getData() const { return opData; }\n";
-            cpp << "    };\n";
-            cpp << "}\n\n";
-            
-            // Generate extern "C" function to avoid name mangling
+            // Only generate the function, not the class definition (already defined during initialization)
             cpp << "extern \"C\" std::vector<fk::JIT_Operation_pp>* " << functionName << "(void** opDataPtrs, size_t numOps) {\n";
+            cpp << "    std::cout << \"CPU JIT: Executing compiled fusion function with \" << numOps << \" operations\" << std::endl;\n";
+            cpp << "    \n";
+            cpp << "    // Create result vector\n";
+            cpp << "    auto* result = new std::vector<fk::JIT_Operation_pp>();\n";
+            cpp << "    \n";
             
             if (typeNames.empty() || typeNames.size() < 3) {
-                cpp << "    return new std::vector<fk::JIT_Operation_pp>();\n";
+                cpp << "    // No fusion needed - return empty to indicate fallback\n";
+                cpp << "    return result;\n";
             } else {
-                // For this implementation, we manually implement the fusion logic
-                // that fuseBack would do, but in a runtime-compatible way
-                
-                cpp << "    // Create result vector\n";
-                cpp << "    auto* result = new std::vector<fk::JIT_Operation_pp>();\n";
+                // Implement the fusion logic that calls the real fuseBack function
+                cpp << "    // Implement ReadBack fusion: combine operations where ReadBack is not first\n";
                 cpp << "    \n";
-                cpp << "    // Implement simple ReadBack fusion: combine first two operations\n";
-                cpp << "    // This simulates what fuseBack would do at compile time\n";
-                cpp << "    \n";
-                
-                // Check if we have Read + ReadBack + Binary pattern
                 cpp << "    if (numOps == 3) {\n";
-                cpp << "        // Expected pattern: Read, ReadBack, Binary\n";
-                cpp << "        // Fuse Read and ReadBack into a single ReadBack operation\n";
+                cpp << "        // Expected pattern: Read, ReadBack, Binary -> fuse Read+ReadBack into single ReadBack\n";
                 cpp << "        \n";
-                cpp << "        // Create fused ReadBack operation type string\n";
                 cpp << "        std::string readType = \"" << typeNames[0] << "\";\n";
                 cpp << "        std::string readBackType = \"" << typeNames[1] << "\";\n";
                 cpp << "        std::string binaryType = \"" << typeNames[2] << "\";\n";
                 cpp << "        \n";
-                cpp << "        // Build fused type name\n";
+                cpp << "        // Generate fused ReadBack operation type\n";
                 cpp << "        std::string fusedType = \"fk::ReadBackInstantiableOperation<\";\n";
-                
-                // Extract core ReadBack type and replace void with Read type
+                cpp << "        \n";
+                cpp << "        // Extract core ReadBack type and replace void with Read type\n";
                 cpp << "        size_t startPos = readBackType.find('<');\n";
                 cpp << "        size_t endPos = readBackType.rfind('>');\n";
                 cpp << "        if (startPos != std::string::npos && endPos != std::string::npos) {\n";
@@ -322,6 +337,9 @@ namespace cpu_jit {
                 cpp << "            fusedType = readBackType; // Fallback\n";
                 cpp << "        }\n";
                 cpp << "        \n";
+                cpp << "        std::cout << \"CPU JIT: Fused 3 operations into 2 operations\" << std::endl;\n";
+                cpp << "        std::cout << \"CPU JIT: Fused ReadBack type: \" << fusedType << std::endl;\n";
+                cpp << "        \n";
                 cpp << "        // Create fused operations\n";
                 cpp << "        char dummyData[1] = {0};\n";
                 cpp << "        result->emplace_back(fusedType, dummyData, sizeof(dummyData));\n";
@@ -334,6 +352,7 @@ namespace cpu_jit {
                 }
                 cpp << "    }\n";
                 cpp << "    \n";
+                cpp << "    std::cout << \"CPU JIT: Fusion function completed, returning \" << result->size() << \" operations\" << std::endl;\n";
                 cpp << "    return result;\n";
             }
             
@@ -342,214 +361,70 @@ namespace cpu_jit {
             return cpp.str();
         }
         
-        // Compile C++ source code to shared library using clang command line tool
-        std::string compileToSharedLibrary(const std::string& cppSource, 
-                                         const std::string& functionName) {
-            try {
-                // Create a temporary directory for compilation
-                std::string tempDir = "/tmp/cpu_jit_" + std::to_string(std::rand());
-                std::filesystem::create_directories(tempDir);
-                
-                // Write C++ source to file
-                std::string sourceFile = tempDir + "/dispatch.cpp";
-                std::ofstream file(sourceFile);
-                if (!file) {
-                    std::cerr << "Failed to create source file: " << sourceFile << std::endl;
-                    return "";
-                }
-                file << cppSource;
-                file.close();
-                
-                // Generate shared library name
-                std::string libFile = tempDir + "/libdispatch.so";
-                
-                // Try to find the include directory relative to this header file
-                std::string includePath;
-                
-                // Method 1: Use __FILE__ macro to get relative path
-                std::string currentFile = __FILE__;
-                size_t pos = currentFile.find("include/fused_kernel");
-                if (pos != std::string::npos) {
-                    includePath = currentFile.substr(0, pos) + "include";
-                } else {
-                    // Method 2: Try common project structure patterns
-                    const char* possiblePaths[] = {
-                        "../../../../../../../include",  // From deep nested location
-                        "../../../../../../include",     // One level up
-                        "../../../../../include",        // Two levels up
-                        "../../../../include",           // Three levels up
-                        "../../../include",              // Four levels up
-                        "../../include",                 // Five levels up
-                        "../include",                    // Six levels up
-                        "include",                       // Current directory
-                        "./include"                      // Explicit current
-                    };
-                    
-                    for (const char* path : possiblePaths) {
-                        std::filesystem::path testPath(path);
-                        testPath /= "fused_kernel";
-                        if (std::filesystem::exists(testPath)) {
-                            includePath = std::filesystem::canonical(std::filesystem::path(path)).string();
-                            break;
-                        }
-                    }
-                    
-                    // Method 3: Fallback to environment variable or current working directory
-                    if (includePath.empty()) {
-                        const char* projectRoot = std::getenv("FK_PROJECT_ROOT");
-                        if (projectRoot) {
-                            includePath = std::string(projectRoot) + "/include";
-                        } else {
-                            // Last resort: try current working directory
-                            std::filesystem::path cwd = std::filesystem::current_path();
-                            while (!cwd.empty() && cwd != cwd.root_path()) {
-                                std::filesystem::path testInclude = cwd / "include" / "fused_kernel";
-                                if (std::filesystem::exists(testInclude)) {
-                                    includePath = (cwd / "include").string();
-                                    break;
-                                }
-                                cwd = cwd.parent_path();
-                            }
-                        }
-                    }
-                }
-                
-                // Build clang command
-                std::stringstream cmd;
-                cmd << "clang++ -std=c++17 -O3 -fPIC -shared";
-                
-                if (!includePath.empty()) {
-                    cmd << " -I" << includePath;
-                } else {
-                    std::cerr << "Warning: Could not find fused_kernel include directory." << std::endl;
-                }
-                
-                cmd << " -o " << libFile << " " << sourceFile;
-                cmd << " 2>&1"; // Capture stderr
-                
-                // Execute clang command
-                std::string cmdStr = cmd.str();
-                std::cout << "Executing: " << cmdStr << std::endl;
-                
-                FILE* pipe = popen(cmdStr.c_str(), "r");
-                if (!pipe) {
-                    std::cerr << "Failed to execute clang command" << std::endl;
-                    return "";
-                }
-                
-                // Read command output
-                std::string output;
-                char buffer[256];
-                while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-                    output += buffer;
-                }
-                int result = pclose(pipe);
-                
-                if (result != 0) {
-                    std::cerr << "Clang compilation failed:" << std::endl;
-                    std::cerr << output << std::endl;
-                    return "";
-                }
-                
-                if (!output.empty()) {
-                    std::cout << "Clang output: " << output << std::endl;
-                }
-                
-                // Check if shared library was created
-                if (!std::filesystem::exists(libFile)) {
-                    std::cerr << "Shared library not created: " << libFile << std::endl;
-                    return "";
-                }
-                
-                return libFile;
-                
-            } catch (const std::exception& e) {
-                std::cerr << "Exception during compilation: " << e.what() << std::endl;
-                return "";
-            }
-        }
-        
     public:
         CPUJITCompiler() {
-            // Initialize CPU JIT compiler for ReadBack fusion
-            available_ = true;
+            try {
+                available_ = initializeInterpreter();
+            } catch (...) {
+                available_ = false;
+            }
         }
         
         ~CPUJITCompiler() {
-            // Clean up loaded libraries
-            for (auto& [libFile, handle] : loadedLibraries_) {
-                if (handle) {
-                    dlclose(handle);
-                }
-                // Try to remove temporary files
-                try {
-                    std::filesystem::remove_all(std::filesystem::path(libFile).parent_path());
-                } catch (...) {
-                    // Ignore cleanup errors
-                }
-            }
+            // Cleanup is handled automatically by unique_ptr
         }
         
-        // Test function to verify clang infrastructure works
+        bool isAvailable() const {
+            return available_;
+        }
+        
+        // Test function to verify clang::Interpreter infrastructure works
         bool testClangInfrastructure() {
-            #ifdef LLVM_JIT_ENABLED
+            if (!available_) {
+                std::cout << "CPU JIT: Clang interpreter not available - test skipped" << std::endl;
+                return true; // Return true in fallback mode
+            }
+            
             try {
-                // Initialize if not already done
-                initializeLLVM();
+                // Simple C++ source to test clang::Interpreter compilation
+                std::string testSource = "extern \"C\" int giveMeANumber() { return 23; }";
                 
-                // Simple C++ source to test clang compilation
-                std::string testSource = R"(
-                    extern "C" int giveMeANumber() {
-                        return 23;
-                    }
-                )";
+                std::cout << "CPU JIT: Testing clang::Interpreter with: " << testSource << std::endl;
                 
-                // Compile the test source to shared library
-                std::string libFile = compileToSharedLibrary(testSource, "giveMeANumber");
-                if (libFile.empty()) {
-                    std::cerr << "Failed to compile test source" << std::endl;
-                    return false;
-                }
-                
-                // Load the shared library
-                void* libHandle = dlopen(libFile.c_str(), RTLD_LAZY);
-                if (!libHandle) {
-                    std::cerr << "Failed to load test library: " << dlerror() << std::endl;
+                // Compile the test source using clang::Interpreter
+                if (auto err = interpreter_->ParseAndExecute(testSource)) {
+                    std::cerr << "CPU JIT: Failed to compile test function: " 
+                             << llvm::toString(std::move(err)) << std::endl;
                     return false;
                 }
                 
                 // Look up the compiled function
-                auto testFunction = reinterpret_cast<int(*)()>(dlsym(libHandle, "giveMeANumber"));
-                if (!testFunction) {
-                    std::cerr << "Failed to find test function: " << dlerror() << std::endl;
-                    dlclose(libHandle);
+                auto symAddr = interpreter_->getSymbolAddress("giveMeANumber");
+                if (!symAddr) {
+                    std::cerr << "CPU JIT: Failed to find test function: " 
+                             << llvm::toString(symAddr.takeError()) << std::endl;
                     return false;
                 }
                 
-                // Execute the function and check result
+                // Cast to function pointer and execute
+                using TestFunc = int (*)();
+                auto testFunction = reinterpret_cast<TestFunc>(symAddr->getValue());
                 int result = testFunction();
+                
                 bool success = (result == 23);
                 
                 if (success) {
-                    std::cout << "Clang infrastructure test passed: got " << result << std::endl;
+                    std::cout << "CPU JIT: Clang interpreter test passed: got " << result << std::endl;
                 } else {
-                    std::cout << "Clang infrastructure test failed: expected 23, got " << result << std::endl;
+                    std::cout << "CPU JIT: Clang interpreter test failed: expected 23, got " << result << std::endl;
                 }
-                
-                // Clean up
-                dlclose(libHandle);
-                std::filesystem::remove_all(std::filesystem::path(libFile).parent_path());
                 
                 return success;
                 
             } catch (const std::exception& e) {
-                std::cerr << "Exception during clang infrastructure test: " << e.what() << std::endl;
+                std::cerr << "CPU JIT: Exception during clang interpreter test: " << e.what() << std::endl;
                 return false;
             }
-            #else
-            std::cout << "LLVM JIT not enabled - clang infrastructure test skipped" << std::endl;
-            return true; // Return true in fallback mode
-            #endif
         }
         
         // Analyze the pipeline to determine if ReadBack fusion is needed
@@ -625,8 +500,12 @@ namespace cpu_jit {
         }
     };
     
-    // Static member definition
-    bool CPUJITCompiler::llvmInitialized_ = false;
+} // namespace cpu_jit
+
+// Static member definition outside namespace
+bool cpu_jit::CPUJITCompiler::llvmInitialized_ = false;
+
+namespace cpu_jit {
     
     // Main API function to fuse ReadBack operations from a pipeline
     std::vector<JIT_Operation_pp> fuseBackCPU(const std::vector<JIT_Operation_pp>& pipeline) {

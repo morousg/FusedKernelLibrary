@@ -205,6 +205,80 @@ if (NVRTC_ENABLE)
 		set(NVRTC_ENABLE OFF CACHE BOOL "NVRTC support was disabled because the CUDA Toolkit could not be found." FORCE)
 	endif()
 endif()
+
+# LLVM JIT compilation support (using clang::Interpreter)
+if (LLVM_JIT_ENABLE)
+	message(STATUS "Configuring LLVM JIT compilation support...")
+	find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config-18 llvm-config DOC "llvm-config tool")
+	
+	if(LLVM_CONFIG_EXECUTABLE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --version OUTPUT_VARIABLE LLVM_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --prefix OUTPUT_VARIABLE LLVM_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --libdir OUTPUT_VARIABLE LLVM_LIB_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --cxxflags OUTPUT_VARIABLE LLVM_CXX_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --ldflags OUTPUT_VARIABLE LLVM_LD_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs core orcjit executionengine mcjit interpreter target nativecodegen asmparser asmprinter OUTPUT_VARIABLE LLVM_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+		execute_process(COMMAND ${LLVM_CONFIG_EXECUTABLE} --system-libs OUTPUT_VARIABLE LLVM_SYSTEM_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+		
+		# Find Clang C++ library for interpreter support
+		find_library(CLANG_CPP_LIB 
+			NAMES clang-cpp.18.1 clang-cpp.18 clang-cpp
+			PATHS ${LLVM_LIB_DIR} /usr/lib/x86_64-linux-gnu /usr/lib
+			NO_DEFAULT_PATH)
+		if(CLANG_CPP_LIB)
+			set(CLANG_LIBRARIES ${CLANG_CPP_LIB})
+			message(STATUS "Found Clang C++ library: ${CLANG_CPP_LIB}")
+		else()
+			# Try direct path to the library
+			if(EXISTS "/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18.1")
+				set(CLANG_LIBRARIES "/usr/lib/x86_64-linux-gnu/libclang-cpp.so.18.1")
+				message(STATUS "Using direct path to Clang C++ library: ${CLANG_LIBRARIES}")
+			else()
+				message(WARNING "libclang-cpp not found, trying individual Clang libraries")
+				set(CLANG_LIBRARIES -lclangInterpreter -lclangFrontend -lclangCodeGen -lclangSema -lclangAnalysis -lclangAST -lclangParse -lclangLex -lclangBasic)
+			endif()
+		endif()
+		
+		# Add Clang include directory for interpreter headers
+		set(CLANG_INCLUDE_DIR "${LLVM_PREFIX}/include")
+		if(NOT EXISTS "${CLANG_INCLUDE_DIR}/clang/Interpreter/Interpreter.h")
+			# Try alternative location for Clang headers
+			set(CLANG_INCLUDE_DIR "/usr/lib/llvm-18/include")
+		endif()
+		if(NOT EXISTS "${CLANG_INCLUDE_DIR}/clang/Interpreter/Interpreter.h")
+			# Try even more alternative locations
+			set(CLANG_INCLUDE_DIR "/usr/include/clang-18")
+		endif()
+		
+		# Verify that the Clang interpreter header exists
+		if(EXISTS "${CLANG_INCLUDE_DIR}/clang/Interpreter/Interpreter.h")
+			message(STATUS "LLVM JIT compilation support is enabled.")
+			message(STATUS "LLVM version: ${LLVM_VERSION}")
+			message(STATUS "LLVM prefix: ${LLVM_PREFIX}")
+			message(STATUS "LLVM include dir: ${LLVM_INCLUDE_DIR}")
+			message(STATUS "LLVM lib dir: ${LLVM_LIB_DIR}")
+			message(STATUS "LLVM LD flags: ${LLVM_LD_FLAGS}")
+			message(STATUS "LLVM libs: ${LLVM_LIBS}")
+			message(STATUS "LLVM system libs: ${LLVM_SYSTEM_LIBS}")
+			message(STATUS "Clang libraries: ${CLANG_LIBRARIES}")
+			
+			set(LLVM_JIT_LIBRARIES ${LLVM_LD_FLAGS} ${LLVM_LIBS} ${CLANG_LIBRARIES} ${LLVM_SYSTEM_LIBS})
+			set(LLVM_JIT_INCLUDE_DIRS ${LLVM_INCLUDE_DIR} ${CLANG_INCLUDE_DIR})
+			set(LLVM_JIT_CXX_FLAGS ${LLVM_CXX_FLAGS})
+			
+			# Add preprocessor definitions for LLVM JIT
+			add_definitions(-DLLVM_JIT_ENABLED)
+		else()
+			message(WARNING "Clang interpreter headers not found at ${CLANG_INCLUDE_DIR}")
+			message(WARNING "LLVM JIT support disabled - clang::Interpreter not available")
+			set(LLVM_JIT_ENABLE OFF CACHE BOOL "LLVM JIT support was disabled because clang::Interpreter headers could not be found." FORCE)
+		endif()
+	else()
+		message(WARNING "llvm-config not found, disabling LLVM JIT support")
+		set(LLVM_JIT_ENABLE OFF CACHE BOOL "LLVM JIT support was disabled because llvm-config could not be found." FORCE)
+	endif()
+endif()
 	
 add_subdirectory(include)
 add_subdirectory(lib)

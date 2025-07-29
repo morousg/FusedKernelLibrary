@@ -43,6 +43,29 @@ namespace test {
         std::cout << std::endl;
     }
     
+    // Test that clang::Interpreter infrastructure works by compiling simple function
+    bool testClangInfrastructure() {
+        std::cout << "Testing clang::Interpreter infrastructure..." << std::endl;
+        
+        try {
+            auto& compiler = fk::cpu_jit::CPUJITCompiler::getInstance();
+            
+            bool success = compiler.testClangInfrastructure();
+            
+            if (success) {
+                std::cout << "SUCCESS: Clang interpreter infrastructure test passed" << std::endl;
+            } else {
+                std::cout << "FAILURE: Clang interpreter infrastructure test failed" << std::endl;
+            }
+            
+            return success;
+            
+        } catch (const std::exception& e) {
+            std::cout << "EXCEPTION: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
     // Test basic CPU JIT functionality
     bool testBasicCPUJIT() {
         std::cout << "Testing basic CPU JIT functionality..." << std::endl;
@@ -395,19 +418,6 @@ namespace test {
             return true;
         } catch (const std::exception& e) {
             std::cerr << "Exception in testLLVMInitialization: " << e.what() << std::endl;
-            return false;
-        }
-    }
-    
-    // Test clang infrastructure by compiling and executing a simple function
-    bool testClangInfrastructure() {
-        std::cout << "Testing clang infrastructure..." << std::endl;
-        
-        try {
-            auto& compiler = cpu_jit::CPUJITCompiler::getInstance();
-            return compiler.testClangInfrastructure();
-        } catch (const std::exception& e) {
-            std::cerr << "Exception in testClangInfrastructure: " << e.what() << std::endl;
             return false;
         }
     }
