@@ -21,6 +21,7 @@
 #include <fused_kernel/core/execution_model/stream.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>
 #include <fused_kernel/algorithms/basic_ops/static_loop.h>
+#include <fused_kernel/core/data/ptr_utils.h>
 
 constexpr char VARIABLE_DIMENSION_NAME[]{ "Number of Operations" };
 

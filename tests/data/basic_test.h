@@ -17,6 +17,7 @@
 #include <iostream>
 
 #include <fused_kernel/core/data/ptr_nd.h>
+#include <fused_kernel/core/data/ptr_utils.h>
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>
 #include <fused_kernel/core/execution_model/memory_operations.h>
 #include <fused_kernel/algorithms/basic_ops/arithmetic.h>

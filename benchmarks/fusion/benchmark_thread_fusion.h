@@ -21,6 +21,8 @@
 #include <fused_kernel/core/core.h>
 #include <fused_kernel/algorithms/image_processing/saturate.h>
 #include <fused_kernel/algorithms/image_processing/color_conversion.h>
+#include <fused_kernel/core/data/ptr_utils.h>
+
 #include <iostream>
 #include <fused_kernel/fused_kernel.h>
 #include "tests/nvtx.h"

@@ -18,6 +18,7 @@
 #include <benchmarks/twoExecutionsBenchmark.h>
 
 #include <fused_kernel/core/data/ptr_nd.h>
+#include <fused_kernel/core/data/ptr_utils.h>
 #include <fused_kernel/algorithms/algorithms.h>
 #include <fused_kernel/fused_kernel.h>
 

@@ -25,6 +25,7 @@ namespace cg = cooperative_groups;
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>
 #include <fused_kernel/core/execution_model/thread_fusion.h>
 #include <fused_kernel/core/execution_model/parallel_architectures.h>
+#include <fused_kernel/core/execution_model/active_threads.h>
 #include <cmath>
 
 namespace fk { // namespace FusedKernel
