@@ -292,8 +292,6 @@ FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, co
         DECLARE_EXECUTOR_PARENT_IMPL
     };
 #endif
-
-#undef DECLARE_EXECUTOR_PARENT_IMPL
 } // namespace fk
 
 #endif // FK_EXECUTORS_CUH
