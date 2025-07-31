@@ -108,27 +108,40 @@ void testArithmeticOperatorTypes() {
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
     
     using BaseType = fk::VBase<VecType>;
-    VecType a = fk::make_set<VecType>(static_cast<BaseType>(2));
-    VecType b = fk::make_set<VecType>(static_cast<BaseType>(1));
-    BaseType scalar = static_cast<BaseType>(1);
+    constexpr VecType a = fk::make_set<VecType>(static_cast<BaseType>(2));
+    constexpr VecType b = fk::make_set<VecType>(static_cast<BaseType>(1));
+    constexpr BaseType scalar = static_cast<BaseType>(1);
     
     // Test that operators exist and compile
-    [[maybe_unused]] auto add_result = a + b;
-    [[maybe_unused]] auto sub_result = a - b;
-    [[maybe_unused]] auto mul_result = a * b;
-    [[maybe_unused]] auto div_result = a / b;
-    
+    constexpr auto add_result = a + b;
+ 
+    static_assert(std::is_same_v<decltype(add_result), const float2>, " operator should return scalar vector");    
+    constexpr auto sub_result = a - b;    
+    static_assert(std::is_same_v<decltype(sub_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto mul_result = a * b;
+    static_assert(std::is_same_v<decltype(mul_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto div_result = a / b;
+    static_assert(std::is_same_v<decltype(mul_result), const float2>, " operator should return scalar vector"); 
+
     // Test scalar operations
-    [[maybe_unused]] auto add_scalar_result = a + scalar;
-    [[maybe_unused]] auto sub_scalar_result = a - scalar;
-    [[maybe_unused]] auto mul_scalar_result = a * scalar;
-    [[maybe_unused]] auto div_scalar_result = a / scalar;
+    constexpr auto add_scalar_result = a + scalar;
+    static_assert(std::is_same_v<decltype(add_scalar_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto sub_scalar_result = a - scalar;
+    static_assert(std::is_same_v<decltype(sub_scalar_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto mul_scalar_result = a * scalar;
+    static_assert(std::is_same_v<decltype(mul_scalar_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto div_scalar_result = a / scalar;
+    static_assert(std::is_same_v<decltype(div_scalar_result), const float2>, " operator should return scalar vector"); 
     
     // Test scalar on left side
-    [[maybe_unused]] auto scalar_add_result = scalar + a;
-    [[maybe_unused]] auto scalar_sub_result = scalar - a;
-    [[maybe_unused]] auto scalar_mul_result = scalar * a;
-    [[maybe_unused]] auto scalar_div_result = scalar / a;
+    constexpr auto scalar_add_result = scalar + a;
+    static_assert(std::is_same_v<decltype(scalar_add_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto scalar_sub_result = scalar - a;
+    static_assert(std::is_same_v<decltype(scalar_sub_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto scalar_mul_result = scalar * a;
+    static_assert(std::is_same_v<decltype(scalar_mul_result), const float2>, " operator should return scalar vector"); 
+    constexpr auto scalar_div_result = scalar / a;
+    static_assert(std::is_same_v<decltype(scalar_div_result), const float2>, " operator should return scalar vector");
 }
 
 // Test unary operators
@@ -141,7 +154,8 @@ void testUnaryOperators() {
     
     // Test unary minus for signed types
     if constexpr (std::is_signed_v<fk::VBase<VecType>>) {
-        [[maybe_unused]] auto neg_result = -a;
+        auto neg_result = -a;
+
     }
     
     // Test logical not
