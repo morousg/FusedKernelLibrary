@@ -22,16 +22,6 @@
 #include <fused_kernel/algorithms/basic_ops/set.h>
 #include <fused_kernel/core/execution_model/stream.h>
 
-#if defined(NVRTC_ENABLED)
-#include <unordered_map>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <cstring>
-#include <fused_kernel/core/utils/type_to_string.h>
-#include <fused_kernel/core/execution_model/executor_details/jit_executor_details.h>
-#endif
-
 #if defined(__NVCC__) || defined(__HIP__)
 #include <fused_kernel/core/execution_model/executor_details/executor_kernels.h>
 #endif
