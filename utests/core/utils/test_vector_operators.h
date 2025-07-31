@@ -1,4 +1,4 @@
-/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Huguet)
+﻿/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Huguet)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -205,74 +205,172 @@ void testBitwiseOperators() {
 }
 
 // Test actual computation for float2 to ensure operators work correctly
-void testFloat2ComputationCorrectness() {
+bool testFloat2ComputationCorrectness() {
     float2 a = {3.0f, 4.0f};
     float2 b = {1.0f, 2.0f};
-    
+    bool res = true;
     // Test arithmetic
     auto add_result = a + b;
-    assert(approxEqual(add_result.x, 4.0f) && approxEqual(add_result.y, 6.0f));
+    
+    
+    if (!approxEqual(add_result.x, 4.0f) && approxEqual(add_result.y, 6.0f)) {
+        std::cerr << "Float2 addition test failed: expected (4.0, 6.0), got (" << add_result.x << ", " << add_result.y
+                  << ")" << std::endl;
+        res = false;        
+        
+    }
     
     auto sub_result = a - b;
-    assert(approxEqual(sub_result.x, 2.0f) && approxEqual(sub_result.y, 2.0f));
+    if(!(approxEqual(sub_result.x, 2.0f) && approxEqual(sub_result.y, 2.0f)))
+        {
+        std::cerr << "Float2 subtraction test failed: expected (2.0, 2.0), got (" << sub_result.x << ", " << sub_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
     
     auto mul_result = a * b;
-    assert(approxEqual(mul_result.x, 3.0f) && approxEqual(mul_result.y, 8.0f));
+    if(!(approxEqual(mul_result.x, 3.0f) && approxEqual(mul_result.y, 8.0f)))
+        {
+        std::cerr << "Float2 multiplication test failed: expected (3.0, 8.0), got (" << mul_result.x << ", " << mul_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
     
     auto div_result = a / b;
-    assert(approxEqual(div_result.x, 3.0f) && approxEqual(div_result.y, 2.0f));
+    if (!(approxEqual(div_result.x, 3.0f) && approxEqual(div_result.y, 2.0f)))
+        {
+        std::cerr << "Float2 division test failed: expected (3.0, 2.0), got (" << div_result.x << ", " << div_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
     
     // Test scalar arithmetic
     auto scalar_add = a + 1.0f;
-    assert(approxEqual(scalar_add.x, 4.0f) && approxEqual(scalar_add.y, 5.0f));
+    if(!(approxEqual(scalar_add.x, 4.0f) && approxEqual(scalar_add.y, 5.0f)))
+        {
+        std::cerr << "Float2 scalar addition test failed: expected (4.0, 5.0), got (" << scalar_add.x << ", " << scalar_add.y
+                  << ")" << std::endl;
+        res = false;
+    }   
     
     auto scalar_mul = a * 2.0f;
-    assert(approxEqual(scalar_mul.x, 6.0f) && approxEqual(scalar_mul.y, 8.0f));
+    if(!(approxEqual(scalar_mul.x, 6.0f) && approxEqual(scalar_mul.y, 8.0f)))
+        {
+        std::cerr << "Float2 scalar multiplication test failed: expected (6.0, 8.0), got (" << scalar_mul.x << ", " << scalar_mul.y
+                  << ")" << std::endl;
+        res = false;
+    }
     
     // Test comparisons
     auto eq_result = a == b;
-    assert(!eq_result.x && !eq_result.y);
+    if(!(!eq_result.x && !eq_result.y))
+        {
+        std::cerr << "Float2 equality test failed: expected (false, false), got (" << eq_result.x << ", " << eq_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
     
     auto gt_result = a > b;
-    assert(gt_result.x && gt_result.y);
-    
+    if(!(gt_result.x && gt_result.y))
+        {
+        std::cerr << "Float2 greater than test failed: expected (true, true), got (" << gt_result.x << ", " << gt_result.y
+                  << ")" << std::endl;
+        res = false;
+    }       
     auto scalar_gt = a > 2.0f;
-    assert(scalar_gt.x && scalar_gt.y);
+    if (!(scalar_gt.x && scalar_gt.y))
+        {
+        std::cerr << "Float2 scalar greater than test failed: expected (true, true), got (" << scalar_gt.x << ", " << scalar_gt.y
+                  << ")" << std::endl;
+        res = false;
+    }
     
     auto scalar_lt = a < 2.0f;
-    assert(!scalar_lt.x && !scalar_lt.y);
+    if (!(!scalar_lt.x && !scalar_lt.y))
+        {
+        std::cerr << "Float2 scalar less than test failed: expected (false, false), got (" << scalar_lt.x << ", " << scalar_lt.y
+                  << ")" << std::endl;
+        res = false;
+    }
+    return res;
 }
 
 // Test actual computation for int4 to ensure operators work correctly
-void testInt4ComputationCorrectness() {
+bool testInt4ComputationCorrectness() {
     int4 a = {10, 20, 30, 40};
     int4 b = {5, 10, 15, 20};
-    
+    bool res = true;
     // Test arithmetic
     auto add_result = a + b;
-    assert(add_result.x == 15 && add_result.y == 30 && add_result.z == 45 && add_result.w == 60);
-    
+    if (!(add_result.x == 15 && add_result.y == 30 && add_result.z == 45 && add_result.w == 60)) {
+        std::cerr << "Int4 addition test failed: expected (15, 30, 45, 60), got (" << add_result.x << ", "
+                  << add_result.y << ", " << add_result.z << ", " << add_result.w << ")" << std::endl;
+        assert(false);
+        res = false;
+    }
+
     auto sub_result = a - b;
-    assert(sub_result.x == 5 && sub_result.y == 10 && sub_result.z == 15 && sub_result.w == 20);
+    if (!(sub_result.x == 5 && sub_result.y == 10 && sub_result.z == 15 && sub_result.w == 20)) {
+        std::cerr << "Int4 subtraction test failed: expected (5, 10, 15, 20), got (" << sub_result.x << ", "
+                  << sub_result.y << ", " << sub_result.z << ", " << sub_result.w << ")" << std::endl;
+        assert(false);
+        res = false;
+    }
     
     // Test bitwise operations
     auto and_result = a & b;
-    assert(and_result.x == (10 & 5) && and_result.y == (20 & 10) && 
-           and_result.z == (30 & 15) && and_result.w == (40 & 20));
+    if(!(and_result.x == (10 & 5) && and_result.y == (20 & 10) && 
+           and_result.z == (30 & 15) &&
+          and_result.w == (40 & 20))) {
+        std::cerr << "Int4 bitwise AND test failed: expected (" 
+                  << (10 & 5) << ", " << (20 & 10) << ", " 
+                  << (30 & 15) << ", " << (40 & 20) << "), got (" 
+                  << and_result.x << ", " << and_result.y << ", " 
+                  << and_result.z
+                  << ", " << and_result.w << ")" << std::endl;
+        assert(false);
+        res = false;
+    }
     
     // Test comparisons
     auto gt_result = a > b;
-    assert(gt_result.x && gt_result.y && gt_result.z && gt_result.w);
+    if (!(gt_result.x && gt_result.y && gt_result.z && gt_result.w)) {
+        std::cerr << "Int4 greater than test failed: expected (true, true, true, true), got (" 
+                  << gt_result.x << ", " << gt_result.y << ", " 
+                  << gt_result.z << ", " << gt_result.w << ")" << std::endl;
+        assert(false);
+        res = false;
+    }
     
     auto eq_result = a == a;
-    assert(eq_result.x && eq_result.y && eq_result.z && eq_result.w);
+    if (!(eq_result.x && eq_result.y && eq_result.z && eq_result.w)) {
+        std::cerr << "Int4 equality test failed: expected (true, true, true, true), got (" 
+                  << eq_result.x << ", " << eq_result.y << ", " 
+                  << eq_result.z << ", " << eq_result.w << ")" << std::endl;
+        assert(false);
+        res = false;
+    }
     
     // Test scalar operations
     auto scalar_add = a + 5;
-    assert(scalar_add.x == 15 && scalar_add.y == 25 && scalar_add.z == 35 && scalar_add.w == 45);
+    if (!(scalar_add.x == 15 && scalar_add.y == 25 && scalar_add.z == 35 && scalar_add.w == 45)) {
+        std::cerr << "Int4 scalar addition test failed: expected (15, 25, 35, 45), got (" 
+                  << scalar_add.x << ", " << scalar_add.y << ", " 
+                  << scalar_add.z << ", " << scalar_add.w << ")" << std::endl;
+        assert(false);
+        res = false;
+    }
     
     auto scalar_gt = a > 25;
-    assert(!scalar_gt.x && !scalar_gt.y && scalar_gt.z && scalar_gt.w);
+    if(!(!scalar_gt.x && !scalar_gt.y && scalar_gt.z && scalar_gt.w)){
+        std::cerr << "Int4 scalar greater than test failed: expected (false, false, true, true), got (" 
+                  << scalar_gt.x << ", " << scalar_gt.y << ", " 
+                  << scalar_gt.z << ", " << scalar_gt.w << ")" << std::endl;
+        assert(false);
+        res = false;
+
+    }
+    return res;
 }
 
 int launch() {
@@ -349,10 +447,17 @@ int launch() {
     testBitwiseOperators<uchar4>();
     testBitwiseOperators<short3>();
     
+    //previous test use static asserts, to they don't compile if the results are not correct
+    //  the next one are at runtime, so we need to check the results manually
     // Test actual computation correctness
-    testFloat2ComputationCorrectness();
-    testInt4ComputationCorrectness();
-    
+    bool res = testFloat2ComputationCorrectness();
+   
+    bool res1 =testInt4ComputationCorrectness();
+    if (!res ||!res1)
+        {
+        std::cerr << "Vector operator tests failed!" << std::endl;
+        return -1;
+    }
     std::cout << "All vector operator tests passed!" << std::endl;
     return 0;
 }
