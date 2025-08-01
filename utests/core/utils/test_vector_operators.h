@@ -16,6 +16,7 @@
 #define FK_TEST_VECTOR_OPERATORS_H
 
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
+#include <fused_kernel/core/utils/type_to_string.h>
 #include <type_traits>
 #include <iostream>
 #include <cassert>
@@ -103,7 +104,7 @@ void testScalarComparisonOperatorTypes() {
 }
 
 // Test arithmetic operators return correct types
-template <typename VecType>
+template <typename VecType, typename ReturnType> 
 void testArithmeticOperatorTypes() {
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
     
@@ -113,35 +114,35 @@ void testArithmeticOperatorTypes() {
     constexpr BaseType scalar = static_cast<BaseType>(1);
     
     // Test that operators exist and compile
-    constexpr auto add_result = a + b;
- 
-    static_assert(std::is_same_v<decltype(add_result), const float2>, " operator should return scalar vector");    
+    constexpr auto add_result = a + b;  
+    static_assert(std::is_same_v<decltype(add_result), ReturnType >,
+                  "type should not change after operation: ");    
     constexpr auto sub_result = a - b;    
-    static_assert(std::is_same_v<decltype(sub_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(sub_result), ReturnType >, "type should not change after operation"); 
     constexpr auto mul_result = a * b;
-    static_assert(std::is_same_v<decltype(mul_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(mul_result), ReturnType >, "type should not change after operation"); 
     constexpr auto div_result = a / b;
-    static_assert(std::is_same_v<decltype(mul_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(mul_result), ReturnType >, "type should not change after operation"); 
 
     // Test scalar operations
     constexpr auto add_scalar_result = a + scalar;
-    static_assert(std::is_same_v<decltype(add_scalar_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(add_scalar_result), ReturnType >, "type should not change after operation"); 
     constexpr auto sub_scalar_result = a - scalar;
-    static_assert(std::is_same_v<decltype(sub_scalar_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(sub_scalar_result), ReturnType >, "type should not change after operation"); 
     constexpr auto mul_scalar_result = a * scalar;
-    static_assert(std::is_same_v<decltype(mul_scalar_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(mul_scalar_result), ReturnType >, "type should not change after operation"); 
     constexpr auto div_scalar_result = a / scalar;
-    static_assert(std::is_same_v<decltype(div_scalar_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(div_scalar_result), ReturnType >, "type should not change after operation"); 
     
     // Test scalar on left side
     constexpr auto scalar_add_result = scalar + a;
-    static_assert(std::is_same_v<decltype(scalar_add_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(scalar_add_result), ReturnType >, "type should not change after operation"); 
     constexpr auto scalar_sub_result = scalar - a;
-    static_assert(std::is_same_v<decltype(scalar_sub_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(scalar_sub_result), ReturnType >, "type should not change after operation"); 
     constexpr auto scalar_mul_result = scalar * a;
-    static_assert(std::is_same_v<decltype(scalar_mul_result), const float2>, " operator should return scalar vector"); 
+    static_assert(std::is_same_v<decltype(scalar_mul_result), ReturnType >, "type should not change after operation"); 
     constexpr auto scalar_div_result = scalar / a;
-    static_assert(std::is_same_v<decltype(scalar_div_result), const float2>, " operator should return scalar vector");
+    static_assert(std::is_same_v<decltype(scalar_div_result), ReturnType >, "type should not change after operation");
 }
 
 // Test unary operators
@@ -387,70 +388,77 @@ bool testInt4ComputationCorrectness() {
     return res;
 }
 
+ 
+
+template <typename BaseInput, typename BaseOutput> 
+void addOneTestAllChannelsOpTypes() {
+ 
+    // Vector of 1
+    using Input1 = typename fk::VectorType<BaseInput, 1>::type_v;
+    using Output1 = typename fk::VectorType<BaseOutput, 1>::type_v;
+    testComparisonOperatorTypes<Input1, bool1>();
+    testScalarComparisonOperatorTypes<Input1, bool1>();
+
+    // Vector of 2
+    using Input2 = fk::VectorType_t<BaseInput, 2>;
+    using Output2 = fk::VectorType_t<BaseOutput, 2>;
+    testComparisonOperatorTypes<Input2, bool2>();
+    testScalarComparisonOperatorTypes<Input2, bool2>();
+
+    // Vector of 3
+    using Input3 = fk::VectorType_t<BaseInput, 3>;
+    using Output3 = fk::VectorType_t<BaseOutput, 3>;
+    testComparisonOperatorTypes<Input3, bool3>();
+    testScalarComparisonOperatorTypes<Input3, bool3>();
+
+    // Vector of 4
+    using Input4 = fk::VectorType_t<BaseInput, 4>;
+    using Output4 = fk::VectorType_t<BaseOutput, 4>;
+    testComparisonOperatorTypes<Input4, bool4>();
+    testScalarComparisonOperatorTypes<Input4, bool4>();
+}
+
+
+template <typename TypeList_, typename Type, size_t... Idx>
+void addAllTestsFor_helper(const std::index_sequence<Idx...> &) {
+    static_assert(fk::validCUDAVec<Type> || std::is_fundamental_v<Type>,
+                  "Type must be either a cuda vector or a fundamental type.");
+    static_assert(fk::isTypeList<TypeList_>, "TypeList_ must be a valid TypeList.");
+    // For each type in TypeList_, add tests with Type
+    (addOneTestAllChannelsOpTypes<fk::TypeAt_t<Idx, TypeList_>, Type>(), ...);
+}
+
+template <typename TypeList_, size_t... Idx> 
+void addAllTestsFor(const std::index_sequence<Idx...> &) {
+    // For each type in TypeList_, add tests with each type in TypeList_
+    (addAllTestsFor_helper<TypeList_, fk::TypeAt_t<Idx, TypeList_>>(std::make_index_sequence<TypeList_::size>{}), ...);
+}
+
+
+
 int launch() {
-    // Test comparison operator types for all vector types
-    testComparisonOperatorTypes<float1, bool1>();
-    testComparisonOperatorTypes<float2, bool2>();
-    testComparisonOperatorTypes<float3, bool3>();
-    testComparisonOperatorTypes<float4, bool4>();
     
-    testComparisonOperatorTypes<int1, bool1>();
-    testComparisonOperatorTypes<int2, bool2>();
-    testComparisonOperatorTypes<int3, bool3>();
-    testComparisonOperatorTypes<int4, bool4>();
+    // Test boolean operators
+    using Fundamental = fk::RemoveType_t<0, fk::RemoveType_t<0, fk::RemoveType_t<0, fk::StandardTypes>>>;
+    addAllTestsFor<Fundamental>(std::make_index_sequence<Fundamental::size>());
+
     
-    testComparisonOperatorTypes<uchar1, bool1>();
-    testComparisonOperatorTypes<uchar2, bool2>();
-    testComparisonOperatorTypes<uchar3, bool3>();
-    testComparisonOperatorTypes<uchar4, bool4>();
-    
-    testComparisonOperatorTypes<double1, bool1>();
-    testComparisonOperatorTypes<double2, bool2>();
-    testComparisonOperatorTypes<double3, bool3>();
-    testComparisonOperatorTypes<double4, bool4>();
-    
-    testComparisonOperatorTypes<long1, bool1>();
-    testComparisonOperatorTypes<long2, bool2>();
-    testComparisonOperatorTypes<long3, bool3>();
-    testComparisonOperatorTypes<long4, bool4>();
-    
-    testComparisonOperatorTypes<longlong1, bool1>();
-    testComparisonOperatorTypes<longlong2, bool2>();
-    testComparisonOperatorTypes<longlong3, bool3>();
-    testComparisonOperatorTypes<longlong4, bool4>();
-    
-    // Test scalar comparison operator types
-    testScalarComparisonOperatorTypes<float1, bool1>();
-    testScalarComparisonOperatorTypes<float2, bool2>();
-    testScalarComparisonOperatorTypes<float3, bool3>();
-    testScalarComparisonOperatorTypes<float4, bool4>();
-    
-    testScalarComparisonOperatorTypes<int1, bool1>();
-    testScalarComparisonOperatorTypes<int2, bool2>();
-    testScalarComparisonOperatorTypes<int3, bool3>();
-    testScalarComparisonOperatorTypes<int4, bool4>();
-    
-    testScalarComparisonOperatorTypes<uchar1, bool1>();
-    testScalarComparisonOperatorTypes<uchar2, bool2>();
-    testScalarComparisonOperatorTypes<uchar3, bool3>();
-    testScalarComparisonOperatorTypes<uchar4, bool4>();
-    
-    testScalarComparisonOperatorTypes<long1, bool1>();
-    testScalarComparisonOperatorTypes<long2, bool2>();
-    testScalarComparisonOperatorTypes<long3, bool3>();
-    testScalarComparisonOperatorTypes<long4, bool4>();
-    
-    // Test arithmetic operators
-    testArithmeticOperatorTypes<float2>();
-    testArithmeticOperatorTypes<int4>();
-    testArithmeticOperatorTypes<double3>();
-    testArithmeticOperatorTypes<uchar1>();
-    
+
     // Test unary operators
+   
+    testUnaryOperators<float1>();
     testUnaryOperators<float2>();
+    testUnaryOperators<float3>();
+    testUnaryOperators<float4>();
+    testUnaryOperators<int1>();
+    testUnaryOperators<int2>();
+    testUnaryOperators<int3>();
     testUnaryOperators<int4>();
+    testUnaryOperators<uchar1>();
+    testUnaryOperators<uchar2>();
     testUnaryOperators<uchar3>();
-    
+    testUnaryOperators<uchar4>();
+   
     // Test compound assignment operators
     testCompoundAssignmentOperators<float2>();
     testCompoundAssignmentOperators<int4>();
