@@ -18,7 +18,6 @@
 #ifndef FK_TYPE_LIST
 #define FK_TYPE_LIST
 
-#include <stddef.h>
 #include <utility>
 #include <fused_kernel/core/utils/utils.h>
 
@@ -114,7 +113,7 @@ namespace fk { // namespace fused kernel
      */
     template <typename T, typename... Types>
     struct TypeIndex<T, TypeList<T, Types...>> {
-        static constexpr std::size_t value = 0;
+        static constexpr size_t value = 0;
     };
 
     /**
@@ -129,7 +128,7 @@ namespace fk { // namespace fused kernel
     template <typename T, typename U, typename... Types>
     struct TypeIndex<T, TypeList<U, Types...>> {
         static_assert(one_of<T, TypeList<U, Types...>>::value == true, "The type is not on the type list");
-        static constexpr std::size_t value = 1 + TypeIndex<T, TypeList<Types...>>::value;
+        static constexpr size_t value = 1 + TypeIndex<T, TypeList<Types...>>::value;
     };
 
     /**
@@ -194,7 +193,7 @@ namespace fk { // namespace fused kernel
     template<typename T, typename... Ts>
     constexpr bool all_types_are_same = std::conjunction_v<std::is_same<T, Ts>...>;
 
-    template <std::size_t Index, typename T, typename... Types>
+    template <size_t Index, typename T, typename... Types>
     struct InsertType {};
 
     template <typename T>
@@ -202,7 +201,7 @@ namespace fk { // namespace fused kernel
         using type = TypeList<T>;
     };
 
-    template <std::size_t Index, typename T, typename Head>
+    template <size_t Index, typename T, typename Head>
     struct InsertType<Index, T, TypeList<Head>> {
         using type = std::conditional_t<Index == 0,
             TypeList<T, Head>,
@@ -210,7 +209,7 @@ namespace fk { // namespace fused kernel
         >;
     };
 
-    template <std::size_t Index, typename T, typename Head, typename... Tail>
+    template <size_t Index, typename T, typename Head, typename... Tail>
     struct InsertType<Index, T, TypeList<Head, Tail...>> {
         using type = std::conditional_t<Index == 0,
                                         TypeList<T, Head, Tail...>,
@@ -218,7 +217,7 @@ namespace fk { // namespace fused kernel
                                        >;
     };
 
-    template <std::size_t Index, typename T, typename TypeList>
+    template <size_t Index, typename T, typename TypeList>
     using InsertType_t = typename InsertType<Index, T, TypeList>::type;
 
     template <typename TypeList, typename T>
@@ -227,7 +226,7 @@ namespace fk { // namespace fused kernel
     template <typename T, typename TypeList>
     using InsertTypeFront_t = typename InsertType<0, T, TypeList>::type;
 
-    template <std::size_t Index, typename... Types>
+    template <size_t Index, typename... Types>
     struct RemoveType;
 
     template <typename Head, typename... Tail>
@@ -235,13 +234,13 @@ namespace fk { // namespace fused kernel
         using type = TypeList<Tail...>; // Remove the first type
     };
 
-    template <std::size_t Index, typename Head, typename... Tail>
+    template <size_t Index, typename Head, typename... Tail>
     struct RemoveType<Index, TypeList<Head, Tail...>> {
         static_assert(Index < TypeList<Head, Tail...>::size, "Index out of range");
         using type = TypeListCat_t<TypeList<Head>, typename RemoveType<Index - 1, TypeList<Tail...>>::type>;
     };
 
-    template <std::size_t Index, typename TypeList>
+    template <size_t Index, typename TypeList>
     using RemoveType_t = typename RemoveType<Index, TypeList>::type;
 
     template <typename T, typename Restriction, typename TypeList, bool last, T currentInt, T... integers>
