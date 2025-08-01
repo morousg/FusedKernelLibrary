@@ -15,19 +15,10 @@
 
 #include "test_saturate_common.h"
 
-template <typename TypeList_, size_t... Idx>
-void addAllTestsFor(const std::index_sequence<Idx...>&) {
-    // For each type in TypeList_, add tests with each type in TypeList_
-    (addAllTestsFor_helper<TypeList_, fk::TypeAt_t<Idx, TypeList_>>(std::make_index_sequence<TypeList_::size>{}), ...);
-}
-
 START_ADDING_TESTS
-// Test all combinations as in the original test
-using Fundamental = fk::RemoveType_t<0, fk::StandardTypes>;
-addAllTestsFor<Fundamental>(std::make_index_sequence<Fundamental::size>());
+addAllTestsForInputType<unsigned long>();
 STOP_ADDING_TESTS
 
-// You can add more tests for other type combinations as needed.
 int launch() {
     RUN_ALL_TESTS
 }
