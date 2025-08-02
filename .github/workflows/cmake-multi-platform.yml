@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [jetsonnanoorin]
         build_type: [Release]
-        cpp_compiler: [g++,clang++]        
+        cpp_compiler: [clang++]        
         include:
           #- os: windows-latest
            # cpp_compiler: cl
