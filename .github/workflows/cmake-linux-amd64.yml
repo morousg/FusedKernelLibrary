@@ -16,9 +16,7 @@ jobs:
 
       matrix:        
         build_type: [Release]
-        cpp_compiler: [g++,clang++]   
-              
- 
+        cpp_compiler: [g++,clang++]                  
            
     steps:
     - uses: actions/checkout@v4

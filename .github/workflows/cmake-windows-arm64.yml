@@ -18,13 +18,7 @@ jobs:
       fail-fast: false 
       matrix:
         build_type: [Release]
-        toolset: ["v143,cuda=12.9"]        
-        cpp_compiler: [cl]    #todo:test clang-cl? ???    
-   
-
-        #  - os: jetsonnanoorin
-         #   cpp_compiler: clang++
-                    
+        toolset: ["v143,cuda=12.9"]         
     steps:
     - uses: actions/checkout@v4
 

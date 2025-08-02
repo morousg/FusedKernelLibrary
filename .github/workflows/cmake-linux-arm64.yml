@@ -20,8 +20,7 @@ jobs:
       # 3. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
-      matrix:
-        os: [jetsonnanoorin]           
+      matrix:          
         build_type: [Release]
         cpp_compiler: [g++,clang++]   
  
@@ -30,7 +29,7 @@ jobs:
     - name: Add to PATH
       shell: bash
       run: |
-        echo "/usr/lib/llvm-18/bin" >> $GITHUB_PATH
+        echo "/usr/lib/llvm-19/bin" >> $GITHUB_PATH
     
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
