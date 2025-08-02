@@ -1,7 +1,9 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake on multiple platforms
-
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
 on:
   #push:
  #  branches: [ $default-branch ]
