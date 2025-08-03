@@ -25,13 +25,13 @@ jobs:
       matrix:
         os: [jetsonnanoorin]
         build_type: [Release]
-        cpp_compiler: [gcc,clang++]        
+        cpp_compiler: [clang++]        
         include:
           #- os: windows-latest
            # cpp_compiler: cl
            # cpp_compiler: cl
-          - os: jetsonnanoorin
-            cpp_compiler: g++
+         # - os: jetsonnanoorin
+          #  cpp_compiler: g++
           - os: jetsonnanoorin
             cpp_compiler: clang++
          
@@ -43,8 +43,8 @@ jobs:
           - os: jetsonnanoorin
             cpp_compiler: cl
 
-        #  - os: jetsonnanoorin
-        #    cpp_compiler: clang++
+          - os: jetsonnanoorin
+            cpp_compiler: gcc
 
     steps:
     - uses: actions/checkout@v4
@@ -59,6 +59,7 @@ jobs:
     - name: Configure CMake     
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash -leo pipefail {0}  #to parse clang paths in /etc/profile 
       run: >
         cmake -G "Ninja" -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}        
