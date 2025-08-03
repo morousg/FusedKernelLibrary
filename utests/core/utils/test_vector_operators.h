@@ -151,20 +151,24 @@ void testUnaryOperators() {
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
     
     using BaseType = fk::VBase<VecType>;
-    VecType a = fk::make_set<VecType>(static_cast<BaseType>(1));
+    constexpr VecType a = fk::make_set<VecType>(static_cast<BaseType>(1));
     
     // Test unary minus for signed types
     if constexpr (std::is_signed_v<fk::VBase<VecType>>) {
-        auto neg_result = -a;
-
+        constexpr auto neg_result = -a;
+        static_assert(std::is_same_v<decltype(neg_result), const VecType>, "Unary minus should return same vector type");
     }
     
     // Test logical not
-    [[maybe_unused]] auto not_result = !a;
+    constexpr auto not_result = !a;
     
     // Test bitwise not for integral types
     if constexpr (std::is_integral_v<fk::VBase<VecType>>) {
-        [[maybe_unused]] auto bnot_result = ~a;
+        constexpr auto bnot_result = ~a;
+ 
+        static_assert(std::is_same_v<decltype(bnot_result), const VecType>,
+                      "Unary minus should return same vector type");
+       
     }
 }
 
@@ -398,29 +402,32 @@ void addOneTestAllChannelsOpTypes() {
     using Output1 = typename fk::VectorType<BaseOutput, 1>::type_v;
     testComparisonOperatorTypes<Input1, bool1>();
     testScalarComparisonOperatorTypes<Input1, bool1>();
-
+    testUnaryOperators<Input1>();
     // Vector of 2
     using Input2 = fk::VectorType_t<BaseInput, 2>;
     using Output2 = fk::VectorType_t<BaseOutput, 2>;
     testComparisonOperatorTypes<Input2, bool2>();
     testScalarComparisonOperatorTypes<Input2, bool2>();
+    testUnaryOperators<Input2>();
 
     // Vector of 3
     using Input3 = fk::VectorType_t<BaseInput, 3>;
     using Output3 = fk::VectorType_t<BaseOutput, 3>;
     testComparisonOperatorTypes<Input3, bool3>();
     testScalarComparisonOperatorTypes<Input3, bool3>();
+    testUnaryOperators<Input3>();
 
     // Vector of 4
     using Input4 = fk::VectorType_t<BaseInput, 4>;
     using Output4 = fk::VectorType_t<BaseOutput, 4>;
     testComparisonOperatorTypes<Input4, bool4>();
     testScalarComparisonOperatorTypes<Input4, bool4>();
+    testUnaryOperators<Input4>();
 }
 
 
 template <typename TypeList_, typename Type, size_t... Idx>
-void addAllTestsFor_helper(const std::index_sequence<Idx...> &) {
+void addAllTestsFor_helper_op_types(const std::index_sequence<Idx...> &) {
     static_assert(fk::validCUDAVec<Type> || std::is_fundamental_v<Type>,
                   "Type must be either a cuda vector or a fundamental type.");
     static_assert(fk::isTypeList<TypeList_>, "TypeList_ must be a valid TypeList.");
@@ -429,20 +436,21 @@ void addAllTestsFor_helper(const std::index_sequence<Idx...> &) {
 }
 
 template <typename TypeList_, size_t... Idx> 
-void addAllTestsFor(const std::index_sequence<Idx...> &) {
+void addAllTestsForOpTypes(const std::index_sequence<Idx...> &) {
     // For each type in TypeList_, add tests with each type in TypeList_
-    (addAllTestsFor_helper<TypeList_, fk::TypeAt_t<Idx, TypeList_>>(std::make_index_sequence<TypeList_::size>{}), ...);
+    (addAllTestsFor_helper_op_types<TypeList_, fk::TypeAt_t<Idx, TypeList_>>(
+         std::make_index_sequence<TypeList_::size>{}),
+     ...);
 }
-
+ 
 
 
 int launch() {
     
     // Test boolean operators
     using Fundamental = fk::RemoveType_t<0, fk::RemoveType_t<0, fk::RemoveType_t<0, fk::StandardTypes>>>;
-    addAllTestsFor<Fundamental>(std::make_index_sequence<Fundamental::size>());
+    addAllTestsForOpTypes<Fundamental>(std::make_index_sequence<Fundamental::size>());
 
-    
 
     // Test unary operators
    
