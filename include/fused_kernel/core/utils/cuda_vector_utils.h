@@ -417,65 +417,184 @@ FK_HOST_DEVICE_CNST modificable_type ## 4& operator op(modificable_type ## 4 & a
     return a; \
 }
 
-VEC_COMPOUND_OP(-=, char, char)
-VEC_COMPOUND_OP(-=, short, short)
-VEC_COMPOUND_OP(-=, int, int)
-VEC_COMPOUND_OP(-=, float, float)
-VEC_COMPOUND_OP(-=, double, double)
-VEC_COMPOUND_OP(-=, uchar, uchar)
-VEC_COMPOUND_OP(-=, char, uchar)
-VEC_COMPOUND_OP(-=, ushort, uchar)
-VEC_COMPOUND_OP(-=, short, uchar)
-VEC_COMPOUND_OP(-=, int, uchar)
-VEC_COMPOUND_OP(-=, uint, uchar)
-VEC_COMPOUND_OP(-=, float, uchar)
-VEC_COMPOUND_OP(-=, double, uchar)
-VEC_COMPOUND_OP(-=, uint, uint)
+// Compound assignment operators for all combinations of fk::StandardTypes
+#define VEC_COMPOUND_OP_ALL_STANDARD_TYPES(op) \
+    VEC_COMPOUND_OP(op, bool, bool) \
+    VEC_COMPOUND_OP(op, bool, uchar) \
+    VEC_COMPOUND_OP(op, bool, char) \
+    VEC_COMPOUND_OP(op, bool, ushort) \
+    VEC_COMPOUND_OP(op, bool, short) \
+    VEC_COMPOUND_OP(op, bool, uint) \
+    VEC_COMPOUND_OP(op, bool, int) \
+    VEC_COMPOUND_OP(op, bool, ulong) \
+    VEC_COMPOUND_OP(op, bool, long) \
+    VEC_COMPOUND_OP(op, bool, ulonglong) \
+    VEC_COMPOUND_OP(op, bool, longlong) \
+    VEC_COMPOUND_OP(op, bool, float) \
+    VEC_COMPOUND_OP(op, bool, double) \
+    VEC_COMPOUND_OP(op, uchar, bool) \
+    VEC_COMPOUND_OP(op, uchar, uchar) \
+    VEC_COMPOUND_OP(op, uchar, char) \
+    VEC_COMPOUND_OP(op, uchar, ushort) \
+    VEC_COMPOUND_OP(op, uchar, short) \
+    VEC_COMPOUND_OP(op, uchar, uint) \
+    VEC_COMPOUND_OP(op, uchar, int) \
+    VEC_COMPOUND_OP(op, uchar, ulong) \
+    VEC_COMPOUND_OP(op, uchar, long) \
+    VEC_COMPOUND_OP(op, uchar, ulonglong) \
+    VEC_COMPOUND_OP(op, uchar, longlong) \
+    VEC_COMPOUND_OP(op, uchar, float) \
+    VEC_COMPOUND_OP(op, uchar, double) \
+    VEC_COMPOUND_OP(op, char, bool) \
+    VEC_COMPOUND_OP(op, char, uchar) \
+    VEC_COMPOUND_OP(op, char, char) \
+    VEC_COMPOUND_OP(op, char, ushort) \
+    VEC_COMPOUND_OP(op, char, short) \
+    VEC_COMPOUND_OP(op, char, uint) \
+    VEC_COMPOUND_OP(op, char, int) \
+    VEC_COMPOUND_OP(op, char, ulong) \
+    VEC_COMPOUND_OP(op, char, long) \
+    VEC_COMPOUND_OP(op, char, ulonglong) \
+    VEC_COMPOUND_OP(op, char, longlong) \
+    VEC_COMPOUND_OP(op, char, float) \
+    VEC_COMPOUND_OP(op, char, double) \
+    VEC_COMPOUND_OP(op, ushort, bool) \
+    VEC_COMPOUND_OP(op, ushort, uchar) \
+    VEC_COMPOUND_OP(op, ushort, char) \
+    VEC_COMPOUND_OP(op, ushort, ushort) \
+    VEC_COMPOUND_OP(op, ushort, short) \
+    VEC_COMPOUND_OP(op, ushort, uint) \
+    VEC_COMPOUND_OP(op, ushort, int) \
+    VEC_COMPOUND_OP(op, ushort, ulong) \
+    VEC_COMPOUND_OP(op, ushort, long) \
+    VEC_COMPOUND_OP(op, ushort, ulonglong) \
+    VEC_COMPOUND_OP(op, ushort, longlong) \
+    VEC_COMPOUND_OP(op, ushort, float) \
+    VEC_COMPOUND_OP(op, ushort, double) \
+    VEC_COMPOUND_OP(op, short, bool) \
+    VEC_COMPOUND_OP(op, short, uchar) \
+    VEC_COMPOUND_OP(op, short, char) \
+    VEC_COMPOUND_OP(op, short, ushort) \
+    VEC_COMPOUND_OP(op, short, short) \
+    VEC_COMPOUND_OP(op, short, uint) \
+    VEC_COMPOUND_OP(op, short, int) \
+    VEC_COMPOUND_OP(op, short, ulong) \
+    VEC_COMPOUND_OP(op, short, long) \
+    VEC_COMPOUND_OP(op, short, ulonglong) \
+    VEC_COMPOUND_OP(op, short, longlong) \
+    VEC_COMPOUND_OP(op, short, float) \
+    VEC_COMPOUND_OP(op, short, double) \
+    VEC_COMPOUND_OP(op, uint, bool) \
+    VEC_COMPOUND_OP(op, uint, uchar) \
+    VEC_COMPOUND_OP(op, uint, char) \
+    VEC_COMPOUND_OP(op, uint, ushort) \
+    VEC_COMPOUND_OP(op, uint, short) \
+    VEC_COMPOUND_OP(op, uint, uint) \
+    VEC_COMPOUND_OP(op, uint, int) \
+    VEC_COMPOUND_OP(op, uint, ulong) \
+    VEC_COMPOUND_OP(op, uint, long) \
+    VEC_COMPOUND_OP(op, uint, ulonglong) \
+    VEC_COMPOUND_OP(op, uint, longlong) \
+    VEC_COMPOUND_OP(op, uint, float) \
+    VEC_COMPOUND_OP(op, uint, double) \
+    VEC_COMPOUND_OP(op, int, bool) \
+    VEC_COMPOUND_OP(op, int, uchar) \
+    VEC_COMPOUND_OP(op, int, char) \
+    VEC_COMPOUND_OP(op, int, ushort) \
+    VEC_COMPOUND_OP(op, int, short) \
+    VEC_COMPOUND_OP(op, int, uint) \
+    VEC_COMPOUND_OP(op, int, int) \
+    VEC_COMPOUND_OP(op, int, ulong) \
+    VEC_COMPOUND_OP(op, int, long) \
+    VEC_COMPOUND_OP(op, int, ulonglong) \
+    VEC_COMPOUND_OP(op, int, longlong) \
+    VEC_COMPOUND_OP(op, int, float) \
+    VEC_COMPOUND_OP(op, int, double) \
+    VEC_COMPOUND_OP(op, ulong, bool) \
+    VEC_COMPOUND_OP(op, ulong, uchar) \
+    VEC_COMPOUND_OP(op, ulong, char) \
+    VEC_COMPOUND_OP(op, ulong, ushort) \
+    VEC_COMPOUND_OP(op, ulong, short) \
+    VEC_COMPOUND_OP(op, ulong, uint) \
+    VEC_COMPOUND_OP(op, ulong, int) \
+    VEC_COMPOUND_OP(op, ulong, ulong) \
+    VEC_COMPOUND_OP(op, ulong, long) \
+    VEC_COMPOUND_OP(op, ulong, ulonglong) \
+    VEC_COMPOUND_OP(op, ulong, longlong) \
+    VEC_COMPOUND_OP(op, ulong, float) \
+    VEC_COMPOUND_OP(op, ulong, double) \
+    VEC_COMPOUND_OP(op, long, bool) \
+    VEC_COMPOUND_OP(op, long, uchar) \
+    VEC_COMPOUND_OP(op, long, char) \
+    VEC_COMPOUND_OP(op, long, ushort) \
+    VEC_COMPOUND_OP(op, long, short) \
+    VEC_COMPOUND_OP(op, long, uint) \
+    VEC_COMPOUND_OP(op, long, int) \
+    VEC_COMPOUND_OP(op, long, ulong) \
+    VEC_COMPOUND_OP(op, long, long) \
+    VEC_COMPOUND_OP(op, long, ulonglong) \
+    VEC_COMPOUND_OP(op, long, longlong) \
+    VEC_COMPOUND_OP(op, long, float) \
+    VEC_COMPOUND_OP(op, long, double) \
+    VEC_COMPOUND_OP(op, ulonglong, bool) \
+    VEC_COMPOUND_OP(op, ulonglong, uchar) \
+    VEC_COMPOUND_OP(op, ulonglong, char) \
+    VEC_COMPOUND_OP(op, ulonglong, ushort) \
+    VEC_COMPOUND_OP(op, ulonglong, short) \
+    VEC_COMPOUND_OP(op, ulonglong, uint) \
+    VEC_COMPOUND_OP(op, ulonglong, int) \
+    VEC_COMPOUND_OP(op, ulonglong, ulong) \
+    VEC_COMPOUND_OP(op, ulonglong, long) \
+    VEC_COMPOUND_OP(op, ulonglong, ulonglong) \
+    VEC_COMPOUND_OP(op, ulonglong, longlong) \
+    VEC_COMPOUND_OP(op, ulonglong, float) \
+    VEC_COMPOUND_OP(op, ulonglong, double) \
+    VEC_COMPOUND_OP(op, longlong, bool) \
+    VEC_COMPOUND_OP(op, longlong, uchar) \
+    VEC_COMPOUND_OP(op, longlong, char) \
+    VEC_COMPOUND_OP(op, longlong, ushort) \
+    VEC_COMPOUND_OP(op, longlong, short) \
+    VEC_COMPOUND_OP(op, longlong, uint) \
+    VEC_COMPOUND_OP(op, longlong, int) \
+    VEC_COMPOUND_OP(op, longlong, ulong) \
+    VEC_COMPOUND_OP(op, longlong, long) \
+    VEC_COMPOUND_OP(op, longlong, ulonglong) \
+    VEC_COMPOUND_OP(op, longlong, longlong) \
+    VEC_COMPOUND_OP(op, longlong, float) \
+    VEC_COMPOUND_OP(op, longlong, double) \
+    VEC_COMPOUND_OP(op, float, bool) \
+    VEC_COMPOUND_OP(op, float, uchar) \
+    VEC_COMPOUND_OP(op, float, char) \
+    VEC_COMPOUND_OP(op, float, ushort) \
+    VEC_COMPOUND_OP(op, float, short) \
+    VEC_COMPOUND_OP(op, float, uint) \
+    VEC_COMPOUND_OP(op, float, int) \
+    VEC_COMPOUND_OP(op, float, ulong) \
+    VEC_COMPOUND_OP(op, float, long) \
+    VEC_COMPOUND_OP(op, float, ulonglong) \
+    VEC_COMPOUND_OP(op, float, longlong) \
+    VEC_COMPOUND_OP(op, float, float) \
+    VEC_COMPOUND_OP(op, float, double) \
+    VEC_COMPOUND_OP(op, double, bool) \
+    VEC_COMPOUND_OP(op, double, uchar) \
+    VEC_COMPOUND_OP(op, double, char) \
+    VEC_COMPOUND_OP(op, double, ushort) \
+    VEC_COMPOUND_OP(op, double, short) \
+    VEC_COMPOUND_OP(op, double, uint) \
+    VEC_COMPOUND_OP(op, double, int) \
+    VEC_COMPOUND_OP(op, double, ulong) \
+    VEC_COMPOUND_OP(op, double, long) \
+    VEC_COMPOUND_OP(op, double, ulonglong) \
+    VEC_COMPOUND_OP(op, double, longlong) \
+    VEC_COMPOUND_OP(op, double, float) \
+    VEC_COMPOUND_OP(op, double, double)
 
-VEC_COMPOUND_OP(+=, char, char)
-VEC_COMPOUND_OP(+=, short, short)
-VEC_COMPOUND_OP(+=, int, int)
-VEC_COMPOUND_OP(+=, float, float)
-VEC_COMPOUND_OP(+=, double, double)
-VEC_COMPOUND_OP(+=, uchar, uchar)
-VEC_COMPOUND_OP(+=, char, uchar)
-VEC_COMPOUND_OP(+=, ushort, uchar)
-VEC_COMPOUND_OP(+=, short, uchar)
-VEC_COMPOUND_OP(+=, int, uchar)
-VEC_COMPOUND_OP(+=, uint, uchar)
-VEC_COMPOUND_OP(+=, float, uchar)
-VEC_COMPOUND_OP(+=, double, uchar)
-VEC_COMPOUND_OP(+=, uint, uint)
-
-VEC_COMPOUND_OP(*=, char, char)
-VEC_COMPOUND_OP(*=, short, short)
-VEC_COMPOUND_OP(*=, int, int)
-VEC_COMPOUND_OP(*=, float, float)
-VEC_COMPOUND_OP(*=, double, double)
-VEC_COMPOUND_OP(*=, uchar, uchar)
-VEC_COMPOUND_OP(*=, char, uchar)
-VEC_COMPOUND_OP(*=, ushort, uchar)
-VEC_COMPOUND_OP(*=, short, uchar)
-VEC_COMPOUND_OP(*=, int, uchar)
-VEC_COMPOUND_OP(*=, uint, uchar)
-VEC_COMPOUND_OP(*=, float, uchar)
-VEC_COMPOUND_OP(*=, double, uchar)
-VEC_COMPOUND_OP(*=, uint, uint)
-
-VEC_COMPOUND_OP(/=, char, char)
-VEC_COMPOUND_OP(/=, short, short)
-VEC_COMPOUND_OP(/=, int, int)
-VEC_COMPOUND_OP(/=, float, float)
-VEC_COMPOUND_OP(/=, double, double)
-VEC_COMPOUND_OP(/=, uchar, uchar)
-VEC_COMPOUND_OP(/=, char, uchar)
-VEC_COMPOUND_OP(/=, ushort, uchar)
-VEC_COMPOUND_OP(/=, short, uchar)
-VEC_COMPOUND_OP(/=, int, uchar)
-VEC_COMPOUND_OP(/=, uint, uchar)
-VEC_COMPOUND_OP(/=, float, uchar)
-VEC_COMPOUND_OP(/=, double, uchar)
-VEC_COMPOUND_OP(/=, uint, uint)
+// Now use the macro for all compound assignment operators
+VEC_COMPOUND_OP_ALL_STANDARD_TYPES(+=)
+VEC_COMPOUND_OP_ALL_STANDARD_TYPES(-=)
+VEC_COMPOUND_OP_ALL_STANDARD_TYPES(*=)
+VEC_COMPOUND_OP_ALL_STANDARD_TYPES(/=)
+  
 
 #undef VEC_COMPOUND_OP
 
