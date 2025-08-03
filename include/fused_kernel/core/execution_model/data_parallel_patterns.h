@@ -1,4 +1,4 @@
-/* Copyright 2023-2025 Oscar Amoros Huguet
+﻿/* Copyright 2023-2025 Oscar Amoros Huguet
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -218,7 +218,7 @@ namespace fk { // namespace FusedKernel
             if constexpr (TFI::ENABLED) {
                 const ActiveThreads gridActiveThreads(static_cast<uint>(ceil(activeThreads.x / static_cast<float>(TFI::elems_per_thread))),
                                                       activeThreads.y, activeThreads.z);
-                bool threadDivisible;
+                bool threadDivisible = false;
                 if constexpr (TFI::ENABLED) {
                     using ReadOperation = typename FirstIOp::Operation;
                     using WriteOperation = typename LastType_t<IOps...>::Operation;

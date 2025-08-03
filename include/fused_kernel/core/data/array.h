@@ -25,12 +25,12 @@ namespace fk {
     union Array {
         enum { size = SIZE };
         T at[SIZE];
-        FK_HOST_DEVICE_CNST Array(const T& initValue) {
+        FK_HOST_DEVICE_CNST Array(const T& initValue) : at{} {
             for (int i = 0; i < static_cast<int>(SIZE); i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
+        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T> &initList) : at{} {
             int i = 0;
             for (const auto& value : initList) {
                 at[i++] = value;
@@ -50,7 +50,7 @@ namespace fk {
         };
         FK_HOST_DEVICE_CNST Array(const T& other) : x(other) {}
         FK_HOST_DEVICE_CNST Array(const typename VectorType<T,1>::type_v& other) : x(other.x) {}
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
+        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T> &initList) : at{} {
             int i = 0;
             for (const auto& value : initList) {
                 at[i++] = value;
@@ -76,12 +76,12 @@ namespace fk {
             T x, y;
         };
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 2>& other) : x(other.x), y(other.y) {}
-        FK_HOST_DEVICE_CNST Array(const T& initValue) {
+        FK_HOST_DEVICE_CNST Array(const T &initValue) : at{} {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
+        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T> &initList) : at{} {
             int i = 0;
             for (const auto& value : initList) {
                 at[i++] = value;
@@ -111,12 +111,12 @@ namespace fk {
             T x, y, z;
         };
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 3>& other) : x(other.x), y(other.y), z(other.z) {}
-        FK_HOST_DEVICE_CNST Array(const T& initValue) {
+        FK_HOST_DEVICE_CNST Array(const T &initValue) : at{} {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
+        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T> &initList) : at{} {
             int i = 0;
             for (const auto& value : initList) {
                 at[i++] = value;
@@ -147,12 +147,12 @@ namespace fk {
             T x, y, z, w;
         };
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 4>& other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
-        FK_HOST_DEVICE_CNST Array(const T& initValue) {
+        FK_HOST_DEVICE_CNST Array(const T &initValue) : at{} {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
+        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T> &initList) : at{} {
             int i = 0;
             for (const auto& value : initList) {
                 at[i++] = value;
