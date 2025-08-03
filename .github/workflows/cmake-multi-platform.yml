@@ -1,7 +1,7 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake on multiple platforms
-
+ 
 on:
   #push:
  #  branches: [ $default-branch ]
@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [jetsonnanoorin]
         build_type: [Release]
-        cpp_compiler: [g++,clang++]        
+        cpp_compiler: [gcc,clang++]        
         include:
           #- os: windows-latest
            # cpp_compiler: cl
@@ -56,20 +56,19 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Configure CMake
+    - name: Configure CMake     
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        cmake -G "Ninja" -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}        
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCUDA_ARCH="87;"
-
         -S ${{ github.workspace }}
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}  --parallel 6
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} 
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
