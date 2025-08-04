@@ -25,3 +25,7 @@ jobs:
     permissions:
       # To allow us to clone the repo for setup
       contents: read
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
