@@ -27,7 +27,7 @@ using namespace fk;
 
 // Operation types
 // Read
-using RPerThrFloat = PerThreadRead<_2D, float>;
+using RPerThrFloat = PerThreadRead<ND::_2D, float>;
 // ReadBack
 using RBResize = Resize<InterpolationType::INTER_LINEAR, AspectRatio::IGNORE_AR, Instantiable<RPerThrFloat>>;
 // Unary
@@ -39,12 +39,12 @@ using BAddFloat = Add<float>;
 // Ternary
 using TInterpFloat = Interpolate<InterpolationType::INTER_LINEAR, Instantiable<RPerThrFloat>>;
 // Write
-using WPerThrFloat = PerThreadWrite<_2D, float>;
+using WPerThrFloat = PerThreadWrite<ND::_2D, float>;
 // MidWrite
 using MWPerThrFloat = FusedOperation<WPerThrFloat, BAddFloat>;
 
 constexpr inline bool test_read_then_batch() {
-    constexpr RawPtr<_2D, float> input{ nullptr, { 64,64, 64 * sizeof(float) } };
+    constexpr RawPtr<ND::_2D, float> input{ nullptr, { 64,64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
 
     constexpr std::array<Size, 2> resizes{ Size(16, 16), Size(16, 16) };
@@ -78,7 +78,7 @@ constexpr inline bool test_read_then_batch() {
 
 constexpr inline bool test_readback_then_batch() {
 
-    constexpr RawPtr<_2D, float> input{ nullptr, { 64, 64, 64 * sizeof(float) } };
+    constexpr RawPtr<ND::_2D, float> input{ nullptr, { 64, 64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
     constexpr auto oneResize = Resize<InterpolationType::INTER_LINEAR>::build(readIOp, Size(32, 32));
     using ResizeType = decltype(oneResize);
@@ -93,8 +93,8 @@ constexpr inline bool test_readback_then_batch() {
 }
 
 constexpr inline bool test_batch_then_readback() {
-    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
-                                                        RawPtr<_2D, float>{nullptr, {128,64, 64 * (sizeof(float))}} };
+    constexpr std::array<RawPtr<ND::_2D, float>, 2> inputs{ RawPtr<ND::_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
+                                                        RawPtr<ND::_2D, float>{nullptr, {128,64, 64 * (sizeof(float))}} };
 
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
@@ -109,8 +109,8 @@ constexpr inline bool test_batch_then_readback() {
 }
 
 constexpr inline bool test_batch_then_compute() {
-    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
-                                                        RawPtr<_2D, float>{nullptr, {64,64, 64 * (sizeof(float))}} };
+    constexpr std::array<RawPtr<ND::_2D, float>, 2> inputs{ RawPtr<ND::_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
+                                                        RawPtr<ND::_2D, float>{nullptr, {64,64, 64 * (sizeof(float))}} };
 
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
@@ -122,7 +122,7 @@ constexpr inline bool test_batch_then_compute() {
 }
 
 constexpr inline bool test_read_then_readback() {
-    constexpr RawPtr<_2D, float> input{ nullptr, { 64, 64, 64 * sizeof(float) } };
+    constexpr RawPtr<ND::_2D, float> input{ nullptr, { 64, 64, 64 * sizeof(float) } };
     constexpr auto readIOp = RPerThrFloat::build(input);
 
     constexpr auto fusedOp = readIOp.then(Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR>::build(Size(16,32), 0.5f));
@@ -133,8 +133,8 @@ constexpr inline bool test_read_then_readback() {
 
 constexpr inline bool test_batched() {
 
-    constexpr std::array<RawPtr<_2D, float>, 2> inputs{ RawPtr<_2D, float>{nullptr, {64,64, 64*sizeof(float)}},
-                                                        RawPtr<_2D, float>{nullptr, {64,64, 64*(sizeof(float))}}};
+    constexpr std::array<RawPtr<ND::_2D, float>, 2> inputs{ RawPtr<ND::_2D, float>{nullptr, {64,64, 64*sizeof(float)}},
+                                                        RawPtr<ND::_2D, float>{nullptr, {64,64, 64*(sizeof(float))}}};
 
     constexpr auto readBatchOp = RPerThrFloat::build(inputs);
     using ReadIOp = decltype(readBatchOp);
@@ -162,10 +162,10 @@ constexpr inline bool test_batched() {
     // end then()
     constexpr auto fusedBatchesOp = readBatchOp.then(batchResize);
 
-    constexpr std::array<RawPtr<_2D, float>, 2> outputs{ RawPtr<_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
-                                                         RawPtr<_2D, float>{nullptr, {64,64, 64 * (sizeof(float))}} };
+    constexpr std::array<RawPtr<ND::_2D, float>, 2> outputs{ RawPtr<ND::_2D, float>{nullptr, {64,64, 64 * sizeof(float)}},
+                                                         RawPtr<ND::_2D, float>{nullptr, {64,64, 64 * (sizeof(float))}} };
 
-    [[maybe_unused]] constexpr auto writeBatchOp = PerThreadWrite<_2D, float>::build(outputs);
+    [[maybe_unused]] constexpr auto writeBatchOp = PerThreadWrite<ND::_2D, float>::build(outputs);
 
     return std::is_same_v<decltype(batcheResize), decltype(fusedBatchesOp)>;
 }
@@ -209,17 +209,17 @@ int launch() {
     static_assert(decltype(op)::Operation::exec(10, op.params) == 55);
 
     Ptr2D<uint3> outputAlt(32, 32);
-    constexpr RawPtr<_2D, uchar3> input{nullptr, PtrDims<_2D>(128, 128)};
+    constexpr RawPtr<ND::_2D, uchar3> input{nullptr, PtrDims<ND::_2D>(128, 128)};
     constexpr Size dstSize(32, 32);
     Stream stream;
 
     constexpr auto someReadOp =
-        PerThreadRead<_2D, uchar3>::build(input).then(Cast<uchar3, float3>::build()).then(Resize<InterpolationType::INTER_LINEAR>::build(dstSize));
+        PerThreadRead<ND::_2D, uchar3>::build(input).then(Cast<uchar3, float3>::build()).then(Resize<InterpolationType::INTER_LINEAR>::build(dstSize));
     static_assert(isReadBackType<decltype(someReadOp)>, "Unexpected Operation Type for someReadOp");
-    static_assert(std::is_same_v<decltype(someReadOp.back_function.params), OperationTuple<PerThreadRead<_2D, uchar3>, Cast<uchar3, float3>>>, "Unexpected type for params");
+    static_assert(std::is_same_v<decltype(someReadOp.back_function.params), OperationTuple<PerThreadRead<ND::_2D, uchar3>, Cast<uchar3, float3>>>, "Unexpected type for params");
 
     constexpr bool correct =
-        std::is_same_v<OperationTuple<PerThreadRead<_2D, uchar3>, Cast<uchar3, float3>>, decltype(someReadOp.back_function.params)>;
+        std::is_same_v<OperationTuple<PerThreadRead<ND::_2D, uchar3>, Cast<uchar3, float3>>, decltype(someReadOp.back_function.params)>;
     static_assert(correct, "Unexpected resulting type");
 
     constexpr auto finalOp = someReadOp.then(Mul<float3>::build(make_<float3>(3.f, 1.f, 32.f)));
@@ -249,7 +249,7 @@ int launch() {
     static_assert(someReadOpAlt.getActiveThreads().y == 32, "Wrong height");
     static_assert(someReadOpAlt.getActiveThreads().z == 1, "Wrong depth");
 
-    executeOperations<fk::TransformDPP<>>(stream, someReadOpAlt, PerThreadWrite<_2D, uint3>::build(outputAlt));
+    executeOperations<fk::TransformDPP<>>(stream, someReadOpAlt, PerThreadWrite<ND::_2D, uint3>::build(outputAlt));
 
     outputAlt.download(stream);
     stream.sync();
@@ -258,7 +258,7 @@ int launch() {
 
     for (int y = 0; y < 32; ++y) {
         for (int x = 0; x < 32; ++x) {
-            const uint3 temp = *PtrAccessor<_2D>::cr_point({x, y}, outputAlt.ptrPinned());
+            const uint3 temp = *PtrAccessor<ND::_2D>::cr_point({x, y}, outputAlt.ptrPinned());
             correct2 &= (temp.x == 3 && temp.y == 1 && temp.z == 32);
         }
     }

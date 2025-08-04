@@ -149,7 +149,7 @@ int launch() {
     bool h_correct{ true };
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            const Bool3 boolVect = *PtrAccessor<_2D>::cr_point(Point(x, y), test0.ptrPinned()) == make_<uchar3>(1, 2, 3);
+            const Bool3 boolVect = *PtrAccessor<ND::_2D>::cr_point(Point(x, y), test0.ptrPinned()) == make_<uchar3>(1, 2, 3);
             h_correct &= VectorAnd<Bool3>::exec(boolVect);
         }
     }

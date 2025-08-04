@@ -56,7 +56,7 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
 
         std::array<fk::Ptr2D<InputType>, BATCH> crops;
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::_2D>{static_cast<uint>(cropSize.width),
+            crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::ND::_2D>{static_cast<uint>(cropSize.width),
                                                                                          static_cast<uint>(cropSize.height), 
                                                                                          static_cast<uint>(d_input.dims().pitch)});
             d_output_cv[crop_i].Alloc(cropSize);
@@ -64,7 +64,7 @@ bool benchmark_Horizontal_Fusion(const size_t& NUM_ELEMS_X, const size_t& NUM_EL
 
         START_FIRST_BENCHMARK(fk::defaultParArch)
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            const auto writeOp = fk::PerThreadWrite<fk::_2D, OutputType>::build(d_output_cv[crop_i]); 
+            const auto writeOp = fk::PerThreadWrite<fk::ND::_2D, OutputType>::build(d_output_cv[crop_i]); 
             fk::executeOperations<fk::TransformDPP<>>(crops[crop_i], stream,
                 fk::SaturateCast<InputType, OutputType>::build(),
                 fk::Mul<OutputType>::build(val_alpha),
@@ -143,15 +143,15 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
 
         std::array<fk::Ptr2D<InputType>, BATCH> crops;
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::_2D>{static_cast<uint>(cropSize.width),
+            crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::ND::_2D>{static_cast<uint>(cropSize.width),
                                                                                          static_cast<uint>(cropSize.height), 
                                                                                          static_cast<uint>(d_input.dims().pitch)});
             d_output_cv[crop_i].Alloc(cropSize);
         }
 
         // Read Ops
-        const auto read_array = fk::PerThreadRead<fk::_2D, InputType>::build_batch(crops);
-        const auto read = fk::PerThreadRead<fk::_2D, InputType>::build(crops);
+        const auto read_array = fk::PerThreadRead<fk::ND::_2D, InputType>::build_batch(crops);
+        const auto read = fk::PerThreadRead<fk::ND::_2D, InputType>::build(crops);
 
         // Compute Ops
         const auto saturate = fk::SaturateCast<InputType, OutputType>::build();
@@ -160,7 +160,7 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD(const size_t& NUM_ELEMS_X, cons
         const auto div = fk::Div<OutputType>::build(val_div);
 
         // Write Ops
-        const auto write_array = fk::PerThreadWrite<fk::_2D, OutputType>::build_batch(d_output_cv);
+        const auto write_array = fk::PerThreadWrite<fk::ND::_2D, OutputType>::build_batch(d_output_cv);
         const auto write = fk::TensorWrite<OutputType>::build(d_tensor_output);
 
         START_FIRST_BENCHMARK(fk::defaultParArch)
@@ -235,15 +235,15 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD_CUDAGraphs(const size_t& NUM_EL
 
         std::array<fk::Ptr2D<InputType>, BATCH> crops;
         for (int crop_i = 0; crop_i < BATCH; crop_i++) {
-            crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::_2D>{static_cast<uint>(cropSize.width),
+            crops[crop_i] = d_input.crop(fk::Point(crop_i, crop_i), fk::PtrDims<fk::ND::_2D>{static_cast<uint>(cropSize.width),
                                                                                          static_cast<uint>(cropSize.height), 
                                                                                          static_cast<uint>(d_input.dims().pitch)});
             d_output_cv[crop_i].Alloc(cropSize);
         }
 
         // Read Ops
-        const auto read_array = fk::PerThreadRead<fk::_2D, InputType>::build_batch(crops);
-        const auto read = fk::PerThreadRead<fk::_2D, InputType>::build(crops);
+        const auto read_array = fk::PerThreadRead<fk::ND::_2D, InputType>::build_batch(crops);
+        const auto read = fk::PerThreadRead<fk::ND::_2D, InputType>::build(crops);
 
         // Compute Ops
         const auto saturate = fk::SaturateCast<InputType, OutputType>::build();
@@ -252,7 +252,7 @@ bool benchmark_Horizontal_Fusion_NO_CPU_OVERHEAD_CUDAGraphs(const size_t& NUM_EL
         const auto div = fk::Div<OutputType>::build(val_div);
 
         // Write Ops
-        const auto write_array = fk::PerThreadWrite<fk::_2D, OutputType>::build_batch(d_output_cv);
+        const auto write_array = fk::PerThreadWrite<fk::ND::_2D, OutputType>::build_batch(d_output_cv);
         const auto write = fk::TensorWrite<OutputType>::build(d_tensor_output);
 
         cudaGraph_t mainGraph;

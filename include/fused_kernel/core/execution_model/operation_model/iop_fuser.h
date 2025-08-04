@@ -52,15 +52,15 @@ namespace fk {
                 const auto backOpArray = BatchOperation::toArray(selfIOp);
                 const auto forwardOpArray = BatchOperation::toArray(cIOp);
                 using BuilderType = typename ContinuationIOp::Operation::Operation;
-                if constexpr (Operation::PP == PROCESS_ALL && ContinuationIOp::Operation::PP == PROCESS_ALL) {
+                if constexpr (Operation::PP == PlanePolicy::PROCESS_ALL && ContinuationIOp::Operation::PP == PlanePolicy::PROCESS_ALL) {
                     return BuilderType::build(backOpArray, forwardOpArray);
-                } else if constexpr ((Operation::PP == PROCESS_ALL && ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) ||
-                    (Operation::PP == CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT)) {
+                } else if constexpr ((Operation::PP == PlanePolicy::PROCESS_ALL && ContinuationIOp::Operation::PP == PlanePolicy::CONDITIONAL_WITH_DEFAULT) ||
+                    (Operation::PP == PlanePolicy::CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == PlanePolicy::CONDITIONAL_WITH_DEFAULT)) {
                     // We assume that the output type of the forward operation does not change
                     // We will take the default value of the continuation operation
                     return BuilderType::build(cIOp.params.usedPlanes, cIOp.params.default_value, backOpArray, forwardOpArray);
                 } else {
-                    static_assert((Operation::PP == CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == PROCESS_ALL), "We should not be here");
+                    static_assert((Operation::PP == PlanePolicy::CONDITIONAL_WITH_DEFAULT && ContinuationIOp::Operation::PP == PlanePolicy::PROCESS_ALL), "We should not be here");
                     using BackType = std::decay_t<decltype(backOpArray)>;
                     using ForType = std::decay_t<decltype(forwardOpArray)>;
                     constexpr size_t BATCH = static_cast<size_t>(ContinuationIOp::Operation::BATCH);
@@ -81,7 +81,7 @@ namespace fk {
                 const auto backOpArray = make_set_std_array<BATCH>(selfIOp);
                 const auto forwardOpArray = BatchOperation::toArray(cIOp);
                 using BuilderType = typename ContinuationIOp::Operation::Operation;
-                if constexpr (ContinuationIOp::Operation::PP == CONDITIONAL_WITH_DEFAULT) {
+                if constexpr (ContinuationIOp::Operation::PP == PlanePolicy::CONDITIONAL_WITH_DEFAULT) {
                     return BuilderType::build(cIOp.params.usedPlanes, cIOp.params.default_value, backOpArray, forwardOpArray);
                 } else {
                     return BuilderType::build(backOpArray, forwardOpArray);
@@ -94,7 +94,7 @@ namespace fk {
                     const auto backOpArray = BatchOperation::toArray(selfIOp);
                     const auto forwardOpArray = make_set_std_array<BATCH>(cIOp);
                     using BuilderType = typename ContinuationIOp::Operation;
-                    if constexpr (Operation::PP == CONDITIONAL_WITH_DEFAULT) {
+                    if constexpr (Operation::PP == PlanePolicy::CONDITIONAL_WITH_DEFAULT) {
                         using BackType = std::decay_t<decltype(backOpArray)>;
                         using ForType = std::decay_t<decltype(forwardOpArray)>;
                         using FusedType = typename decltype(make_fusedArray<BATCH>(std::declval<std::make_index_sequence<BATCH>>(), std::declval<BackType>(), std::declval<ForType>()))::value_type;

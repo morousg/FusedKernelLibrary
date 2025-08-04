@@ -60,10 +60,10 @@ inline bool testNumInstPerOp(fk::Stream& stream, fk::Ptr1D<float>& inputFirst,
     fk::setTo(init_val_output, outputFirst, stream);
     fk::setTo(init_val_output, outputSecond, stream);
 
-    const auto readDF = fk::PerThreadRead<fk::_1D, float>::build(inputFirst);
-    const auto readDF2 = fk::PerThreadRead<fk::_1D, float>::build(inputSecond);
-    const auto writeDF = fk::PerThreadWrite<fk::_1D, float>::build(outputFirst);
-    const auto writeDF2 = fk::PerThreadWrite<fk::_1D, float>::build(outputSecond);
+    const auto readDF = fk::PerThreadRead<fk::ND::_1D, float>::build(inputFirst);
+    const auto readDF2 = fk::PerThreadRead<fk::ND::_1D, float>::build(inputSecond);
+    const auto writeDF = fk::PerThreadWrite<fk::ND::_1D, float>::build(outputFirst);
+    const auto writeDF2 = fk::PerThreadWrite<fk::ND::_1D, float>::build(outputSecond);
 
     if constexpr (exactDivision) {
         // Wramming up the GPU

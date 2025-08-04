@@ -21,12 +21,12 @@
 
 namespace fk {
 
-    enum CircularTensorOrder { NewestFirst, OldestFirst };
+    enum class CircularTensorOrder { NewestFirst, OldestFirst };
 
     template <CircularTensorOrder CTO, int BATCH>
     struct SequenceSelectorType {
         FK_HOST_DEVICE_FUSE uint at(const uint& index) {
-            if constexpr (CTO == NewestFirst) {
+            if constexpr (CTO == CircularTensorOrder::NewestFirst) {
                 return index > 0 ? 2u : 1u;
             } else {
                 return index != BATCH - 1 ? 2u : 1u;
@@ -39,18 +39,18 @@ namespace fk {
 
     template <>
     struct CTReadDirection<CircularTensorOrder::NewestFirst> {
-        static const CircularDirection dir{ Descendent };
+        static const CircularDirection dir{ CircularDirection::Descendent };
     };
 
     template <>
     struct CTReadDirection<CircularTensorOrder::OldestFirst> {
-        static const CircularDirection dir{ Ascendent };
+        static const CircularDirection dir{ CircularDirection::Ascendent };
     };
 
     template <CircularTensorOrder CT_ORDER>
     static constexpr CircularDirection CTReadDirection_v = CTReadDirection<CT_ORDER>::dir;
 
-    enum ColorPlanes { Standard, Transposed };
+    enum class ColorPlanes { Standard, Transposed };
 
     template <typename T, ColorPlanes CP_MODE>
     struct CoreType;

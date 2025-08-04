@@ -17,7 +17,7 @@
 #define ND_H
 
 namespace fk {
-    enum ND { _1D = 1, _2D = 2, _3D = 3, T3D = 4 };
+    enum class ND { _1D = 1, _2D = 2, _3D = 3, T3D = 4 };
 } // namespace fk
 
 #endif // ND_H

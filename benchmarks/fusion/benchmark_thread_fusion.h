@@ -56,13 +56,13 @@ bool testThreadFusionSameTypeIO(fk::Stream& stream) {
 
         START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
-        const auto read = fk::PerThreadRead<fk::_2D, T>::build(d_input);
-        const auto write = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS);
+        const auto read = fk::PerThreadRead<fk::ND::_2D, T>::build(d_input);
+        const auto write = fk::PerThreadWrite<fk::ND::_2D, T>::build(d_output_cvGS);
         fk::executeOperations<fk::TransformDPP<fk::defaultParArch, fk::TF::DISABLED>>(stream, read, write);
         STOP_FIRST_START_SECOND_BENCHMARK
         // fusion version
-        const auto readTF = fk::PerThreadRead<fk::_2D, T>::build(d_input);
-        const auto writeTF = fk::PerThreadWrite<fk::_2D, T>::build(d_output_cvGS_ThreadFusion);
+        const auto readTF = fk::PerThreadRead<fk::ND::_2D, T>::build(d_input);
+        const auto writeTF = fk::PerThreadWrite<fk::ND::_2D, T>::build(d_output_cvGS_ThreadFusion);
         fk::executeOperations<fk::TransformDPP<fk::defaultParArch, fk::TF::ENABLED>>(stream, readTF, writeTF);
         STOP_SECOND_BENCHMARK
 
@@ -114,13 +114,13 @@ bool testThreadFusionDifferentTypeIO(fk::Stream& stream) {
 
         START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
-        const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
-        const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
+        const auto read = fk::PerThreadRead<fk::ND::_2D, I>::build(d_input);
+        const auto write = fk::PerThreadWrite<fk::ND::_2D, O>::build(d_output_cvGS);
         fk::executeOperations<fk::TransformDPP<fk::defaultParArch, fk::TF::DISABLED>>(stream, read, fk::SaturateCast<I, O>::build(), write);
         STOP_FIRST_START_SECOND_BENCHMARK
         // fusion version
-        const auto readTF = fk::PerThreadRead<fk::_2D, I>::build(d_input);
-        const auto writeTF = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS_ThreadFusion);
+        const auto readTF = fk::PerThreadRead<fk::ND::_2D, I>::build(d_input);
+        const auto writeTF = fk::PerThreadWrite<fk::ND::_2D, O>::build(d_output_cvGS_ThreadFusion);
         fk::executeOperations<fk::TransformDPP<fk::defaultParArch, fk::TF::ENABLED>>(stream, readTF, fk::SaturateCast<I, O>::build(), writeTF);
         STOP_SECOND_BENCHMARK
 
@@ -173,13 +173,13 @@ bool testThreadFusionDifferentTypeAndChannelIO(fk::Stream& stream) {
         // In this case it's not OpenCV, it's cvGPUSpeedup without thread fusion
         START_FIRST_BENCHMARK(fk::defaultParArch)
         // non fusion version
-        const auto read = fk::PerThreadRead<fk::_2D, I>::build(d_input);
-        const auto write = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS);
+        const auto read = fk::PerThreadRead<fk::ND::_2D, I>::build(d_input);
+        const auto write = fk::PerThreadWrite<fk::ND::_2D, O>::build(d_output_cvGS);
         fk::executeOperations<fk::TransformDPP<fk::defaultParArch, fk::TF::DISABLED>>(stream, read, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), write);
         STOP_FIRST_START_SECOND_BENCHMARK
         // fusion version
-        const auto readTF = fk::PerThreadRead<fk::_2D, I>::build(d_input);
-        const auto writeTF = fk::PerThreadWrite<fk::_2D, O>::build(d_output_cvGS_ThreadFusion);
+        const auto readTF = fk::PerThreadRead<fk::ND::_2D, I>::build(d_input);
+        const auto writeTF = fk::PerThreadWrite<fk::ND::_2D, O>::build(d_output_cvGS_ThreadFusion);
         fk::executeOperations<fk::TransformDPP<fk::defaultParArch, fk::TF::ENABLED>>(stream, readTF, fk::SaturateCast<I, T>::build(), fk::ColorConversion<CODE, T, O>::build(), writeTF);
         STOP_SECOND_BENCHMARK
 

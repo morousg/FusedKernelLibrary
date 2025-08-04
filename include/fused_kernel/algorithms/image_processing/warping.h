@@ -22,19 +22,19 @@
 #include <fused_kernel/algorithms/image_processing/interpolation.h>
 
 namespace fk {
-    enum WarpType { Affine = 0, Perspective = 1 };
+    enum class WarpType { Affine = 0, Perspective = 1 };
 
     template<enum WarpType WType>
     struct WarpingParameters;
 
     template<>
-    struct WarpingParameters<Affine> {
+    struct WarpingParameters<WarpType::Affine> {
         StaticRawPtr<StaticPtrDims2D<3, 2>, float> transformMatrix;
         Size dstSize;
     };
 
     template<>
-    struct WarpingParameters<Perspective> {
+    struct WarpingParameters<WarpType::Perspective> {
         StaticRawPtr<StaticPtrDims2D<3, 3>, float> transformMatrix;
         Size dstSize;
     };

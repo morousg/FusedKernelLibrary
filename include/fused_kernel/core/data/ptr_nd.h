@@ -24,89 +24,89 @@
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 
 namespace fk {
-	enum MemType { Device, Host, HostPinned, DeviceAndPinned };
+	enum class MemType { Device, Host, HostPinned, DeviceAndPinned };
 #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
-    constexpr MemType defaultMemType = DeviceAndPinned;
+    constexpr MemType defaultMemType = MemType::DeviceAndPinned;
 #else
-    constexpr MemType defaultMemType = Host;
+    constexpr MemType defaultMemType = MemType::Host;
 #endif
 
     template <enum ND D, typename T>
     struct PtrImpl;
 
     template <typename T>
-    struct PtrImpl<_1D, T> {
-        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<_1D>& dims) {
+    struct PtrImpl<ND::_1D, T> {
+        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<ND::_1D>& dims) {
             return dims.pitch;
         }
-        FK_HOST_FUSE uint getNumElements(const PtrDims<_1D>& dims) {
+        FK_HOST_FUSE uint getNumElements(const PtrDims<ND::_1D>& dims) {
             return dims.width;
         }
-        FK_HOST_FUSE void d_malloc(RawPtr<_1D, T>& ptr_a) {
+        FK_HOST_FUSE void d_malloc(RawPtr<ND::_1D, T>& ptr_a) {
             gpuErrchk(cudaMalloc(&ptr_a.data, sizeof(T) * ptr_a.dims.width));
             ptr_a.dims.pitch = sizeof(T) * ptr_a.dims.width;
         }
-        FK_HOST_FUSE void h_malloc_init(PtrDims<_1D>& dims) {
+        FK_HOST_FUSE void h_malloc_init(PtrDims<ND::_1D>& dims) {
             dims.pitch = sizeof(T) * dims.width;
         }
     };
 
     template <typename T>
-    struct PtrImpl<_2D, T> {
-        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<_2D>& dims) {
+    struct PtrImpl<ND::_2D, T> {
+        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<ND::_2D>& dims) {
             return dims.pitch * dims.height;
         }
-        FK_HOST_FUSE uint getNumElements(const PtrDims<_2D>& dims) {
+        FK_HOST_FUSE uint getNumElements(const PtrDims<ND::_2D>& dims) {
             return dims.width * dims.height;
         }
-        FK_HOST_FUSE void d_malloc(RawPtr<_2D, T>& ptr_a) {
+        FK_HOST_FUSE void d_malloc(RawPtr<ND::_2D, T>& ptr_a) {
             if (ptr_a.dims.pitch == 0) {
                 size_t pitch;
                 gpuErrchk(cudaMallocPitch(&ptr_a.data, &pitch, sizeof(T) * ptr_a.dims.width, ptr_a.dims.height));
                 ptr_a.dims.pitch = static_cast<int>(pitch);
             } else {
-                gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<_2D, T>::sizeInBytes(ptr_a.dims)));
+                gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<ND::_2D, T>::sizeInBytes(ptr_a.dims)));
             }
         }
-        FK_HOST_FUSE void h_malloc_init(PtrDims<_2D>& dims) {
+        FK_HOST_FUSE void h_malloc_init(PtrDims<ND::_2D>& dims) {
             dims.pitch = sizeof(T) * dims.width;
         }
     };
 
     template <typename T>
-    struct PtrImpl<_3D, T> {
-        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<_3D>& dims) {
+    struct PtrImpl<ND::_3D, T> {
+        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<ND::_3D>& dims) {
             return dims.pitch * dims.height * dims.planes * dims.color_planes;
         }
-        FK_HOST_FUSE uint getNumElements(const PtrDims<_3D>& dims) {
+        FK_HOST_FUSE uint getNumElements(const PtrDims<ND::_3D>& dims) {
             return dims.width * dims.height * dims.planes * dims.color_planes;
         }
-        FK_HOST_FUSE void d_malloc(RawPtr<_3D, T>& ptr_a) {
+        FK_HOST_FUSE void d_malloc(RawPtr<ND::_3D, T>& ptr_a) {
             if (ptr_a.dims.pitch == 0) {
                 ptr_a.dims.pitch = sizeof(T) * ptr_a.dims.width;
             }
-            gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<_3D, T>::sizeInBytes(ptr_a.dims)));
+            gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<ND::_3D, T>::sizeInBytes(ptr_a.dims)));
             ptr_a.dims.plane_pitch = ptr_a.dims.pitch * ptr_a.dims.height;
         }
-        FK_HOST_FUSE void h_malloc_init(PtrDims<_3D>& dims) {
+        FK_HOST_FUSE void h_malloc_init(PtrDims<ND::_3D>& dims) {
             dims.pitch = sizeof(T) * dims.width;
             dims.plane_pitch = dims.pitch * dims.height;
         }
     };
 
     template <typename T>
-    struct PtrImpl<T3D, T> {
-        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<T3D>& dims) {
+    struct PtrImpl<ND::T3D, T> {
+        FK_HOST_FUSE size_t sizeInBytes(const PtrDims<ND::T3D>& dims) {
             return dims.color_planes_pitch * dims.color_planes;
         }
-        FK_HOST_FUSE uint getNumElements(const PtrDims<T3D>& dims) {
+        FK_HOST_FUSE uint getNumElements(const PtrDims<ND::T3D>& dims) {
             return dims.width * dims.height * dims.planes * dims.color_planes;
         }
-        FK_HOST_FUSE void d_malloc(RawPtr<T3D, T>& ptr_a) {
-            PtrImpl<T3D, T>::h_malloc_init(ptr_a.dims);
-            gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<T3D, T>::sizeInBytes(ptr_a.dims)));
+        FK_HOST_FUSE void d_malloc(RawPtr<ND::T3D, T>& ptr_a) {
+            PtrImpl<ND::T3D, T>::h_malloc_init(ptr_a.dims);
+            gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<ND::T3D, T>::sizeInBytes(ptr_a.dims)));
         }
-        FK_HOST_FUSE void h_malloc_init(PtrDims<T3D>& dims) {
+        FK_HOST_FUSE void h_malloc_init(PtrDims<ND::T3D>& dims) {
             dims.pitch = sizeof(T) * dims.width;
             dims.plane_pitch = dims.pitch * dims.height;
             dims.color_planes_pitch = dims.plane_pitch * dims.planes;
@@ -189,7 +189,7 @@ namespace fk {
                 ref->cnt--;
                 if (ref->cnt == 0) {
                     switch (type) {
-                    case Device:
+                    case MemType::Device:
                         {
                             #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
                             gpuErrchk(cudaFree(ref->ptr));
@@ -198,10 +198,10 @@ namespace fk {
                             #endif
                         }
                         break;
-                    case Host:
+                    case MemType::Host:
                         free(ref->ptr);
                         break;
-                    case HostPinned:
+                    case MemType::HostPinned:
                         {
                             #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
                             gpuErrchk(cudaFreeHost(ref->ptr));
@@ -210,7 +210,7 @@ namespace fk {
                             #endif
                         }
                         break;
-                    case DeviceAndPinned:
+                    case MemType::DeviceAndPinned:
                     {
 #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
                         gpuErrchk(cudaFree(ref->ptr));
@@ -248,7 +248,7 @@ namespace fk {
                 const size_t totalBytes = sizeInBytes();
                 gpuErrchk(cudaMemcpyAsync(other.data, thisPtr.data, totalBytes, kind, stream));
             } else {
-                if constexpr (D > _2D || D == _1D) {
+                if constexpr (D > ND::_2D || D == ND::_1D) {
                     throw std::runtime_error("Padding only supported in 2D pointers");
                 } else {
                     gpuErrchk(cudaMemcpy2DAsync(other.data, other.dims.pitch, thisPtr.data, thisPtr.dims.pitch,
@@ -302,25 +302,25 @@ namespace fk {
             }
 
             switch (type) {
-            case Device:
+            case MemType::Device:
                 {
                     allocDevice();
                     ptr_pinned = ptr_a;
                 }
                 break;
-            case Host:
+            case MemType::Host:
                 {
                     allocHost();
                     ptr_pinned = ptr_a;
                 }
                 break;
-            case HostPinned:
+            case MemType::HostPinned:
                 {
                     allocHostPinned();
                     ptr_pinned = ptr_a;
                 }
                 break;
-            case DeviceAndPinned:
+            case MemType::DeviceAndPinned:
                 {
                     allocDeviceAndPinned();
                 }
@@ -456,117 +456,117 @@ namespace fk {
         }
 
         template <enum ND DIM = D>
-        inline std::enable_if_t<(DIM > _2D), Ptr<_2D, T>> getPlane(const uint& plane) {
+        inline std::enable_if_t<(DIM > ND::_2D), Ptr<ND::_2D, T>> getPlane(const uint& plane) {
             if (plane >= this->ptr_pinned.dims.planes) {
                 throw std::runtime_error("Plane index out of bounds");
             }
 
-            T* const data = PtrAccessor<_3D>::point(Point(0, 0, plane), this->ptr_a);
-            T* const pinned_data = PtrAccessor<_3D>::point(Point(0, 0, plane), this->ptr_pinned);
-            return Ptr<_2D, T>(data, pinned_data, PtrDims<_2D>{this->ptr_a.dims.width, this->ptr_a.dims.height, this->ptr_a.dims.pitch}, this->type, this->deviceID);
+            T* const data = PtrAccessor<ND::_3D>::point(Point(0, 0, plane), this->ptr_a);
+            T* const pinned_data = PtrAccessor<ND::_3D>::point(Point(0, 0, plane), this->ptr_pinned);
+            return Ptr<ND::_2D, T>(data, pinned_data, PtrDims<ND::_2D>{this->ptr_a.dims.width, this->ptr_a.dims.height, this->ptr_a.dims.pitch}, this->type, this->deviceID);
         }
     };
 
     template <typename T>
-    class Ptr1D : public Ptr<_1D, T> {
+    class Ptr1D : public Ptr<ND::_1D, T> {
     public:
         inline constexpr Ptr1D<T>() {}
         inline constexpr Ptr1D<T>(const uint& num_elems, const uint& size_in_bytes = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_1D, T>(PtrDims<_1D>(num_elems, size_in_bytes), type_, deviceID_) {}
+            Ptr<ND::_1D, T>(PtrDims<ND::_1D>(num_elems, size_in_bytes), type_, deviceID_) {}
 
-        inline constexpr Ptr1D<T>(const Ptr<_1D, T>& other) : Ptr<_1D, T>(other) {}
+        inline constexpr Ptr1D<T>(const Ptr<ND::_1D, T>& other) : Ptr<ND::_1D, T>(other) {}
 
-        inline constexpr Ptr1D<T>(T* data_, const PtrDims<_1D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_1D, T>(data_, dims_, type_, deviceID_) {}
+        inline constexpr Ptr1D<T>(T* data_, const PtrDims<ND::_1D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
+            Ptr<ND::_1D, T>(data_, dims_, type_, deviceID_) {}
 
-        inline constexpr Ptr1D<T> crop1D(const Point& p, const PtrDims<_1D>& newDims) { return Ptr<_1D, T>::crop(p, newDims); }
+        inline constexpr Ptr1D<T> crop1D(const Point& p, const PtrDims<ND::_1D>& newDims) { return Ptr<ND::_1D, T>::crop(p, newDims); }
     };
 
     template <typename T>
-    class Ptr2D : public Ptr<_2D, T> {
+    class Ptr2D : public Ptr<ND::_2D, T> {
     public:
         inline constexpr Ptr2D<T>() {}
         inline Ptr2D<T>(const Size& size, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_2D, T>(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_) {}
+            Ptr<ND::_2D, T>(PtrDims<ND::_2D>(size.width, size.height, pitch_), type_, deviceID_) {}
         inline Ptr2D<T>(const uint& width_, const uint& height_, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_2D, T>(PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
+            Ptr<ND::_2D, T>(PtrDims<ND::_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
-        inline constexpr Ptr2D<T>(const Ptr<_2D, T>& other) : Ptr<_2D, T>(other) {}
+        inline constexpr Ptr2D<T>(const Ptr<ND::_2D, T>& other) : Ptr<ND::_2D, T>(other) {}
 
         inline Ptr2D<T>(T* data_, const uint& width_, const uint& height_, const uint& pitch_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_2D, T>(data_, PtrDims<_2D>(width_, height_, pitch_), type_, deviceID_) {}
+            Ptr<ND::_2D, T>(data_, PtrDims<ND::_2D>(width_, height_, pitch_), type_, deviceID_) {}
 
-        inline Ptr2D<T> crop2D(const Point& p, const PtrDims<_2D>& newDims) { return Ptr<_2D, T>::crop(p, newDims); }
+        inline Ptr2D<T> crop2D(const Point& p, const PtrDims<ND::_2D>& newDims) { return Ptr<ND::_2D, T>::crop(p, newDims); }
         inline void Alloc(const fk::Size& size, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
-            this->allocPtr(PtrDims<_2D>(size.width, size.height, pitch_), type_, deviceID_);
+            this->allocPtr(PtrDims<ND::_2D>(size.width, size.height, pitch_), type_, deviceID_);
         }
     };
 
     // A Ptr3D pointer
     template <typename T>
-    class Ptr3D : public Ptr<_3D, T> {
+    class Ptr3D : public Ptr<ND::_3D, T> {
     public:
         inline constexpr Ptr3D<T>(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const uint& pitch_ = 0, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_3D, T>(PtrDims<_3D>(width_, height_, planes_, color_planes_, pitch_), type_, deviceID_) {}
+            Ptr<ND::_3D, T>(PtrDims<ND::_3D>(width_, height_, planes_, color_planes_, pitch_), type_, deviceID_) {}
 
-        inline constexpr Ptr3D<T>(const Ptr<_3D, T>& other) : Ptr<_3D, T>(other) {}
+        inline constexpr Ptr3D<T>(const Ptr<ND::_3D, T>& other) : Ptr<ND::_3D, T>(other) {}
 
-        inline constexpr Ptr3D<T>(T* data_, const PtrDims<_3D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_3D, T>(data_, dims_, type_, deviceID_) {}
+        inline constexpr Ptr3D<T>(T* data_, const PtrDims<ND::_3D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
+            Ptr<ND::_3D, T>(data_, dims_, type_, deviceID_) {}
 
-        inline constexpr Ptr3D<T> crop3D(const Point& p, const PtrDims<_3D>& newDims) { return Ptr<_3D, T>::crop(p, newDims); }
+        inline constexpr Ptr3D<T> crop3D(const Point& p, const PtrDims<ND::_3D>& newDims) { return Ptr<ND::_3D, T>::crop(p, newDims); }
     };
 
     // A color-plane-transposed 3D pointer PtrT3D
     template <typename T>
-    class PtrT3D : public Ptr<T3D, T> {
+    class PtrT3D : public Ptr<ND::T3D, T> {
     public:
         inline constexpr PtrT3D<T>(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<T3D, T>(PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
+            Ptr<ND::T3D, T>(PtrDims<ND::T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
 
-        inline constexpr PtrT3D<T>(const Ptr<T3D, T>& other) : Ptr<T3D, T>(other) {}
+        inline constexpr PtrT3D<T>(const Ptr<ND::T3D, T>& other) : Ptr<ND::T3D, T>(other) {}
 
-        inline constexpr PtrT3D<T>(T* data_, const PtrDims<T3D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<T3D, T>(data_, dims_, type_, deviceID_) {}
+        inline constexpr PtrT3D<T>(T* data_, const PtrDims<ND::T3D>& dims_, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
+            Ptr<ND::T3D, T>(data_, dims_, type_, deviceID_) {}
 
-        inline constexpr PtrT3D<T> crop3D(const Point& p, const PtrDims<T3D>& newDims) { return Ptr<T3D, T>::crop(p, newDims); }
+        inline constexpr PtrT3D<T> crop3D(const Point& p, const PtrDims<ND::T3D>& newDims) { return Ptr<ND::T3D, T>::crop(p, newDims); }
     };
 
     // A Tensor pointer
     template <typename T>
-    class Tensor : public Ptr<_3D, T> {
+    class Tensor : public Ptr<ND::_3D, T> {
     public:
         inline constexpr Tensor() {}
 
-        inline constexpr Tensor(const Tensor<T>& other) : Ptr<_3D, T>(other) {}
+        inline constexpr Tensor(const Tensor<T>& other) : Ptr<ND::_3D, T>(other) {}
 
         inline constexpr Tensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_3D, T>(PtrDims<_3D>(width_, height_, planes_, color_planes_, sizeof(T)* width_), type_, deviceID_) {}
+            Ptr<ND::_3D, T>(PtrDims<ND::_3D>(width_, height_, planes_, color_planes_, sizeof(T)* width_), type_, deviceID_) {}
 
         inline constexpr Tensor(T* data, const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<_3D, T>(data, PtrDims<_3D>(width_, height_, planes_, color_planes_, sizeof(T)* width_), type_, deviceID_) {}
+            Ptr<ND::_3D, T>(data, PtrDims<ND::_3D>(width_, height_, planes_, color_planes_, sizeof(T)* width_), type_, deviceID_) {}
 
         inline constexpr void allocTensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
-            this->allocPtr(PtrDims<_3D>(width_, height_, planes_, color_planes_, sizeof(T) * width_), type_, deviceID_);
+            this->allocPtr(PtrDims<ND::_3D>(width_, height_, planes_, color_planes_, sizeof(T) * width_), type_, deviceID_);
         }
     };
 
     // A color-plane-transposed Tensor pointer
     template <typename T>
-    class TensorT : public Ptr<T3D, T> {
+    class TensorT : public Ptr<ND::T3D, T> {
     public:
         inline constexpr TensorT() {}
 
-        inline constexpr TensorT(const TensorT<T>& other) : Ptr<T3D, T>(other) {}
+        inline constexpr TensorT(const TensorT<T>& other) : Ptr<ND::T3D, T>(other) {}
 
         inline constexpr TensorT(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<T3D, T>(PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
+            Ptr<ND::T3D, T>(PtrDims<ND::T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
 
         inline constexpr TensorT(T* data, const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) :
-            Ptr<T3D, T>(data, PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
+            Ptr<ND::T3D, T>(data, PtrDims<ND::T3D>(width_, height_, planes_, color_planes_), type_, deviceID_) {}
 
         inline constexpr void allocTensor(const uint& width_, const uint& height_, const uint& planes_, const uint& color_planes_ = 1, const MemType& type_ = defaultMemType, const int& deviceID_ = 0) {
-            this->allocPtr(PtrDims<T3D>(width_, height_, planes_, color_planes_), type_, deviceID_);
+            this->allocPtr(PtrDims<ND::T3D>(width_, height_, planes_, color_planes_), type_, deviceID_);
         }
     };
 } // namespace fk
