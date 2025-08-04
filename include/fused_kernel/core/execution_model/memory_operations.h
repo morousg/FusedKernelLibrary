@@ -87,7 +87,7 @@ namespace fk {
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
-            if constexpr (D == _1D) {
+            if constexpr (D == ND::_1D) {
                 return 1;
             } else {
                 return opData.params.dims.height;
@@ -95,7 +95,7 @@ namespace fk {
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
-            if constexpr (D == _1D || D == _2D) {
+            if constexpr (D == ND::_1D || D == ND::_2D) {
                 return 1;
             } else {
                 return opData.params.dims.planes;
@@ -136,7 +136,7 @@ namespace fk {
     template <typename T>
     struct TensorRead {
     private:
-        using Parent = ReadOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorRead<T>>;
+        using Parent = ReadOperation<T, RawPtr<ND::_3D, T>, T, TF::ENABLED, TensorRead<T>>;
         using SelfType = TensorRead<T>;
     public:
         FK_STATIC_STRUCT(TensorRead, SelfType)
@@ -144,7 +144,7 @@ namespace fk {
 
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType> exec(const Point& thread, const ParamsType& params) {
-            return *PtrAccessor<_3D>::template cr_point<T, ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType>>(thread, params);
+            return *PtrAccessor<ND::_3D>::template cr_point<T, ThreadFusionType<ReadDataType, ELEMS_PER_THREAD, OutputType>>(thread, params);
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.width;
@@ -170,14 +170,14 @@ namespace fk {
     template <typename T>
     struct TensorWrite {
     private:
-        using Parent = WriteOperation<T, RawPtr<_3D, T>, T, TF::ENABLED, TensorWrite<T>>;
+        using Parent = WriteOperation<T, RawPtr<ND::_3D, T>, T, TF::ENABLED, TensorWrite<T>>;
         using SelfType = TensorWrite<T>;
     public:
         FK_STATIC_STRUCT(TensorWrite, SelfType)
         DECLARE_WRITE_PARENT
         template <uint ELEMS_PER_THREAD = 1>
         FK_HOST_DEVICE_FUSE void exec(const Point& thread, const ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>& input, const ParamsType& params) {
-            *PtrAccessor<_3D>::template point<T, ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>>(thread, params) = input;
+            *PtrAccessor<ND::_3D>::template point<T, ThreadFusionType<InputType, ELEMS_PER_THREAD, InputType>>(thread, params) = input;
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -192,7 +192,7 @@ namespace fk {
     template <typename T>
     struct TensorSplit {
     private:
-        using Parent = WriteOperation<T, RawPtr<_3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorSplit<T>>;
+        using Parent = WriteOperation<T, RawPtr<ND::_3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorSplit<T>>;
         using SelfType = TensorSplit<T>;
     public:
         FK_STATIC_STRUCT(TensorSplit, SelfType)
@@ -203,7 +203,7 @@ namespace fk {
 
             const int planePixels = params.dims.width * params.dims.height;
 
-            WriteDataType* const work_plane = PtrAccessor<_3D>::point(thread, params);
+            WriteDataType* const work_plane = PtrAccessor<ND::_3D>::point(thread, params);
 
             *work_plane = input.x;
             *(work_plane + planePixels) = input.y;
@@ -225,7 +225,7 @@ namespace fk {
     template <typename T>
     struct TensorTSplit {
     private:
-        using Parent = WriteOperation<T, RawPtr<T3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorTSplit<T>>;
+        using Parent = WriteOperation<T, RawPtr<ND::T3D, VBase<T>>, VBase<T>, TF::DISABLED, TensorTSplit<T>>;
         using SelfType = TensorTSplit<T>;
     public:
         FK_STATIC_STRUCT(TensorTSplit, SelfType)
@@ -234,13 +234,13 @@ namespace fk {
             static_assert(cn<InputType> >= 2,
                           "Wrong type for split tensor write. It must be one of <type>2, <type>3 or <type>4.");
 
-            *PtrAccessor<T3D>::point(thread, params, 0) = input.x;
-            *PtrAccessor<T3D>::point(thread, params, 1) = input.y;
+            *PtrAccessor<ND::T3D>::point(thread, params, 0) = input.x;
+            *PtrAccessor<ND::T3D>::point(thread, params, 1) = input.y;
             if constexpr (cn<InputType> >= 3) {
-                *PtrAccessor<T3D>::point(thread, params, 2) = input.z;
+                *PtrAccessor<ND::T3D>::point(thread, params, 2) = input.z;
             }
             if constexpr (cn<InputType> == 4) {
-                *PtrAccessor<T3D>::point(thread, params, 3) = input.w;
+                *PtrAccessor<ND::T3D>::point(thread, params, 3) = input.w;
             }
         }
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -254,7 +254,7 @@ namespace fk {
     template <typename T>
     struct TensorPack {
     private:
-        using Parent = ReadOperation<VBase<T>, RawPtr<_3D, VBase<T>>, T, TF::DISABLED, TensorPack<T>>;
+        using Parent = ReadOperation<VBase<T>, RawPtr<ND::_3D, VBase<T>>, T, TF::DISABLED, TensorPack<T>>;
         using SelfType = TensorPack<T>;
     public:
         FK_STATIC_STRUCT(TensorPack, SelfType)
@@ -265,7 +265,7 @@ namespace fk {
 
             const int planePixels = params.dims.width * params.dims.height;
 
-            const ReadDataType* const work_plane = PtrAccessor<_3D>::cr_point(thread, params);
+            const ReadDataType* const work_plane = PtrAccessor<ND::_3D>::cr_point(thread, params);
             if constexpr (cn<OutputType> == 2) {
                 return make_<OutputType>(*work_plane, *(work_plane + planePixels));
             } else if constexpr (cn<OutputType> == 3) {
@@ -303,7 +303,7 @@ namespace fk {
     template <typename T>
     struct TensorTPack {
     private:
-        using Parent = ReadOperation<T, RawPtr<T3D, VBase<T>>, T, TF::DISABLED, TensorTPack<T>>;
+        using Parent = ReadOperation<T, RawPtr<ND::T3D, VBase<T>>, T, TF::DISABLED, TensorTPack<T>>;
         using SelfType = TensorTPack<T>;
     public:
         FK_STATIC_STRUCT(TensorTPack, SelfType)
@@ -312,18 +312,18 @@ namespace fk {
             static_assert(cn<OutputType> >= 2,
                           "Wrong type for split tensor read. It must be one of <type>2, <type>3 or <type>4.");
 
-            const VBase<T> x = *PtrAccessor<T3D>::cr_point(thread, params, 0);
+            const VBase<T> x = *PtrAccessor<ND::T3D>::cr_point(thread, params, 0);
             if constexpr (cn<OutputType> == 2) {
-                const VBase<T> y = *PtrAccessor<T3D>::cr_point(thread, params, 1);
+                const VBase<T> y = *PtrAccessor<ND::T3D>::cr_point(thread, params, 1);
                 return make_<OutputType>(x, y);
             } else if constexpr (cn<OutputType> == 3) {
-                const VBase<T> y = *PtrAccessor<T3D>::cr_point(thread, params, 1);
-                const VBase<T> z = *PtrAccessor<T3D>::cr_point(thread, params, 2);
+                const VBase<T> y = *PtrAccessor<ND::T3D>::cr_point(thread, params, 1);
+                const VBase<T> z = *PtrAccessor<ND::T3D>::cr_point(thread, params, 2);
                 return make_<OutputType>(x, y, z);
             } else {
-                const VBase<T> y = *PtrAccessor<T3D>::cr_point(thread, params, 1);
-                const VBase<T> z = *PtrAccessor<T3D>::cr_point(thread, params, 2);
-                const VBase<T> w = *PtrAccessor<T3D>::cr_point(thread, params, 3);
+                const VBase<T> y = *PtrAccessor<ND::T3D>::cr_point(thread, params, 1);
+                const VBase<T> z = *PtrAccessor<ND::T3D>::cr_point(thread, params, 2);
+                const VBase<T> w = *PtrAccessor<ND::T3D>::cr_point(thread, params, 3);
                 return make_<OutputType>(x, y, z, w);
             }
         }
@@ -421,7 +421,7 @@ namespace fk {
        See the License for the specific language governing permissions and
        limitations under the License. */
 
-    enum CircularDirection { Ascendent, Descendent };
+    enum class CircularDirection { Ascendent, Descendent };
 
     template <typename OperationDataTypeArray>
     struct CircularMemoryParams {

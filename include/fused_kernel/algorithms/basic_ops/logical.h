@@ -20,7 +20,7 @@
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.h>
 
 namespace fk {
-    enum ShiftDirection { Left, Right };
+    enum class ShiftDirection { Left, Right };
 
     template <typename T, ShiftDirection SD>
     struct ShiftBase {
@@ -33,9 +33,9 @@ namespace fk {
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params) {
             static_assert(!validCUDAVec<T>, "Shift can't work with cuda vector types.");
             static_assert(std::is_unsigned_v<T>, "Shift only works with unsigned integers.");
-            if constexpr (SD == Left) {
+            if constexpr (SD == ShiftDirection::Left) {
                 return input << params;
-            } else if constexpr (SD == Right) {
+            } else if constexpr (SD == ShiftDirection::Right) {
                 return input >> params;
             }
         }
