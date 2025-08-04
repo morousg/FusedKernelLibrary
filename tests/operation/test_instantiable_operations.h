@@ -209,7 +209,7 @@ int launch() {
     static_assert(decltype(op)::Operation::exec(10, op.params) == 55);
 
     Ptr2D<uint3> outputAlt(32, 32);
-    constexpr RawPtr<ND::_2D, uchar3> input{nullptr, PtrDims<_2D>(128, 128)};
+    constexpr RawPtr<ND::_2D, uchar3> input{nullptr, PtrDims<ND::_2D>(128, 128)};
     constexpr Size dstSize(32, 32);
     Stream stream;
 

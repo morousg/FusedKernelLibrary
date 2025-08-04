@@ -248,7 +248,7 @@ namespace fk {
                 const size_t totalBytes = sizeInBytes();
                 gpuErrchk(cudaMemcpyAsync(other.data, thisPtr.data, totalBytes, kind, stream));
             } else {
-                if constexpr (D > _2D || D == _1D) {
+                if constexpr (D > ND::_2D || D == ND::_1D) {
                     throw std::runtime_error("Padding only supported in 2D pointers");
                 } else {
                     gpuErrchk(cudaMemcpy2DAsync(other.data, other.dims.pitch, thisPtr.data, thisPtr.dims.pitch,

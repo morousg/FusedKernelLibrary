@@ -339,12 +339,12 @@ namespace fk {
                                      ReadYUV<PF>>;
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
-            if constexpr (PF == NV12 || PF == P010 || PF == P016 || PF == P210 || PF == P216) {
+            if constexpr (PF == PixelFormat::NV12 || PF == PixelFormat::P010 || PF == PixelFormat::P016 || PF == PixelFormat::P210 || PF == PixelFormat::P216) {
                 // Planar luma
                 const PixelBaseType Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
 
                 // Packed chroma
-                const PtrDims<_2D> dims = params.dims;
+                const PtrDims<ND::_2D> dims = params.dims;
                 using VectorType2 = VectorType_t<PixelBaseType, 2>;
                 const RawPtr<ND::_2D, VectorType2> chromaPlane{
                     reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
@@ -352,15 +352,15 @@ namespace fk {
                 };
                 const ColorSpace CS = static_cast<ColorSpace>(PixelFormatTraits<PF>::space);
                 const VectorType2 UV =
-                    *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, CS == YUV420 ? thread.y >> 1 : thread.y, thread.z }, chromaPlane);
+                    *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, CS == ColorSpace::YUV420 ? thread.y >> 1 : thread.y, thread.z }, chromaPlane);
 
                 return { Y, UV.x, UV.y };
-            } else if constexpr (PF == NV21) {
+            } else if constexpr (PF == PixelFormat::NV21) {
                 // Planar luma
                 const uchar Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
 
                 // Packed chroma
-                const PtrDims<_2D> dims = params.dims;
+                const PtrDims<ND::_2D> dims = params.dims;
                 const RawPtr<ND::_2D, uchar2> chromaPlane{
                     reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
                                               { dims.width >> 1, dims.height >> 1, dims.pitch }
@@ -368,14 +368,14 @@ namespace fk {
                 const uchar2 VU = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane);
 
                 return { Y, VU.y, VU.x };
-            } else if constexpr (PF == Y216 || PF == Y210) {
-                const PtrDims<_2D> dims = params.dims;
+            } else if constexpr (PF == PixelFormat::Y216 || PF == PixelFormat::Y210) {
+                const PtrDims<ND::_2D> dims = params.dims;
                 const RawPtr<ND::_2D, ushort4> image{ reinterpret_cast<ushort4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
                 const ushort4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
                 const bool isEvenThread = IsEven<uint>::exec(thread.x);
 
                 return { isEvenThread ? pixel.x : pixel.z, pixel.y, pixel.w };
-            } else if constexpr (PF == Y416) {
+            } else if constexpr (PF == PixelFormat::Y416) {
                 // AVYU
                 // We use ushort as the type, to be compatible with the rest of the cases
                 const RawPtr<ND::_2D, ushort4> readImage{ params.data, params.dims };

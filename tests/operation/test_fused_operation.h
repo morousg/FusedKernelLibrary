@@ -37,10 +37,10 @@ constexpr bool test_fuseDFResultingTypes() {
     constexpr auto read = Read<PerThreadRead<ND::_2D, float>>{ { fk::RawPtr<ND::_2D, float>{nullptr, {128, 4}} } };
     static_assert(std::is_same_v<std::decay_t<decltype(read)>, Read<PerThreadRead<ND::_2D, float>>>, "Unexpected type after fuseIOps");
 
-    constexpr auto readOp2 = PerThreadRead<ND::_2D, uchar3>::build(RawPtr<ND::_2D, uchar3>{nullptr, PtrDims<_2D>(128,128)});
+    constexpr auto readOp2 = PerThreadRead<ND::_2D, uchar3>::build(RawPtr<ND::_2D, uchar3>{nullptr, PtrDims<ND::_2D>(128,128)});
     static_assert(std::is_same_v<std::decay_t<decltype(readOp2)>, Read<PerThreadRead<ND::_2D, uchar3>>>, "Unexpected type after fuseIOps");
 
-    constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build({ RawPtr<ND::_2D, uchar>{nullptr, PtrDims<_2D>(128, 128)} });
+    constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build({ RawPtr<ND::_2D, uchar>{nullptr, PtrDims<ND::_2D>(128, 128)} });
     constexpr auto readRGB = readYUV.then(ConvertYUVToRGB<PixelFormat::NV12, ColorRange::Full, ColorPrimitives::bt2020, false>::build());
 
     constexpr auto resizeRead = Resize<InterpolationType::INTER_LINEAR>::build(readRGB, Size(64, 64));
