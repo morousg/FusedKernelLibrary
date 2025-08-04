@@ -89,11 +89,71 @@ namespace fk {
             // If demangling fails or is not needed, return the original (likely mangled) name
             return mangled_name;
         }
+
+        // Convert C-style casts to static_cast for NVRTC compatibility
+        // Converts (Type)value to static_cast<Type>(value)
+        std::string convert_c_casts_to_static_cast(std::string type_str) {
+            size_t pos = 0;
+            while ((pos = type_str.find('(', pos)) != std::string::npos) {
+                // Look for pattern: (Type)value
+                size_t close_paren = type_str.find(')', pos + 1);
+                if (close_paren == std::string::npos) {
+                    pos++;
+                    continue;
+                }
+                
+                // Extract the potential type between parentheses
+                std::string potential_type = type_str.substr(pos + 1, close_paren - pos - 1);
+                
+                // Check if this looks like a type (contains :: or alphanumeric with underscores)
+                bool looks_like_type = false;
+                if (!potential_type.empty()) {
+                    // Simple heuristic: if it contains namespace separator or looks like identifier
+                    if (potential_type.find("::") != std::string::npos || 
+                        (std::isalpha(potential_type[0]) || potential_type[0] == '_')) {
+                        looks_like_type = true;
+                        // Additional check: make sure it's not just a function call or arithmetic
+                        for (char c : potential_type) {
+                            if (!std::isalnum(c) && c != '_' && c != ':') {
+                                looks_like_type = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (looks_like_type) {
+                    // Find the value part after the closing parenthesis
+                    size_t value_start = close_paren + 1;
+                    size_t value_end = value_start;
+                    
+                    // Find the end of the value (digit, identifier, or until separator)
+                    while (value_end < type_str.length() && 
+                           (std::isalnum(type_str[value_end]) || type_str[value_end] == '_')) {
+                        value_end++;
+                    }
+                    
+                    if (value_end > value_start) {
+                        std::string value = type_str.substr(value_start, value_end - value_start);
+                        std::string static_cast_expr = "static_cast<" + potential_type + ">(" + value + ")";
+                        
+                        // Replace the C-style cast with static_cast
+                        type_str.replace(pos, value_end - pos, static_cast_expr);
+                        pos += static_cast_expr.length();
+                    } else {
+                        pos = close_paren + 1;
+                    }
+                } else {
+                    pos = close_paren + 1;
+                }
+            }
+            return type_str;
+        }
     } // namespace detail
 
     template <typename T>
     std::string typeToString() {
-        return detail::demangle_name(typeid(T).name());
+        return detail::convert_c_casts_to_static_cast(detail::demangle_name(typeid(T).name()));
     }
 } // namespace fk
 #elif defined(_MSC_VER)
@@ -116,20 +176,142 @@ namespace fk {
             }
             return name;
         }
+
+        // Convert C-style casts to static_cast for NVRTC compatibility
+        // Converts (Type)value to static_cast<Type>(value)
+        std::string convert_c_casts_to_static_cast(std::string type_str) {
+            size_t pos = 0;
+            while ((pos = type_str.find('(', pos)) != std::string::npos) {
+                // Look for pattern: (Type)value
+                size_t close_paren = type_str.find(')', pos + 1);
+                if (close_paren == std::string::npos) {
+                    pos++;
+                    continue;
+                }
+                
+                // Extract the potential type between parentheses
+                std::string potential_type = type_str.substr(pos + 1, close_paren - pos - 1);
+                
+                // Check if this looks like a type (contains :: or alphanumeric with underscores)
+                bool looks_like_type = false;
+                if (!potential_type.empty()) {
+                    // Simple heuristic: if it contains namespace separator or looks like identifier
+                    if (potential_type.find("::") != std::string::npos || 
+                        (std::isalpha(potential_type[0]) || potential_type[0] == '_')) {
+                        looks_like_type = true;
+                        // Additional check: make sure it's not just a function call or arithmetic
+                        for (char c : potential_type) {
+                            if (!std::isalnum(c) && c != '_' && c != ':') {
+                                looks_like_type = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (looks_like_type) {
+                    // Find the value part after the closing parenthesis
+                    size_t value_start = close_paren + 1;
+                    size_t value_end = value_start;
+                    
+                    // Find the end of the value (digit, identifier, or until separator)
+                    while (value_end < type_str.length() && 
+                           (std::isalnum(type_str[value_end]) || type_str[value_end] == '_')) {
+                        value_end++;
+                    }
+                    
+                    if (value_end > value_start) {
+                        std::string value = type_str.substr(value_start, value_end - value_start);
+                        std::string static_cast_expr = "static_cast<" + potential_type + ">(" + value + ")";
+                        
+                        // Replace the C-style cast with static_cast
+                        type_str.replace(pos, value_end - pos, static_cast_expr);
+                        pos += static_cast_expr.length();
+                    } else {
+                        pos = close_paren + 1;
+                    }
+                } else {
+                    pos = close_paren + 1;
+                }
+            }
+            return type_str;
+        }
     } // namespace detail
 
     template <typename T>
     std::string typeToString() {
-        return detail::clean_msvc_typename(typeid(T).name());
+        return detail::convert_c_casts_to_static_cast(detail::clean_msvc_typename(typeid(T).name()));
     }
 } // namespace fk
 #else
 // Fallback for other compilers: return the raw name from typeid.
 // This might be mangled or not, depending on the compiler.
 namespace fk {
+    namespace detail {
+        // Convert C-style casts to static_cast for NVRTC compatibility
+        // Converts (Type)value to static_cast<Type>(value)
+        std::string convert_c_casts_to_static_cast(std::string type_str) {
+            size_t pos = 0;
+            while ((pos = type_str.find('(', pos)) != std::string::npos) {
+                // Look for pattern: (Type)value
+                size_t close_paren = type_str.find(')', pos + 1);
+                if (close_paren == std::string::npos) {
+                    pos++;
+                    continue;
+                }
+                
+                // Extract the potential type between parentheses
+                std::string potential_type = type_str.substr(pos + 1, close_paren - pos - 1);
+                
+                // Check if this looks like a type (contains :: or alphanumeric with underscores)
+                bool looks_like_type = false;
+                if (!potential_type.empty()) {
+                    // Simple heuristic: if it contains namespace separator or looks like identifier
+                    if (potential_type.find("::") != std::string::npos || 
+                        (std::isalpha(potential_type[0]) || potential_type[0] == '_')) {
+                        looks_like_type = true;
+                        // Additional check: make sure it's not just a function call or arithmetic
+                        for (char c : potential_type) {
+                            if (!std::isalnum(c) && c != '_' && c != ':') {
+                                looks_like_type = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (looks_like_type) {
+                    // Find the value part after the closing parenthesis
+                    size_t value_start = close_paren + 1;
+                    size_t value_end = value_start;
+                    
+                    // Find the end of the value (digit, identifier, or until separator)
+                    while (value_end < type_str.length() && 
+                           (std::isalnum(type_str[value_end]) || type_str[value_end] == '_')) {
+                        value_end++;
+                    }
+                    
+                    if (value_end > value_start) {
+                        std::string value = type_str.substr(value_start, value_end - value_start);
+                        std::string static_cast_expr = "static_cast<" + potential_type + ">(" + value + ")";
+                        
+                        // Replace the C-style cast with static_cast
+                        type_str.replace(pos, value_end - pos, static_cast_expr);
+                        pos += static_cast_expr.length();
+                    } else {
+                        pos = close_paren + 1;
+                    }
+                } else {
+                    pos = close_paren + 1;
+                }
+            }
+            return type_str;
+        }
+    } // namespace detail
+
     template <typename T>
     std::string typeToString() {
-        return typeid(T).name();
+        return detail::convert_c_casts_to_static_cast(typeid(T).name());
     }
 } // namespace fk
 #endif

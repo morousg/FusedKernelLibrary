@@ -92,6 +92,7 @@ namespace fk {
   }                                                                                                                    \
   FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType &opData) { return Parent::build(opData); }        \
   FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType &params) { return Parent::build(params); }
+
     template <typename I, typename P, typename BF, typename O, typename TOperationImpl, bool IS_FUSED = false>
     struct TernaryOperation {
     private:
@@ -165,7 +166,7 @@ namespace fk {
         FK_HOST_DEVICE_FUSE auto build(const ParamsType& params) { return InstantiableType{ {params} }; };
     };
 
-#define DECLARE_READ_PARENT_BASIC                                                                                      \
+#define DECLARE_READ_PARENT_DEVICE_BASIC                                                                                      \
   using ParamsType = typename Parent::ParamsType;                                                                      \
   using ReadDataType = typename Parent::ReadDataType;                                                                  \
   using InstanceType = typename Parent::InstanceType;                                                                  \
@@ -182,9 +183,17 @@ namespace fk {
     } else {                                                                                                           \
       return Parent::exec(thread, opData);                                                                             \
     }                                                                                                                  \
-  }                                                                                                                    \
-  FK_HOST_DEVICE_FUSE auto build(const OperationDataType &opData) { return Parent::build(opData); }                    \
-  FK_HOST_DEVICE_FUSE auto build(const ParamsType &params) { return Parent::build(params); }
+  }
+
+#ifndef NVRTC_COMPILER
+#define DECLARE_READ_PARENT_BASIC                                                                                      \
+  DECLARE_READ_PARENT_DEVICE_BASIC                                                                                     \
+  FK_HOST_FUSE auto build(const OperationDataType &opData) { return Parent::build(opData); }                    \
+  FK_HOST_FUSE auto build(const ParamsType &params) { return Parent::build(params); }
+#else
+#define DECLARE_READ_PARENT_BASIC                                                                                      \
+DECLARE_READ_PARENT_DEVICE_BASIC
+#endif // 
 
     template <typename I, typename P, typename WT, enum TF TFE, typename WOperationImpl, bool IS_FUSED = false>
     struct WriteOperation {

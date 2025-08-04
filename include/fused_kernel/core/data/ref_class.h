@@ -15,6 +15,7 @@
 #ifndef FK_REF_CLASS_H
 #define FK_REF_CLASS_H
 
+#ifndef NVRTC_COMPILER
 #include <stdexcept>
 
 namespace fk {
@@ -69,5 +70,5 @@ namespace fk {
     };
 
 } // namespace fk
-
+#endif // NVRTC_COMPILER
 #endif // !FK_REF_CLASS_H

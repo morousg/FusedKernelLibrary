@@ -29,7 +29,7 @@
 #endif
 #endif // NVRTC_COMPILER
 
-#if defined(__CUDACC__) || defined(__NVCC__) || defined(NVRTC_COMPILER) || defined(__HIPCC__)
+#if defined(__NVCC__) || defined(__HIPCC__)
 #define FK_DEVICE_FUSE static constexpr __device__ __forceinline__
 #define FK_DEVICE_CNST constexpr __device__ __forceinline__
 #define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE __host__
@@ -39,6 +39,17 @@
 #define FK_HOST_STATIC static __forceinline__ __host__
 #define FK_HOST_INLINE __forceinline__ __host__
 #define FK_HOST_DEVICE_STATIC static __forceinline__ __host__ __device__
+#define FK_RESTRICT __restrict__
+#elif defined(NVRTC_COMPILER)
+#define FK_DEVICE_FUSE static constexpr __forceinline__
+#define FK_DEVICE_CNST constexpr __forceinline__
+#define FK_HOST_DEVICE_FUSE FK_DEVICE_FUSE
+#define FK_HOST_DEVICE_CNST FK_DEVICE_CNST
+#define FK_HOST_FUSE static constexpr __forceinline__
+#define FK_HOST_CNST constexpr __forceinline__
+#define FK_HOST_STATIC static constexpr __forceinline__
+#define FK_HOST_INLINE constexpr __forceinline__
+#define FK_HOST_DEVICE_STATIC static __forceinline__
 #define FK_RESTRICT __restrict__
 #else
 #define FK_DEVICE_FUSE static constexpr inline

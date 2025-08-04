@@ -19,7 +19,7 @@
 #include <fused_kernel/core/execution_model/operation_model/operation_data.h>
 #include <fused_kernel/core/execution_model/thread_fusion.h>
 #include <fused_kernel/core/utils/parameter_pack_utils.h>
-#include <fused_kernel/core/data/ptr_nd.h>
+//#include <fused_kernel/core/data/ptr_nd.h>
 #include <fused_kernel/core/data/size.h>
 #include <fused_kernel/core/data/array.h>
 #include <fused_kernel/core/constexpr_libs/constexpr_cmath.h>
@@ -28,26 +28,37 @@
 #include <fused_kernel/core/execution_model/active_threads.h>
 
 namespace fk { // namespace FusedKernel
-#define DEVICE_FUNCTION_DETAILS_IS(instance_type) \
+#define INSTANTIABLE_OPERATION_DETAILS_IS(instance_type) \
     using Operation = Operation_t; \
     using InstanceType = instance_type; \
     template <typename IT> \
     static constexpr bool is{ std::is_same_v<IT, InstanceType> };
 
-#define DEVICE_FUNCTION_DETAILS_IS_ASSERT(instance_type) \
-    DEVICE_FUNCTION_DETAILS_IS(instance_type) \
+#define INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(instance_type) \
+    INSTANTIABLE_OPERATION_DETAILS_IS(instance_type) \
     static_assert(std::is_same_v<typename Operation::InstanceType, instance_type>, "Operation is not " #instance_type );
+
+#ifdef NVRTC_COMPILER
+#define INSTANTIABLE_OPERATION_THEN
+#else
+#define INSTANTIABLE_OPERATION_THEN \
+template <typename ContinuationIOp, typename Fuser_t = Fuser> \
+FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const { \
+    return Fuser_t::fuse(*this, cIOp); \
+} \
+template <typename ContinuationIOp, typename... ContinuationIOps> \
+FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const { \
+    return then(cIOp).then(cIOps...); \
+}
+#endif // NVRTC_COMPILER
 
     struct Fuser;
 
     template <typename Operation_t>
     struct ReadInstantiableOperation final : public OperationData<Operation_t> {
-        DEVICE_FUNCTION_DETAILS_IS_ASSERT(ReadType)
+        INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(ReadType)
 
-        template <typename ContinuationIOp, typename Fuser_t = Fuser>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            return Fuser_t::fuse(*this, cIOp);
-        }
+        INSTANTIABLE_OPERATION_THEN
 
         FK_HOST_DEVICE_CNST ActiveThreads getActiveThreads() const {
             return Operation::getActiveThreads(*this);
@@ -56,12 +67,9 @@ namespace fk { // namespace FusedKernel
 
     template <typename Operation_t>
     struct ReadBackInstantiableOperation final : public OperationData<Operation_t> {
-        DEVICE_FUNCTION_DETAILS_IS_ASSERT(ReadBackType)
+        INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(ReadBackType)
 
-        template <typename ContinuationIOp, typename Fuser_t = Fuser>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            return Fuser_t::fuse(*this, cIOp);
-        }
+        INSTANTIABLE_OPERATION_THEN
 
         FK_HOST_DEVICE_CNST ActiveThreads getActiveThreads() const {
             return Operation::getActiveThreads(*this);
@@ -80,17 +88,9 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct BinaryInstantiableOperation final : public OperationData<Operation_t> {
-        DEVICE_FUNCTION_DETAILS_IS_ASSERT(BinaryType)
+        INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(BinaryType)
 
-        template <typename ContinuationIOp, typename Fuser_t = Fuser>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            return Fuser_t::fuse(*this, cIOp);
-        }
-
-        template <typename ContinuationIOp, typename... ContinuationIOps>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
-            return then(cIOp).then(cIOps...);
-        }
+        INSTANTIABLE_OPERATION_THEN
     };
 
     /**
@@ -105,17 +105,9 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct TernaryInstantiableOperation final : public OperationData<Operation_t> {
-        DEVICE_FUNCTION_DETAILS_IS_ASSERT(TernaryType)
+        INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(TernaryType)
 
-        template <typename ContinuationIOp, typename Fuser_t = Fuser>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            return Fuser_t::fuse(*this, cIOp);
-        }
-
-        template <typename ContinuationIOp, typename... ContinuationIOps>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
-            return then(cIOp).then(cIOps...);
-        }
+        INSTANTIABLE_OPERATION_THEN
     };
 
     /**
@@ -128,17 +120,9 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct UnaryInstantiableOperation {
-        DEVICE_FUNCTION_DETAILS_IS_ASSERT(UnaryType)
+        INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(UnaryType)
 
-        template <typename ContinuationIOp, typename Fuser_t = Fuser>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            return Fuser_t::fuse(*this, cIOp);
-        }
-
-        template <typename ContinuationIOp, typename... ContinuationIOps>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
-            return then(cIOp).then(cIOps...);
-        }
+        INSTANTIABLE_OPERATION_THEN
     };
 
     /**
@@ -149,20 +133,12 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct MidWriteInstantiableOperation final : public OperationData<Operation_t> {
-        DEVICE_FUNCTION_DETAILS_IS(MidWriteType)
+        INSTANTIABLE_OPERATION_DETAILS_IS(MidWriteType)
             static_assert(std::is_same_v<typename Operation::InstanceType, WriteType> ||
                 std::is_same_v<typename Operation::InstanceType, MidWriteType>,
                 "Operation is not WriteType or MidWriteType");
 
-        template <typename ContinuationIOp, typename Fuser_t = Fuser>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp) const {
-            return Fuser_t::fuse(*this, cIOp);
-        }
-
-        template <typename ContinuationIOp, typename... ContinuationIOps>
-        FK_HOST_CNST auto then(const ContinuationIOp& cIOp, const ContinuationIOps&... cIOps) const {
-            return then(cIOp).then(cIOps...);
-        }
+        INSTANTIABLE_OPERATION_THEN
     };
 
     /**
@@ -173,13 +149,13 @@ namespace fk { // namespace FusedKernel
     */
     template <typename Operation_t>
     struct WriteInstantiableOperation final : public OperationData<Operation_t> {
-        DEVICE_FUNCTION_DETAILS_IS_ASSERT(WriteType)
+        INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT(WriteType)
     };
 
-#undef DEVICE_FUNCTION_DETAILS_IS_ASSERT
+#undef INSTANTIABLE_OPERATION_DETAILS_IS_ASSERT
 #undef IS_ASSERT
-#undef DEVICE_FUNCTION_DETAILS_IS
-#undef DEVICE_FUNCTION_DETAILS
+#undef INSTANTIABLE_OPERATION_DETAILS_IS
+#undef INSTANTIABLE_OPERATION_DETAILS
 #undef ASSERT
 #undef IS
 

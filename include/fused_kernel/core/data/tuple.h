@@ -225,7 +225,7 @@ namespace fk {
         return tuple_insert<sizeof...(Args) - 1>(t, Tuple<Args...>{args...});
     }
 
-    template <typename TranslateType, typename SourceType, size_t NElems, int... Idx, typename... ExtraParams>
+    /*template <typename TranslateType, typename SourceType, size_t NElems, int... Idx, typename... ExtraParams>
     constexpr inline std::array<typename TranslateType::OutputType, NElems>
         static_translate_helper(const int& usedPlanes,
             const std::array<SourceType, NElems>& srcArray,
@@ -238,7 +238,7 @@ namespace fk {
     constexpr inline std::array<typename TranslateType::OutputType, NElems>
         static_translate(const int& usedPlanes, const std::array<SourceType, NElems>& srcArray, const ExtraParams&... extParams) {
         return static_translate_helper<TranslateType>(usedPlanes, srcArray, std::make_integer_sequence<int, NElems>{}, extParams...);
-    }
+    }*/
 
     template <typename FirstType, typename SecondType>
     struct GetFirst {
@@ -258,7 +258,7 @@ namespace fk {
         }
     };
 
-    template <typename FT, typename ST, size_t NElems>
+    /*template <typename FT, typename ST, size_t NElems>
     constexpr inline std::array<FT, NElems>
         static_translate_get_first(const std::array<std::pair<FT, ST>, NElems>& srcArray) {
         return static_translate_helper<GetFirst<FT, ST>>(NElems, srcArray, std::make_integer_sequence<int, NElems>{});
@@ -268,10 +268,10 @@ namespace fk {
     constexpr inline std::array<ST, NElems>
         static_translate_get_second(const std::array<std::pair<FT, ST>, NElems>& srcArray) {
         return static_translate_helper<GetSecond<FT, ST>>(NElems, srcArray, std::make_integer_sequence<int, NElems>{});
-    }
+    }*/
 
     template <typename T>
-    FK_HOST_CNST auto cudaVectorToTuple(const T& cudaVectType) {
+    FK_HOST_DEVICE_CNST auto cudaVectorToTuple(const T& cudaVectType) {
         static_assert(validCUDAVec<T>, "Non valid CUDA vetor type: cudaVectorToTuple<invalid_type>()");
         if constexpr (cn<T> == 1) {
             return fk::make_tuple(cudaVectType.x);

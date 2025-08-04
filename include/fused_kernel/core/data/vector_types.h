@@ -237,6 +237,8 @@ namespace fk {
 
 #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED) || defined(__NVRTC__)
 #include <vector_types.h>
+#elif defined(NVRTC_COMPILER)
+// Nothing to include here
 #else
 using char1 = fk::Char1;
 using uchar1 = fk::Uchar1;

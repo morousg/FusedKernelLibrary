@@ -20,7 +20,15 @@
 #include <fused_kernel/core/execution_model/thread_fusion.h>
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>
 #include <fused_kernel/core/data/array.h>
+
+#if !defined(NVRTC_COMPILER)
 #include <vector>
+#else
+namespace std {
+    template <typename T>
+    class vector;
+}
+#endif
 
 namespace fk {
 

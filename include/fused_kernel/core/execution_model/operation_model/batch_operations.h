@@ -42,6 +42,7 @@ namespace fk {
 
     struct BatchOperation {
         FK_STATIC_STRUCT(BatchOperation, BatchOperation)
+        #ifndef NVRTC_COMPILER
         template <typename InstantiableType>
         FK_HOST_FUSE auto toArray(const InstantiableType& batchIOp) {
             static_assert(isBatchOperation<typename InstantiableType::Operation>,
@@ -80,6 +81,7 @@ namespace fk {
             using OutputArrayType = decltype(call_build_at_index<Operation, 0>(std::declval<Arrays>()...));
             return std::array<OutputArrayType, sizeof...(Idx)>{call_build_at_index<Operation, Idx>(arrays...)...};
         }
+        #endif // NVRTC_COMPILER
     };
 
     template <size_t BATCH, enum PlanePolicy PP, typename OpParamsType, typename DefaultType>
@@ -112,7 +114,7 @@ namespace fk {
             return BatchOperation::Operation::num_elems_y(thread, opData.params.opData[thread.z]);
         }
         FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationData<BatchOperation>& opData) {
-            return BATCH;
+            return BatchOperation::BATCH;
         }
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationData<BatchOperation>& opData) {
             return BatchOperation::Operation::pitch(thread, opData.params.opData[thread.z]);
@@ -149,9 +151,14 @@ namespace fk {
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
 
         template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE const auto exec(const Point& thread, const ParamsType& params) {
-            return exec_helper<ELEMS_PER_THREAD>(thread, params.opData);
+        FK_HOST_DEVICE_FUSE auto exec(const Point& thread, const ParamsType& params) {
+            if constexpr (THREAD_FUSION) {
+                return Operation::template exec<ELEMS_PER_THREAD>(thread, params.opData[thread.z]);
+            } else {
+                return Operation::exec(thread, params.opData[thread.z]);
+            }
         }
+#ifndef NVRTC_COMPILER
         // Build BatchRead from an array of InstantiableOperations
         template <typename IOp>
         FK_HOST_FUSE std::enable_if_t<isAnyReadType<IOp>, InstantiableType>
@@ -168,15 +175,6 @@ namespace fk {
         }
 
     private:
-        template <uint ELEMS_PER_THREAD = 1>
-        FK_HOST_DEVICE_FUSE const auto exec_helper(const Point& thread, const OperationData<Operation>(&opData)[BATCH]) {
-            if constexpr (THREAD_FUSION) {
-                return Operation::template exec<ELEMS_PER_THREAD>(thread, opData[thread.z]);
-            }
-            else {
-                return Operation::exec(thread, opData[thread.z]);
-            }
-        }
         template <int... Idx>
         FK_HOST_FUSE InstantiableType build_helper(const std::array<Instantiable<Operation>, BATCH>& instantiableOperations,
             const std::integer_sequence<int, Idx...>&) {
@@ -206,8 +204,9 @@ namespace fk {
             // gcc, clang or VS2022
             return { {{{static_cast<OperationData<Operation>>(instantiableOperations[Idx])...},
                       ActiveThreads{max_width, max_height, static_cast<uint>(BATCH)}}} };
-#endif
+#endif // _MSC_VER
         }
+#endif // NVRTC_COMPILER
     };
 
     template <typename T>
@@ -231,11 +230,12 @@ namespace fk {
                                      Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED, BatchRead<BATCH, PP, Operation, OutputType_>>;
         DECLARE_READ_PARENT_BASIC
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
-        template <uint ELEMS_PER_THREAD = 1> FK_HOST_DEVICE_FUSE auto exec(const Point& thread, const ParamsType& params) {
+
+        template <uint ELEMS_PER_THREAD = 1>
+        FK_HOST_DEVICE_FUSE auto exec(const Point& thread, const ParamsType& params) {
             if (params.usedPlanes <= thread.z) {
                 return params.default_value;
-            }
-            else {
+            } else {
                 return Operation::exec(thread, params.opData[thread.z]);
             }
         }
@@ -334,8 +334,7 @@ namespace fk {
             const ParamsType& params) {
             if constexpr (THREAD_FUSION) {
                 Operation::template exec<ELEMS_PER_THREAD>(thread, input, params[thread.z]);
-            }
-            else {
+            } else {
                 Operation::exec(thread, input, params[thread.z]);
             }
         }

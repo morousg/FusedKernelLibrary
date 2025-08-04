@@ -14,6 +14,16 @@
 
 #include "tests/main.h"
 
+#include <fused_kernel/algorithms/algorithms.h>
+#include <fused_kernel/core/core.h>
+#include <fused_kernel/fused_kernel.h>
+
 int launch() {
+
+    fk::Ptr2D<float> input(10, 10);
+    auto readOp = fk::PerThreadRead<fk::_2D, float>::build(input);
+
+    std::cout << "Read Operation typeToString: " << fk::typeToString<decltype(readOp)>() << std::endl;
+    
     return 0;
 }
