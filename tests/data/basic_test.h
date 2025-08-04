@@ -42,15 +42,15 @@ bool testPtr_2D() {
 
     fk::Ptr2D<T> input(width, height);
     fk::setTo(fk::make_set<T>(2), input, stream);
-    fk::Ptr2D<T> cropedInput = input.crop(startPoint, fk::PtrDims<fk::_2D>(width_crop, height_crop));
+    fk::Ptr2D<T> cropedInput = input.crop(startPoint, fk::PtrDims<fk::ND::_2D>(width_crop, height_crop));
     fk::Ptr2D<T> output(width_crop, height_crop);
     fk::Ptr2D<T> outputBig(width, height);
 
-    fk::Read<fk::PerThreadRead<fk::_2D, T>> readCrop{{cropedInput}};
-    fk::Read<fk::PerThreadRead<fk::_2D, T>> readFull{{input}};
+    fk::Read<fk::PerThreadRead<fk::ND::_2D, T>> readCrop{{cropedInput}};
+    fk::Read<fk::PerThreadRead<fk::ND::_2D, T>> readFull{{input}};
 
-    fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::_2D, T>> opFinal_2D = { {output} };
-    fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::_2D, T>> opFinal_2DBig = { {outputBig} };
+    fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::ND::_2D, T>> opFinal_2D = { {output} };
+    fk::WriteInstantiableOperation<fk::PerThreadWrite<fk::ND::_2D, T>> opFinal_2DBig = { {outputBig} };
 
     for (int i=0; i<100; i++) {
         fk::executeOperations<fk::TransformDPP<>>(stream, readCrop, opFinal_2D);
@@ -96,24 +96,24 @@ int launch() {
     fk::Ptr2D<uchar> input(64,64);
     fk::Ptr2D<uint> output(64,64);
 
-    fk::Read<fk::PerThreadRead<fk::_2D, uchar>> read{ {input} };
+    fk::Read<fk::PerThreadRead<fk::ND::_2D, uchar>> read{ {input} };
     fk::Unary<fk::SaturateCast<uchar, uint>> cast = {};
-    fk::Write<fk::PerThreadWrite<fk::_2D, uint>> write { {output} };
+    fk::Write<fk::PerThreadWrite<fk::ND::_2D, uint>> write { {output} };
 
     auto fusedDF = fk::fuse(read, cast, fk::Binary<fk::Mul<uint>>{4});
-    static_assert(std::is_same_v<decltype(fusedDF.params.instance.params), fk::RawPtr<fk::_2D, uchar>>, "Unexpected type for params");
+    static_assert(std::is_same_v<decltype(fusedDF.params.instance.params), fk::RawPtr<fk::ND::_2D, uchar>>, "Unexpected type for params");
     //fusedDF.params.next.instance.params; // Should not compile
     static_assert(std::is_same_v<decltype(fusedDF.params.next.next.instance.params), uint>, "Unexpected type for params");
 
     fk::executeOperations<fk::TransformDPP<>>(stream, fusedDF, write);
     stream.sync();
 
-    fk::OperationTuple<fk::PerThreadRead<fk::_2D, uchar>, fk::SaturateCast<uchar, uint>, fk::PerThreadWrite<fk::_2D, uint>> myTup{};
+    fk::OperationTuple<fk::PerThreadRead<fk::ND::_2D, uchar>, fk::SaturateCast<uchar, uint>, fk::PerThreadWrite<fk::ND::_2D, uint>> myTup{};
 
     fk::get<2>(myTup);
-    constexpr bool test1 = std::is_same_v<fk::get_type_t<0, decltype(myTup)>, fk::PerThreadRead<fk::_2D, uchar>>;
+    constexpr bool test1 = std::is_same_v<fk::get_type_t<0, decltype(myTup)>, fk::PerThreadRead<fk::ND::_2D, uchar>>;
     constexpr bool test2 = std::is_same_v<fk::get_type_t<1, decltype(myTup)>, fk::SaturateCast<uchar, uint>>;
-    constexpr bool test3 = std::is_same_v<fk::get_type_t<2, decltype(myTup)>, fk::PerThreadWrite<fk::_2D, uint>>;
+    constexpr bool test3 = std::is_same_v<fk::get_type_t<2, decltype(myTup)>, fk::PerThreadWrite<fk::ND::_2D, uint>>;
 
     if (test2Dpassed && fk::and_v<test1, test2, test3>) {
         std::cout << "cuda_transform executed!!" << std::endl;

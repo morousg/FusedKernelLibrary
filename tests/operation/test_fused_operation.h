@@ -23,24 +23,24 @@ using namespace fk;
 
 constexpr bool test_fuseDFResultingTypes() {
 
-    constexpr Read<PerThreadRead<_2D, float>> readOp{};
+    constexpr Read<PerThreadRead<ND::_2D, float>> readOp{};
     constexpr Binary<Add<float>> addOp{ 3.f };
     constexpr Unary<Cast<float, int>> castOp{};
-    constexpr Write<PerThreadWrite<_2D, float>> writeOp{};
+    constexpr Write<PerThreadWrite<ND::_2D, float>> writeOp{};
 
-    using Test = decltype(PerThreadRead<_2D, float>::num_elems_y(std::declval<Point>(), std::declval<typename PerThreadRead<_2D, float>::OperationDataType>()));
+    using Test = decltype(PerThreadRead<ND::_2D, float>::num_elems_y(std::declval<Point>(), std::declval<typename PerThreadRead<ND::_2D, float>::OperationDataType>()));
 
     static_assert(std::is_same_v<Test, uint>);
 
     constexpr auto fused1 = fuse(readOp, addOp, castOp);
 
-    constexpr auto read = Read<PerThreadRead<_2D, float>>{ { fk::RawPtr<_2D, float>{nullptr, {128, 4}} } };
-    static_assert(std::is_same_v<std::decay_t<decltype(read)>, Read<PerThreadRead<_2D, float>>>, "Unexpected type after fuseIOps");
+    constexpr auto read = Read<PerThreadRead<ND::_2D, float>>{ { fk::RawPtr<ND::_2D, float>{nullptr, {128, 4}} } };
+    static_assert(std::is_same_v<std::decay_t<decltype(read)>, Read<PerThreadRead<ND::_2D, float>>>, "Unexpected type after fuseIOps");
 
-    constexpr auto readOp2 = PerThreadRead<_2D, uchar3>::build(RawPtr<_2D, uchar3>{nullptr, PtrDims<_2D>(128,128)});
-    static_assert(std::is_same_v<std::decay_t<decltype(readOp2)>, Read<PerThreadRead<_2D, uchar3>>>, "Unexpected type after fuseIOps");
+    constexpr auto readOp2 = PerThreadRead<ND::_2D, uchar3>::build(RawPtr<ND::_2D, uchar3>{nullptr, PtrDims<_2D>(128,128)});
+    static_assert(std::is_same_v<std::decay_t<decltype(readOp2)>, Read<PerThreadRead<ND::_2D, uchar3>>>, "Unexpected type after fuseIOps");
 
-    constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build({ RawPtr<_2D, uchar>{nullptr, PtrDims<_2D>(128, 128)} });
+    constexpr auto readYUV = ReadYUV<PixelFormat::NV12>::build({ RawPtr<ND::_2D, uchar>{nullptr, PtrDims<_2D>(128, 128)} });
     constexpr auto readRGB = readYUV.then(ConvertYUVToRGB<PixelFormat::NV12, ColorRange::Full, ColorPrimitives::bt2020, false>::build());
 
     constexpr auto resizeRead = Resize<InterpolationType::INTER_LINEAR>::build(readRGB, Size(64, 64));
@@ -50,9 +50,9 @@ constexpr bool test_fuseDFResultingTypes() {
     static_assert(resizeReadWithDiv.params.next.next.instance.params == 4.3f, "Unexpected value after resizeRead");
 
     static_assert(std::is_same_v<typename decltype(fused1)::Operation,
-        fk::FusedOperation<fk::PerThreadRead<fk::_2D, float>, fk::Add<float>, fk::Cast<float, int>>>, "Unexpected type after fuseIOps");
+        fk::FusedOperation<fk::PerThreadRead<fk::ND::_2D, float>, fk::Add<float>, fk::Cast<float, int>>>, "Unexpected type after fuseIOps");
 
-    constexpr bool result1 = fk::is_fused_operation<fk::FusedOperation<fk::PerThreadRead<fk::_2D, float>, fk::Add<float>, fk::Cast<float, int>>>::value;
+    constexpr bool result1 = fk::is_fused_operation<fk::FusedOperation<fk::PerThreadRead<fk::ND::_2D, float>, fk::Add<float>, fk::Cast<float, int>>>::value;
 
     constexpr bool result2 = fk::is_fused_operation<typename decltype(fused1)::Operation>::value;
 
@@ -60,13 +60,13 @@ constexpr bool test_fuseDFResultingTypes() {
 
     constexpr auto fused2 = fk::fuse(readOp, addOp, writeOp);
     static_assert(std::is_same_v<typename decltype(fused2)::Operation,
-        fk::FusedOperation<fk::PerThreadRead<fk::_2D, float>, fk::Add<float>, fk::PerThreadWrite<fk::_2D, float>>>, "Unexpected type after fuseIOps");
+        fk::FusedOperation<fk::PerThreadRead<fk::ND::_2D, float>, fk::Add<float>, fk::PerThreadWrite<fk::ND::_2D, float>>>, "Unexpected type after fuseIOps");
 
     return result1 && result2;
 }
 
 constexpr bool test_fuseFusedOperations() {
-    const fk::Read<fk::PerThreadRead<fk::_2D, float>> readOp{};
+    const fk::Read<fk::PerThreadRead<fk::ND::_2D, float>> readOp{};
     const fk::Binary<fk::Add<float>> addOp{ 3.f };
     const fk::Unary<fk::Cast<float, int>> castOp{};
 

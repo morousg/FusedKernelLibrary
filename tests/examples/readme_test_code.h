@@ -54,13 +54,13 @@ int launch() {
 
     // Create a fused operation that reads the input image,
     // crops it, resizes it, and applies arithmetic operations
-    const auto mySender = PerThreadRead<_2D, uchar3>::build(inputImage)
+    const auto mySender = PerThreadRead<ND::_2D, uchar3>::build(inputImage)
         .then(Crop<>::build(crops))
         .then(Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR>::build(outputSize, backgroundColor))
         .then(Mul<float3>::build(mulValue))
         .then(Sub<float3>::build(subValue))
         .then(Div<float3>::build(divValue))
-        .then(ColorConversion<COLOR_RGB2BGR, float3, float3>::build());
+        .then(ColorConversion<ColorConversionCodes::COLOR_RGB2BGR, float3, float3>::build());
 
     // Define the last operation that will write the results to the output pointer
     const auto myReceiver = TensorWrite<float3>::build(output);
@@ -84,13 +84,13 @@ int launch() {
 
     // Create a fused operation that reads the input image,
     // crops it, resizes it, and applies arithmetic operations
-    const auto mySender_cpu = PerThreadRead<_2D, uchar3>::build(cpu_inputImage)
+    const auto mySender_cpu = PerThreadRead<ND::_2D, uchar3>::build(cpu_inputImage)
         .then(Crop<>::build(crops))
         .then(Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR>::build(outputSize, backgroundColor))
         .then(Mul<float3>::build(mulValue))
         .then(Sub<float3>::build(subValue))
         .then(Div<float3>::build(divValue))
-        .then(ColorConversion<COLOR_RGB2BGR, float3, float3>::build());
+        .then(ColorConversion<ColorConversionCodes::COLOR_RGB2BGR, float3, float3>::build());
 
     // Define the last operation that will write the results to the output pointer
     const auto myReceiver_cpu = TensorWrite<float3>::build(cpu_output);

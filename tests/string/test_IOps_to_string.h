@@ -21,7 +21,7 @@
 int launch() {
 
     fk::Ptr2D<float> input(10, 10);
-    auto readOp = fk::PerThreadRead<fk::_2D, float>::build(input);
+    auto readOp = fk::PerThreadRead<fk::ND::_2D, float>::build(input);
 
     std::cout << "Read Operation typeToString: " << fk::typeToString<decltype(readOp)>() << std::endl;
     

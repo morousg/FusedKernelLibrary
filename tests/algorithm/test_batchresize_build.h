@@ -23,15 +23,15 @@ using namespace fk;
 
 int launch() {
     constexpr size_t BATCH = 20;
-    constexpr RawPtr<_2D, float> data{ nullptr,{16,16,16} };
-    constexpr std::array<RawPtr<_2D, float>, BATCH> inputs = make_set_std_array<BATCH>(data);
+    constexpr RawPtr<ND::_2D, float> data{ nullptr,{16,16,16} };
+    constexpr std::array<RawPtr<ND::_2D, float>, BATCH> inputs = make_set_std_array<BATCH>(data);
     constexpr Size oneSize(8,8);
     constexpr std::array<Size, BATCH> resParams = make_set_std_array<BATCH>(oneSize);
 
     constexpr float defaultValue = 0;
     constexpr std::array<float, BATCH> defaultArray = make_set_std_array<BATCH>(defaultValue);
 
-    constexpr auto readDFArray = PerThreadRead<_2D, float>::build_batch(inputs);
+    constexpr auto readDFArray = PerThreadRead<ND::_2D, float>::build_batch(inputs);
 
     constexpr auto oneResizeread = Resize<InterpolationType::INTER_LINEAR>::build(readDFArray[0], resParams[0]);
     static_assert(!isBatchOperation<std::decay_t<decltype(oneResizeread)>>, "oneResize is BatchResize, and should not be");

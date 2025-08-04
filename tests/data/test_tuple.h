@@ -33,9 +33,9 @@ constexpr bool buildTuple() {
 }
 
 constexpr bool buildOperationTupleType() {
-    using Op1 = fk::PerThreadRead<fk::_2D, uchar3>;
+    using Op1 = fk::PerThreadRead<fk::ND::_2D, uchar3>;
     using Op2 = fk::VectorReorder<uchar3, 0, 1, 2>;
-    using Op3 = fk::PerThreadWrite<fk::_2D, uchar3>;
+    using Op3 = fk::PerThreadWrite<fk::ND::_2D, uchar3>;
 
     using TupleType = fk::OperationTuple<Op1, Op2, Op3>;
 

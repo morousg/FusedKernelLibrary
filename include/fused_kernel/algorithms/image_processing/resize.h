@@ -167,8 +167,8 @@ namespace fk {
 
         template <typename BF = BackFunction_>
         FK_HOST_FUSE
-        std::enable_if_t<std::is_same_v<BF, Read<PerThreadRead<_2D, ReadDataType>>>, InstantiableType>
-        build(const RawPtr<_2D, ReadDataType>& input, const Size& dSize, const double& fx, const double& fy) {
+        std::enable_if_t<std::is_same_v<BF, Read<PerThreadRead<ND::_2D, ReadDataType>>>, InstantiableType>
+        build(const RawPtr<ND::_2D, ReadDataType>& input, const Size& dSize, const double& fx, const double& fy) {
             if (dSize.width != 0 && dSize.height != 0) {
                 return build(BF{ {input} }, dSize);
             } else {
@@ -342,8 +342,8 @@ namespace fk {
         }
 
         template <typename T>
-        FK_HOST_FUSE auto build(const RawPtr<_2D, T>& input, const Size& dSize, const double& fx, const double& fy) {
-            return Resize<IType, AR, ReadInstantiableOperation<PerThreadRead<_2D, T>>>::build(input, dSize, fx, fy);
+        FK_HOST_FUSE auto build(const RawPtr<ND::_2D, T>& input, const Size& dSize, const double& fx, const double& fy) {
+            return Resize<IType, AR, ReadInstantiableOperation<PerThreadRead<ND::_2D, T>>>::build(input, dSize, fx, fy);
         }
     };
 }; // namespace fk

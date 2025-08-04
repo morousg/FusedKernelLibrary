@@ -38,18 +38,18 @@ namespace fk {
         }
     };
 
-    enum GrayFormula { CCIR_601 };
+    enum class GrayFormula { CCIR_601 };
 
-    template <typename I, typename O = VBase<I>, GrayFormula GF = CCIR_601>
+    template <typename I, typename O = VBase<I>, GrayFormula GF = GrayFormula::CCIR_601>
     struct RGB2Gray {};
 
     template <typename I, typename O>
-    struct RGB2Gray<I, O, CCIR_601> {
+    struct RGB2Gray<I, O, GrayFormula::CCIR_601> {
     private:
-        using SelfType = RGB2Gray<I, O, CCIR_601>;
+        using SelfType = RGB2Gray<I, O, GrayFormula::CCIR_601>;
     public:
         FK_STATIC_STRUCT(RGB2Gray, SelfType)
-        using Parent = UnaryOperation<I, O, RGB2Gray<I, O, CCIR_601>>;
+        using Parent = UnaryOperation<I, O, RGB2Gray<I, O, GrayFormula::CCIR_601>>;
         DECLARE_UNARY_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             // 0.299*R + 0.587*G + 0.114*B
@@ -75,17 +75,17 @@ namespace fk {
         }
     };
 
-    enum ColorSpace { YUV420, YUV422, YUV444 };
+    enum class ColorSpace { YUV420, YUV422, YUV444 };
     template <ColorSpace CS>
     struct CS_t { ColorSpace value{ CS }; };
 
-    enum ColorRange { Limited, Full };
-    enum ColorPrimitives { bt601, bt709, bt2020 };
+    enum class ColorRange { Limited, Full };
+    enum class ColorPrimitives { bt601, bt709, bt2020 };
 
-    enum ColorDepth { p8bit, p10bit, p12bit, f24bit };
+    enum class ColorDepth { p8bit, p10bit, p12bit, f24bit };
     template <ColorDepth CD>
     struct CD_t { ColorDepth value{ CD }; };
-    using ColorDepthTypes = TypeList<CD_t<p8bit>, CD_t<p10bit>, CD_t<p12bit>, CD_t<f24bit>>;
+    using ColorDepthTypes = TypeList<CD_t<ColorDepth::p8bit>, CD_t<ColorDepth::p10bit>, CD_t<ColorDepth::p12bit>, CD_t<ColorDepth::f24bit>>;
     using ColorDepthPixelBaseTypes = TypeList<uchar, ushort, ushort, float>;
     using ColorDepthPixelTypes = TypeList<uchar3, ushort3, ushort3, float3>;
     template <ColorDepth CD>
@@ -94,16 +94,16 @@ namespace fk {
     using ColorDepthPixelType = EquivalentType_t<CD_t<CD>, ColorDepthTypes, ColorDepthPixelTypes>;
 
 
-    enum PixelFormat { NV12, NV21, YV12, P010, P016, P216, P210, Y216, Y210, Y416 };
+    enum class PixelFormat { NV12, NV21, YV12, P010, P016, P216, P210, Y216, Y210, Y416 };
     template <PixelFormat PF>
     struct PixelFormatTraits;
-    template <> struct PixelFormatTraits<NV12> { enum { space = YUV420, depth = p8bit, cn = 3 }; };
-    template <> struct PixelFormatTraits<NV21> { enum { space = YUV420, depth = p8bit, cn = 3 }; };
-    template <> struct PixelFormatTraits<YV12> { enum { space = YUV420, depth = p8bit, cn = 3 }; };
-    template <> struct PixelFormatTraits<P010> { enum { space = YUV420, depth = p10bit, cn = 3 }; };
-    template <> struct PixelFormatTraits<P210> { enum { space = YUV422, depth = p10bit, cn = 3 }; };
-    template <> struct PixelFormatTraits<Y210> { enum { space = YUV422, depth = p10bit, cn = 3 }; };
-    template <> struct PixelFormatTraits<Y416> { enum { space = YUV444, depth = p12bit, cn = 4 }; };
+    template <> struct PixelFormatTraits<PixelFormat::NV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
+    template <> struct PixelFormatTraits<PixelFormat::NV21> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
+    template <> struct PixelFormatTraits<PixelFormat::YV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
+    template <> struct PixelFormatTraits<PixelFormat::P010> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
+    template <> struct PixelFormatTraits<PixelFormat::P210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
+    template <> struct PixelFormatTraits<PixelFormat::Y210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
+    template <> struct PixelFormatTraits<PixelFormat::Y416> { enum { space = static_cast<int>(ColorSpace::YUV444), depth = static_cast<int>(ColorDepth::p12bit), cn = 4 }; };
 
     template <PixelFormat PF, bool ALPHA>
     using YUVOutputPixelType = VectorType_t<ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>, ALPHA ? 4 : PixelFormatTraits<PF>::cn>;
@@ -115,16 +115,16 @@ namespace fk {
 
     template <ColorDepth CD>
     constexpr SubCoefficients subCoefficients{};
-    template <> constexpr SubCoefficients subCoefficients<p8bit>{ 16.f, 128.f };
-    template <> constexpr SubCoefficients subCoefficients<p10bit>{ 64.f, 512.f };
-    template <> constexpr SubCoefficients subCoefficients<p12bit>{ 64.f, 2048.f };
+    template <> constexpr SubCoefficients subCoefficients<ColorDepth::p8bit>{ 16.f, 128.f };
+    template <> constexpr SubCoefficients subCoefficients<ColorDepth::p10bit>{ 64.f, 512.f };
+    template <> constexpr SubCoefficients subCoefficients<ColorDepth::p12bit>{ 64.f, 2048.f };
 
     template <ColorDepth CD>
     constexpr ColorDepthPixelBaseType<CD> maxDepthValue{};
-    template <> constexpr ColorDepthPixelBaseType<p8bit>  maxDepthValue<p8bit> { 255u };
-    template <> constexpr ColorDepthPixelBaseType<p10bit> maxDepthValue<p10bit> { 1023u };
-    template <> constexpr ColorDepthPixelBaseType<p12bit> maxDepthValue<p12bit> { 4095u };
-    template <> constexpr ColorDepthPixelBaseType<f24bit> maxDepthValue<f24bit> { 1.f };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::p8bit>  maxDepthValue<ColorDepth::p8bit> { 255u };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::p10bit> maxDepthValue<ColorDepth::p10bit> { 1023u };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::p12bit> maxDepthValue<ColorDepth::p12bit> { 4095u };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::f24bit> maxDepthValue<ColorDepth::f24bit> { 1.f };
 
     template <typename I, ColorDepth CD>
     struct AddOpaqueAlpha {
@@ -153,24 +153,24 @@ namespace fk {
         }
     };
 
-    enum ColorConversionDir { YCbCr2RGB, RGB2YCbCr };
+    enum class ColorConversionDir { YCbCr2RGB, RGB2YCbCr };
 
     template <ColorRange CR, ColorPrimitives CP, ColorConversionDir CCD>
     constexpr M3x3Float ccMatrix{};
     // Source: https://en.wikipedia.org/wiki/YCbCr
-    template <> constexpr M3x3Float ccMatrix<Full, bt601, YCbCr2RGB>{
+    template <> constexpr M3x3Float ccMatrix<ColorRange::Full, ColorPrimitives::bt601, ColorConversionDir::YCbCr2RGB>{
         { 1.164383562f,           0.f,       1.596026786f  },
         { 1.164383562f,  -0.39176229f,       -0.812967647f },
         { 1.164383562f,  2.017232143f,       0.f           }};
 
     // Source: https://en.wikipedia.org/wiki/YCbCr
-    template <> constexpr M3x3Float ccMatrix<Full, bt709, YCbCr2RGB>{
+    template <> constexpr M3x3Float ccMatrix<ColorRange::Full, ColorPrimitives::bt709, ColorConversionDir::YCbCr2RGB>{
         { 1.f,               0.f,            1.5748f },
         { 1.f,          -0.1873f,           -0.4681f },
         { 1.f,           1.8556f,                0.f }};
 
     // To be verified
-    template <> constexpr M3x3Float ccMatrix<Limited, bt709, YCbCr2RGB>{
+    template <> constexpr M3x3Float ccMatrix<ColorRange::Limited, ColorPrimitives::bt709, ColorConversionDir::YCbCr2RGB>{
         { 1.f,               0.f,            1.402f },
         { 1.f,         -0.34414f,         -0.71414f },
         { 1.f,            1.772f,               0.f }};
@@ -179,33 +179,33 @@ namespace fk {
         { 1.f,           1.8814f,            0.f     }};*/
 
     // Source: https://en.wikipedia.org/wiki/YCbCr
-    template <> constexpr M3x3Float ccMatrix<Full, bt709, RGB2YCbCr>{
+    template <> constexpr M3x3Float ccMatrix<ColorRange::Full, ColorPrimitives::bt709, ColorConversionDir::RGB2YCbCr>{
         {  0.2126f, 0.7152f, 0.0722f           },
         { -0.1146f,      -0.3854f,            0.5f },
         { 0.5f,         -0.4542f,           -0.0458f }};
 
     // Source: https://en.wikipedia.org/wiki/YCbCr
-    template <> constexpr M3x3Float ccMatrix<Full, bt2020, YCbCr2RGB>{
+    template <> constexpr M3x3Float ccMatrix<ColorRange::Full, ColorPrimitives::bt2020, ColorConversionDir::YCbCr2RGB>{
         {  1.f, 0.f, 1.4746f           },
         { 1.f,          -0.16455312684366f, -0.57135312684366f },
         { 1.f,           1.8814f,            0.f }};
 
-    // Computed from ccMatrix<Full, bt2020, YCbCr2RGB>
-    template <> constexpr M3x3Float ccMatrix<Full, bt2020, RGB2YCbCr>{
+    // Computed from ccMatrix<ColorRange::Full, ColorPrimitives::bt2020, ColorConversionDir::YCbCr2RGB>
+    template <> constexpr M3x3Float ccMatrix<ColorRange::Full, ColorPrimitives::bt2020, ColorConversionDir::RGB2YCbCr>{
         { -0.73792134831461f, 1.90449438202248f, -0.16657303370787f },
         { 0.39221927730127f, -1.01227510472121f,  0.62005582741994f },
         { 1.17857137414527f, -1.29153287808387f,  0.11296150393861f }};
 
     template <ColorDepth CD> constexpr ColorDepthPixelBaseType<CD> shiftFactor{};
-    template <> constexpr ColorDepthPixelBaseType<p8bit>  shiftFactor<p8bit>{ 0u };
-    template <> constexpr ColorDepthPixelBaseType<p10bit> shiftFactor<p10bit>{ 6u };
-    template <> constexpr ColorDepthPixelBaseType<p12bit> shiftFactor<p12bit>{ 4u };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::p8bit>  shiftFactor<ColorDepth::p8bit>{ 0u };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::p10bit> shiftFactor<ColorDepth::p10bit>{ 6u };
+    template <> constexpr ColorDepthPixelBaseType<ColorDepth::p12bit> shiftFactor<ColorDepth::p12bit>{ 4u };
 
     template <ColorDepth CD>
     constexpr float floatShiftFactor{};
-    template <> constexpr float floatShiftFactor<p8bit>{ 1.f };
-    template <> constexpr float floatShiftFactor<p10bit>{ 64.f };
-    template <> constexpr float floatShiftFactor<p12bit>{ 16.f };
+    template <> constexpr float floatShiftFactor<ColorDepth::p8bit>{ 1.f };
+    template <> constexpr float floatShiftFactor<ColorDepth::p10bit>{ 64.f };
+    template <> constexpr float floatShiftFactor<ColorDepth::p12bit>{ 16.f };
 
 
     template <typename O, ColorDepth CD>
@@ -279,9 +279,9 @@ namespace fk {
         // Cb(U) -> input.y
         // Cr(V) -> input.z
         FK_HOST_DEVICE_FUSE float3 computeRGB(const InputType& pixel) {
-            constexpr M3x3Float coefficients = ccMatrix<CR, CP, YCbCr2RGB>;
+            constexpr M3x3Float coefficients = ccMatrix<CR, CP, ColorConversionDir::YCbCr2RGB>;
             constexpr float CSub = subCoefficients<CD>.chroma;
-            if constexpr (CP == bt601) {
+            if constexpr (CP == ColorPrimitives::bt601) {
                 constexpr float YSub = subCoefficients<CD>.luma;
                 return MxVFloat3<UnaryType>::exec({ make_<float3>(pixel.x - YSub, pixel.y - CSub, pixel.z - CSub), coefficients });
             } else {
@@ -333,7 +333,7 @@ namespace fk {
         FK_STATIC_STRUCT(ReadYUV, SelfType)
         using PixelBaseType = ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>;
         using Parent = ReadOperation<PixelBaseType,
-                                     RawPtr<_2D, PixelBaseType>,
+                                     RawPtr<ND::_2D, PixelBaseType>,
                                      ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>,
                                      TF::DISABLED,
                                      ReadYUV<PF>>;
@@ -341,45 +341,45 @@ namespace fk {
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
             if constexpr (PF == NV12 || PF == P010 || PF == P016 || PF == P210 || PF == P216) {
                 // Planar luma
-                const PixelBaseType Y = *PtrAccessor<_2D>::cr_point(thread, params);
+                const PixelBaseType Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
 
                 // Packed chroma
                 const PtrDims<_2D> dims = params.dims;
                 using VectorType2 = VectorType_t<PixelBaseType, 2>;
-                const RawPtr<_2D, VectorType2> chromaPlane{
+                const RawPtr<ND::_2D, VectorType2> chromaPlane{
                     reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
                     { dims.width >> 1, dims.height >> 1, dims.pitch }
                 };
                 const ColorSpace CS = static_cast<ColorSpace>(PixelFormatTraits<PF>::space);
                 const VectorType2 UV =
-                    *PtrAccessor<_2D>::cr_point({ thread.x >> 1, CS == YUV420 ? thread.y >> 1 : thread.y, thread.z }, chromaPlane);
+                    *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, CS == YUV420 ? thread.y >> 1 : thread.y, thread.z }, chromaPlane);
 
                 return { Y, UV.x, UV.y };
             } else if constexpr (PF == NV21) {
                 // Planar luma
-                const uchar Y = *PtrAccessor<_2D>::cr_point(thread, params);
+                const uchar Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
 
                 // Packed chroma
                 const PtrDims<_2D> dims = params.dims;
-                const RawPtr<_2D, uchar2> chromaPlane{
+                const RawPtr<ND::_2D, uchar2> chromaPlane{
                     reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
                                               { dims.width >> 1, dims.height >> 1, dims.pitch }
                 };
-                const uchar2 VU = *PtrAccessor<_2D>::cr_point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane);
+                const uchar2 VU = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane);
 
                 return { Y, VU.y, VU.x };
             } else if constexpr (PF == Y216 || PF == Y210) {
                 const PtrDims<_2D> dims = params.dims;
-                const RawPtr<_2D, ushort4> image{ reinterpret_cast<ushort4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
-                const ushort4 pixel = *PtrAccessor<_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
+                const RawPtr<ND::_2D, ushort4> image{ reinterpret_cast<ushort4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
+                const ushort4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
                 const bool isEvenThread = IsEven<uint>::exec(thread.x);
 
                 return { isEvenThread ? pixel.x : pixel.z, pixel.y, pixel.w };
             } else if constexpr (PF == Y416) {
                 // AVYU
                 // We use ushort as the type, to be compatible with the rest of the cases
-                const RawPtr<_2D, ushort4> readImage{ params.data, params.dims };
-                const ushort4 pixel = *PtrAccessor<_2D>::cr_point(thread, params);
+                const RawPtr<ND::_2D, ushort4> readImage{ params.data, params.dims };
+                const ushort4 pixel = *PtrAccessor<ND::_2D>::cr_point(thread, params);
                 return { pixel.z, pixel.w, pixel.y, pixel.x };
             }
         }
@@ -401,19 +401,19 @@ namespace fk {
         }
     };
 
-    enum ColorConversionCodes {
+    enum class ColorConversionCodes {
         COLOR_BGR2BGRA = 0,
-        COLOR_RGB2RGBA = COLOR_BGR2BGRA,
+        COLOR_RGB2RGBA = 0,  // COLOR_BGR2BGRA
         COLOR_BGRA2BGR = 1,
-        COLOR_RGBA2RGB = COLOR_BGRA2BGR,
+        COLOR_RGBA2RGB = 1,  // COLOR_BGRA2BGR
         COLOR_BGR2RGBA = 2,
-        COLOR_RGB2BGRA = COLOR_BGR2RGBA,
+        COLOR_RGB2BGRA = 2,  // COLOR_BGR2RGBA
         COLOR_RGBA2BGR = 3,
-        COLOR_BGRA2RGB = COLOR_RGBA2BGR,
+        COLOR_BGRA2RGB = 3,  // COLOR_RGBA2BGR
         COLOR_BGR2RGB = 4,
-        COLOR_RGB2BGR = COLOR_BGR2RGB,
+        COLOR_RGB2BGR = 4,   // COLOR_BGR2RGB
         COLOR_BGRA2RGBA = 5,
-        COLOR_RGBA2BGRA = COLOR_BGRA2RGBA,
+        COLOR_RGBA2BGRA = 5, // COLOR_BGRA2RGBA
         COLOR_BGR2GRAY = 6,
         COLOR_RGB2GRAY = 7,
         COLOR_BGRA2GRAY = 10,
@@ -423,14 +423,14 @@ namespace fk {
     template <ColorConversionCodes value>
     using CCC_t = E_t<ColorConversionCodes, value>;
 
-    using SupportedCCC = TypeList<CCC_t<COLOR_BGR2BGRA>,  CCC_t<COLOR_RGB2RGBA>,
-                                  CCC_t<COLOR_BGRA2BGR>,  CCC_t<COLOR_RGBA2RGB>,
-                                  CCC_t<COLOR_BGR2RGBA>,  CCC_t<COLOR_RGB2BGRA>,
-                                  CCC_t<COLOR_BGRA2RGB>,  CCC_t<COLOR_RGBA2BGR>,
-                                  CCC_t<COLOR_BGR2RGB>,   CCC_t<COLOR_RGB2BGR>,
-                                  CCC_t<COLOR_BGRA2RGBA>, CCC_t<COLOR_RGBA2BGRA>,
-                                  CCC_t<COLOR_RGB2GRAY>,  CCC_t<COLOR_RGBA2GRAY>,
-                                  CCC_t<COLOR_BGR2GRAY>,  CCC_t<COLOR_BGRA2GRAY>>;
+    using SupportedCCC = TypeList<CCC_t<ColorConversionCodes::COLOR_BGR2BGRA>,  CCC_t<ColorConversionCodes::COLOR_RGB2RGBA>,
+                                  CCC_t<ColorConversionCodes::COLOR_BGRA2BGR>,  CCC_t<ColorConversionCodes::COLOR_RGBA2RGB>,
+                                  CCC_t<ColorConversionCodes::COLOR_BGR2RGBA>,  CCC_t<ColorConversionCodes::COLOR_RGB2BGRA>,
+                                  CCC_t<ColorConversionCodes::COLOR_BGRA2RGB>,  CCC_t<ColorConversionCodes::COLOR_RGBA2BGR>,
+                                  CCC_t<ColorConversionCodes::COLOR_BGR2RGB>,   CCC_t<ColorConversionCodes::COLOR_RGB2BGR>,
+                                  CCC_t<ColorConversionCodes::COLOR_BGRA2RGBA>, CCC_t<ColorConversionCodes::COLOR_RGBA2BGRA>,
+                                  CCC_t<ColorConversionCodes::COLOR_RGB2GRAY>,  CCC_t<ColorConversionCodes::COLOR_RGBA2GRAY>,
+                                  CCC_t<ColorConversionCodes::COLOR_BGR2GRAY>,  CCC_t<ColorConversionCodes::COLOR_BGRA2GRAY>>;
 
     template <ColorConversionCodes CODE>
     static constexpr bool isSuportedCCC = one_of_v<CCC_t<CODE>, SupportedCCC>;
@@ -442,58 +442,58 @@ namespace fk {
 
     // Will work for COLOR_RGB2RGBA too
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGR2BGRA, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGR2BGRA, I, O, CD> {
         using type = AddOpaqueAlpha<I, CD>;
     };
 
     // Will work for COLOR_RGBA2RGB too
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGRA2BGR, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGRA2BGR, I, O, CD> {
         using type = Discard<I, VectorType_t<VBase<I>, 3>>;
     };
 
-    // Will work for COLOR_RGB2BGRA too
+    // Will work for ColorConversionCodes::COLOR_RGB2BGRA too
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGR2RGBA, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGR2RGBA, I, O, CD> {
         using type = FusedOperation<VectorReorder<I, 2, 1, 0>, AddOpaqueAlpha<I, CD>>;
     };
 
     // Will work for COLOR_RGBA2BGR too
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGRA2RGB, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGRA2RGB, I, O, CD> {
         using type = FusedOperation<VectorReorder<I, 2, 1, 0, 3>,
                            Discard<I, VectorType_t<VBase<I>, 3>>>;
     };
 
-    // Will work for COLOR_RGB2BGR too
+    // Will work for ColorConversionCodes::COLOR_RGB2BGR too
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGR2RGB, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGR2RGB, I, O, CD> {
         using type = VectorReorder<I, 2, 1, 0>;
     };
 
     // Will work for COLOR_RGBA2BGRA too
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGRA2RGBA, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGRA2RGBA, I, O, CD> {
         using type = VectorReorder<I, 2, 1, 0, 3>;
     };
 
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_RGB2GRAY, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_RGB2GRAY, I, O, CD> {
         using type = RGB2Gray<I, O>;
     };
 
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGR2GRAY, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGR2GRAY, I, O, CD> {
         using type = FusedOperation<VectorReorder<I, 2, 1, 0>, RGB2Gray<I, O>>;
     };
 
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_RGBA2GRAY, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_RGBA2GRAY, I, O, CD> {
         using type = RGB2Gray<I, O>;
     };
 
     template <typename I, typename O, ColorDepth CD>
-    struct ColorConversionType<COLOR_BGRA2GRAY, I, O, CD> {
+    struct ColorConversionType<ColorConversionCodes::COLOR_BGRA2GRAY, I, O, CD> {
         using type = FusedOperation<VectorReorder<I, 2, 1, 0, 3>, RGB2Gray<I, O>>;
     };
 

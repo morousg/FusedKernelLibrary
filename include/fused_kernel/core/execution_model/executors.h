@@ -52,7 +52,7 @@ namespace fk {
         template <enum ParArch PA, enum ND D, typename I, typename... IOps>
         FK_HOST_FUSE void executeOperations(const Ptr<D, I>& input, Stream_<PA>& stream,
                                             const IOps&... iOps) {
-            Child::executeOperations_helper(stream, PerThreadRead<_2D, I>::build({ input }), iOps...);
+            Child::executeOperations_helper(stream, PerThreadRead<ND::_2D, I>::build({ input }), iOps...);
         }
 
         template <enum ParArch PA, enum ND D, typename I, typename O, typename... IOps>
@@ -65,30 +65,30 @@ namespace fk {
         template <enum ParArch PA, typename I, size_t BATCH, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input, const int& activeBatch, const I& defaultValue,
                                             Stream_<PA>& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
+            const auto batchReadIOp = PerThreadRead<ND::_2D, I>::build(activeBatch, defaultValue, input);
             Child::executeOperations_helper(stream, batchReadIOp, iOps...);
         }
 
         template <enum ParArch PA, typename I, size_t BATCH, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, BATCH>& input,
                                             Stream_<PA>& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
+            const auto batchReadIOp = PerThreadRead<ND::_2D, I>::build(input);
             Child::executeOperations_helper(stream, batchReadIOp, iOps...);
         }
 
         template <enum ParArch PA, typename I, typename O, size_t Batch, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const int& activeBatch, const I& defaultValue,
                                             const Tensor<O>& output, Stream_<PA>& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(activeBatch, defaultValue, input);
-            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
+            const auto batchReadIOp = PerThreadRead<ND::_2D, I>::build(activeBatch, defaultValue, input);
+            const auto writeOp = PerThreadWrite<ND::_3D, O>::build(output);
             Child::executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
         }
 
         template <enum ParArch PA, typename I, typename O, size_t Batch, typename... IOps>
         FK_HOST_FUSE void executeOperations(const std::array<Ptr2D<I>, Batch>& input, const Tensor<O>& output,
                                             Stream_<PA>& stream, const IOps&... iOps) {
-            const auto batchReadIOp = PerThreadRead<_2D, I>::build(input);
-            const auto writeOp = PerThreadWrite<_3D, O>::build(output);
+            const auto batchReadIOp = PerThreadRead<ND::_2D, I>::build(input);
+            const auto writeOp = PerThreadWrite<ND::_3D, O>::build(output);
             Child::executeOperations_helper(stream, batchReadIOp, iOps..., writeOp);
         }
     };

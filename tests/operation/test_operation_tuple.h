@@ -30,7 +30,7 @@ bool test_OTInitialization() {
     constexpr uint Y = 64;
 
     const fk::Ptr2D<uchar> input(X, Y);
-    using Op = fk::PerThreadRead<fk::_2D, uchar>;
+    using Op = fk::PerThreadRead<fk::ND::_2D, uchar>;
     const fk::Read<Op> read{ {input} };
 
     [[maybe_unused]] const fk::OperationTuple<Op> testing{ {read.params} };

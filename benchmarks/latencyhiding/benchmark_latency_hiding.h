@@ -38,12 +38,12 @@ struct VerticalFusion {
     static inline void execute(const fk::Ptr1D<InputType>& input, fk::Stream& stream,
                                const fk::Ptr1D<OutputType>& output, const IOp& dFunc) {
         const fk::ActiveThreads activeThreads{ output.ptr().dims.width };
-        fk::Read<fk::PerThreadRead<fk::_1D, InputType>> readDF{ {input.ptr()} };
+        fk::Read<fk::PerThreadRead<fk::ND::_1D, InputType>> readDF{ {input.ptr()} };
         using Loop = fk::Binary<fk::StaticLoop<fk::StaticLoop<typename IOp::Operation, INCREMENT>, NumOps/INCREMENT>>;
         Loop loop;
         loop.params = dFunc.params;
 
-        fk::executeOperations<fk::TransformDPP<>>(stream, readDF, loop, fk::Write<fk::PerThreadWrite<fk::_1D, OutputType>>{ {output.ptr()} });
+        fk::executeOperations<fk::TransformDPP<>>(stream, readDF, loop, fk::Write<fk::PerThreadWrite<fk::ND::_1D, OutputType>>{ {output.ptr()} });
     }
 };
 

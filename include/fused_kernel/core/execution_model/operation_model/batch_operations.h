@@ -38,7 +38,7 @@ namespace fk {
     template <typename T>
     static constexpr bool isBatchOperation = IsBatchOperation<T>::value;
 
-    enum PlanePolicy { PROCESS_ALL = 0, CONDITIONAL_WITH_DEFAULT = 1 };
+    enum class PlanePolicy { PROCESS_ALL = 0, CONDITIONAL_WITH_DEFAULT = 1 };
 
     struct BatchOperation {
         FK_STATIC_STRUCT(BatchOperation, BatchOperation)
@@ -88,7 +88,7 @@ namespace fk {
     struct BatchReadParams;
 
     template <size_t BATCH, typename Operation, typename DefaultType>
-    struct BatchReadParams<BATCH, CONDITIONAL_WITH_DEFAULT, Operation, DefaultType> {
+    struct BatchReadParams<BATCH, PlanePolicy::CONDITIONAL_WITH_DEFAULT, Operation, DefaultType> {
         OperationData<Operation> opData[BATCH];
         int usedPlanes;
         DefaultType default_value;
@@ -96,7 +96,7 @@ namespace fk {
     };
 
     template <size_t BATCH, typename Operation, typename DefaultType>
-    struct BatchReadParams<BATCH, PROCESS_ALL, Operation, DefaultType> {
+    struct BatchReadParams<BATCH, PlanePolicy::PROCESS_ALL, Operation, DefaultType> {
         OperationData<Operation> opData[BATCH];
         ActiveThreads activeThreads;
     };
@@ -124,7 +124,7 @@ namespace fk {
         }
     };
 
-    template <size_t BATCH, enum PlanePolicy PP = PROCESS_ALL, typename Operation = void, typename OutputType = NullType>
+    template <size_t BATCH, enum PlanePolicy PP = PlanePolicy::PROCESS_ALL, typename Operation = void, typename OutputType = NullType>
     struct BatchRead;
 
     /// @brief struct BatchRead
@@ -133,19 +133,19 @@ namespace fk {
     /// @tparam PP: enum to select if all planes will be processed equally, or only some
     /// with the remainder not reading and returning a default value
     template <size_t BATCH_, typename Operation_, typename OutputType_>
-    struct BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_> final
-        : public BatchReadBase<BATCH_, BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_>> {
+    struct BatchRead<BATCH_, PlanePolicy::PROCESS_ALL, Operation_, OutputType_> final
+        : public BatchReadBase<BATCH_, BatchRead<BATCH_, PlanePolicy::PROCESS_ALL, Operation_, OutputType_>> {
     private:
-        using SelfType = BatchRead<BATCH_, PROCESS_ALL, Operation_, OutputType_>;
+        using SelfType = BatchRead<BATCH_, PlanePolicy::PROCESS_ALL, Operation_, OutputType_>;
     public:
         FK_STATIC_STRUCT(BatchRead, SelfType)
         using Operation = Operation_;
         static constexpr size_t BATCH = BATCH_;
-        static constexpr PlanePolicy PP = PROCESS_ALL;
+        static constexpr PlanePolicy PP = PlanePolicy::PROCESS_ALL;
         using Parent = ReadOperation<typename Operation::ReadDataType,
                                      BatchReadParams<BATCH, PP, Operation, typename Operation::OutputType>,
                                      typename Operation::OutputType, Operation::THREAD_FUSION ? TF::ENABLED : TF::DISABLED,
-                                     BatchRead<BATCH, PROCESS_ALL, Operation_, OutputType_>>;
+                                     BatchRead<BATCH, PlanePolicy::PROCESS_ALL, Operation_, OutputType_>>;
         DECLARE_READ_PARENT_BASIC
 
         static_assert(isAnyReadType<Operation>, "The Operation is not of any Read type");
@@ -215,15 +215,15 @@ namespace fk {
     using NullTypeToAlternative = std::conditional_t<std::is_same_v<Nullable, NullType>, Alternative, Nullable>;
 
     template <size_t BATCH_, typename Operation_, typename OutputType_>
-    struct BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_> final
-        : public BatchReadBase<BATCH_, BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>> {
+    struct BatchRead<BATCH_, PlanePolicy::CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_> final
+        : public BatchReadBase<BATCH_, BatchRead<BATCH_, PlanePolicy::CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>> {
     private:
-        using SelfType = BatchRead<BATCH_, CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>;
+        using SelfType = BatchRead<BATCH_, PlanePolicy::CONDITIONAL_WITH_DEFAULT, Operation_, OutputType_>;
     public:
         FK_STATIC_STRUCT(BatchRead, SelfType)
         using Operation = Operation_;
         static constexpr int BATCH = BATCH_;
-        static constexpr PlanePolicy PP = CONDITIONAL_WITH_DEFAULT;
+        static constexpr PlanePolicy PP = PlanePolicy::CONDITIONAL_WITH_DEFAULT;
         using Parent = ReadOperation<NullTypeToUchar<typename Operation::ReadDataType>,
                                      BatchReadParams<BATCH, PP, Operation, NullTypeToAlternative<typename Operation::OutputType, OutputType_>>,
                                      NullTypeToAlternative<typename Operation::OutputType, OutputType_>,
@@ -287,31 +287,31 @@ namespace fk {
     };
 
     template <size_t BATCH>
-    struct BatchRead<BATCH, PROCESS_ALL, void> {
+    struct BatchRead<BATCH, PlanePolicy::PROCESS_ALL, void> {
     private:
-        using SelfType = BatchRead<BATCH, PROCESS_ALL, void, NullType>;
+        using SelfType = BatchRead<BATCH, PlanePolicy::PROCESS_ALL, void, NullType>;
     public:
         FK_STATIC_STRUCT(BatchRead, SelfType)
         template <typename IOp> FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations) {
-            return BatchRead<BATCH, PROCESS_ALL, typename IOp::Operation>::build(instantiableOperations);
+            return BatchRead<BATCH, PlanePolicy::PROCESS_ALL, typename IOp::Operation>::build(instantiableOperations);
         }
     };
 
     template <size_t BATCH>
-    struct BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, void> {
+    struct BatchRead<BATCH, PlanePolicy::CONDITIONAL_WITH_DEFAULT, void> {
     private:
-        using SelfType = BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, void, NullType>;
+        using SelfType = BatchRead<BATCH, PlanePolicy::CONDITIONAL_WITH_DEFAULT, void, NullType>;
     public:
         FK_STATIC_STRUCT(BatchRead, SelfType)
         template <typename IOp, typename DefaultValueType>
         FK_HOST_FUSE auto build(const std::array<IOp, BATCH>& instantiableOperations, const int& usedPlanes,
             const DefaultValueType& defaultValue) {
             if constexpr (std::is_same_v<typename IOp::Operation::OutputType, NullType>) {
-                return BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, typename IOp::Operation, DefaultValueType>::build(
+                return BatchRead<BATCH, PlanePolicy::CONDITIONAL_WITH_DEFAULT, typename IOp::Operation, DefaultValueType>::build(
                     instantiableOperations, usedPlanes, defaultValue);
             }
             else {
-                return BatchRead<BATCH, CONDITIONAL_WITH_DEFAULT, typename IOp::Operation>::build(instantiableOperations,
+                return BatchRead<BATCH, PlanePolicy::CONDITIONAL_WITH_DEFAULT, typename IOp::Operation>::build(instantiableOperations,
                     usedPlanes, defaultValue);
             }
         }
@@ -385,13 +385,13 @@ namespace fk {
     public:
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            using BuilderType = BatchRead<BATCH_N, PROCESS_ALL, ReadOperation>;
+            using BuilderType = BatchRead<BATCH_N, PlanePolicy::PROCESS_ALL, ReadOperation>;
             return BuilderType::build(firstInstance, arrays...);
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
                                 const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            using BuilderType = BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT, ReadOperation>;
+            using BuilderType = BatchRead<BATCH_N, PlanePolicy::CONDITIONAL_WITH_DEFAULT, ReadOperation>;
             if constexpr (sizeof...(ArrayTypes) > 0) {
                 return BuilderType::build(usedPlanes, defaultValue, firstInstance, arrays...);
             } else {
@@ -458,12 +458,12 @@ namespace fk {
         template <size_t BATCH_N, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
             const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);
-            return BatchRead<BATCH_N, PROCESS_ALL>::build(arrayOfIOps);
+            return BatchRead<BATCH_N, PlanePolicy::PROCESS_ALL>::build(arrayOfIOps);
         }
         template <size_t BATCH_N, typename DefaultValueType, typename FirstType, typename... ArrayTypes>
         FK_HOST_FUSE auto build(const int& usedPlanes, const DefaultValueType& defaultValue,
                                 const std::array<FirstType, BATCH_N>& firstInstance, const ArrayTypes &...arrays) {
-            using BuilderType = BatchRead<BATCH_N, CONDITIONAL_WITH_DEFAULT>;
+            using BuilderType = BatchRead<BATCH_N, PlanePolicy::CONDITIONAL_WITH_DEFAULT>;
             if constexpr (sizeof...(ArrayTypes) > 0) {
                 const auto arrayOfIOps = BatchOperation::build_batch<ReadOperation>(firstInstance, arrays...);
                 return BuilderType::build(arrayOfIOps, usedPlanes, defaultValue);

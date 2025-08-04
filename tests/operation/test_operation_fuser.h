@@ -22,12 +22,12 @@ using namespace fk;
 using ComplexType =
 Read<FusedOperation_<void,
     Resize<InterpolationType::INTER_LINEAR, AspectRatio::PRESERVE_AR,
-    ReadBack<Crop<Read<PerThreadRead<_2D, uchar3>>>>>,
+    ReadBack<Crop<Read<PerThreadRead<ND::_2D, uchar3>>>>>,
     Mul<float3, float3, float3>>>;
 
 // Operation types
 // Read
-using RPerThrFloat = PerThreadRead<_2D, float>;
+using RPerThrFloat = PerThreadRead<ND::_2D, float>;
 // ReadBack
 using RBResize = Resize<InterpolationType::INTER_LINEAR, AspectRatio::IGNORE_AR, Instantiable<RPerThrFloat>>;
 // Unary
@@ -41,7 +41,7 @@ using Binaries = TypeList<BAddInt, BAddFloat>;
 // Ternary
 using TInterpFloat = Interpolate<InterpolationType::INTER_LINEAR, Instantiable<RPerThrFloat>>;
 // Write
-using WPerThrFloat = PerThreadWrite<_2D, float>;
+using WPerThrFloat = PerThreadWrite<ND::_2D, float>;
 // MidWrite
 using MWPerThrFloat = FusedOperation<WPerThrFloat, BAddFloat>;
 
