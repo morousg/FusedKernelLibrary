@@ -94,7 +94,7 @@ namespace fk {
     using ColorDepthPixelType = EquivalentType_t<CD_t<CD>, ColorDepthTypes, ColorDepthPixelTypes>;
 
 
-    enum class PixelFormat { NV12, NV21, YV12, P010, P016, P216, P210, Y216, Y210, Y416 };
+    enum class PixelFormat { NV12, NV21, YV12, P010, P016, P216, P210, Y216, Y210, Y416, UYVY };
     template <PixelFormat PF>
     struct PixelFormatTraits;
     template <> struct PixelFormatTraits<PixelFormat::NV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
@@ -104,6 +104,7 @@ namespace fk {
     template <> struct PixelFormatTraits<PixelFormat::P210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
     template <> struct PixelFormatTraits<PixelFormat::Y210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
     template <> struct PixelFormatTraits<PixelFormat::Y416> { enum { space = static_cast<int>(ColorSpace::YUV444), depth = static_cast<int>(ColorDepth::p12bit), cn = 4 }; };
+    template <> struct PixelFormatTraits<PixelFormat::UYVY> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
 
     template <PixelFormat PF, bool ALPHA>
     using YUVOutputPixelType = VectorType_t<ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>, ALPHA ? 4 : PixelFormatTraits<PF>::cn>;
@@ -375,6 +376,13 @@ namespace fk {
                 const bool isEvenThread = IsEven<uint>::exec(thread.x);
 
                 return { isEvenThread ? pixel.x : pixel.z, pixel.y, pixel.w };
+            } else if constexpr (PF == PixelFormat::UYVY) {
+                const PtrDims<ND::_2D> dims = params.dims;
+                const RawPtr<ND::_2D, uchar4> image{ reinterpret_cast<uchar4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
+                const uchar4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
+                const bool isEvenThread = IsEven<uint>::exec(thread.x);
+
+                return { isEvenThread ? pixel.y : pixel.w, pixel.x, pixel.z };
             } else if constexpr (PF == PixelFormat::Y416) {
                 // AVYU
                 // We use ushort as the type, to be compatible with the rest of the cases
