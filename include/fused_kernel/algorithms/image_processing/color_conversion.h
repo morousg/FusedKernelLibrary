@@ -378,6 +378,8 @@ namespace fk {
                 return { isEvenThread ? pixel.x : pixel.z, pixel.y, pixel.w };
             } else if constexpr (PF == PixelFormat::UYVY) {
                 const PtrDims<ND::_2D> dims = params.dims;
+                // UYVY Ptr initialization: width = number of pixels in x axis, pitch = number of bytes in x axis
+                // For UYVY format: pitch = (width * 2) + padding, where padding can be 0 or greater
                 const RawPtr<ND::_2D, uchar4> image{ reinterpret_cast<uchar4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
                 const uchar4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
                 const bool isEvenThread = IsEven<uint>::exec(thread.x);
