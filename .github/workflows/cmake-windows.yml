@@ -54,18 +54,16 @@ jobs:
       run: |         
         $vsWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"   
         $vsInstallationPath = & $vsWhere -products * -latest -property installationPath
-        & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation        
-        $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe"
-        cmake -G "Ninja" -B ${{steps.strings.outputs.build-output-dir}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_VS_PLATFORM_NAME=x64 -S ${{github.workspace}};        
+        & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation                
+        cmake -G "Visual Studio 17 2022"  -B ${{steps.strings.outputs.build-output-dir}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -T cuda=12.9 -S ${{github.workspace}};        
  
     - name: Build  
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).      
       run: |             
         $vsWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"   
         $vsInstallationPath = & $vsWhere -products * -latest -property installationPath
-        & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation 
-        $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe"
-        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}               
+        & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation         
+        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --parallel $env:ProcessorCount               
           
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
