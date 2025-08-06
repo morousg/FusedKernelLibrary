@@ -24,9 +24,7 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         os: [windows]
-        build_type: [Release]
-        cuda_version: [11.8 12.9]
-        toolset_version: [v141,v143]
+        build_type: [Release]        
         cpp_compiler: [cl]        
         include:
           - os: windows                       
