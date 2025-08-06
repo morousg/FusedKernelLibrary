@@ -446,6 +446,22 @@ namespace fk {
             }
         }
 
+        inline T at(const uint& x) const {
+            return at(Point(x, 0, 0));
+        }
+
+        template <ND Dims = D>
+        inline std::enable_if_t<(Dims == ND::_2D), T>
+        at(const uint& x, const uint& y) const {
+            return at(Point(x, y, 0));
+        }
+
+        template <ND Dims = D>
+        inline std::enable_if_t<(Dims == ND::_3D), T>
+        at(const uint& x, const uint& y, const uint& z) const {
+            return at(Point(x, y, z));
+        }
+
         inline T& at(const Point& p) {
             if (type != MemType::Device) {
                 return *At::point(p, ptr_pinned);
@@ -453,6 +469,25 @@ namespace fk {
                 throw std::runtime_error("Cannot access data in Device memory from host code");
                 //return make_set<T>(0);
             }
+        }
+
+        inline T& at(const uint& x) {
+            T& val = at(Point(x, 0, 0));
+            return val;
+        }
+
+        template <ND Dims = D>
+        inline std::enable_if_t<(Dims == ND::_2D), T&>
+            at(const uint& x, const uint& y) {
+            T& val = at(Point(x, y, 0));
+            return val;
+        }
+
+        template <ND Dims = D>
+        inline std::enable_if_t<(Dims == ND::_3D), T&>
+            at(const uint& x, const uint& y, const uint& z) {
+            T& val = at(Point(x, y, z));
+            return val;
         }
 
         template <enum ND DIM = D>

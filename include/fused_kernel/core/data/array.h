@@ -209,17 +209,55 @@ namespace fk {
         return make_set_std_array_helper(std::make_index_sequence<BATCH>(), value);
     }
 
-    template <typename StdArray>
-    struct StdArrayDetails;
+    template <typename ArrayLike>
+    struct ArrayTraits;
 
-    template <typename ArrayType, size_t SIZE>
-    struct StdArrayDetails<std::array<ArrayType, SIZE>> {
-        static constexpr size_t size{ SIZE };
-        using type = ArrayType;
+    template <template <typename, size_t> class ArrayLike, typename T, size_t N>
+    struct ArrayTraits<ArrayLike<T, N>> {
+        using type = T;
+        static constexpr size_t size = N;
     };
 
+    template <typename ArrayLike>
+    constexpr size_t arraySize = ArrayTraits<ArrayLike>::size;
+
+    template <typename ArrayLike>
+    using ArrayType = typename ArrayTraits<ArrayLike>::type;
+
     template <size_t BATCH, typename... ArrayTypes>
-    constexpr bool allArraysSameSize_v = and_v<(StdArrayDetails<ArrayTypes>::size == BATCH)...>;
+    constexpr bool allArraysSameSize_v = and_v<(arraySize<ArrayTypes> == BATCH)...>;
+
+    template <template <typename, size_t> class ArrayLike, typename T, size_t N, typename F, std::size_t... Is>
+    FK_HOST_DEVICE_CNST auto transformArray_impl(const ArrayLike<T, N>& input, F&& func, std::index_sequence<Is...>) {
+        using ReturnType = std::invoke_result_t<F, T>;
+        return ArrayLike<ReturnType, N>{ { func(input[Is])... } };
+    }
+
+    template <typename ArrayLike, typename F>
+    FK_HOST_DEVICE_CNST auto transformArray(const ArrayLike& input, F&& func) {
+        return transformArray_impl(input, std::forward<F>(func), std::make_index_sequence<arraySize<ArrayLike>>{});
+    }
+
+    template <typename ArrayType, size_t... Idx>
+    FK_HOST_DEVICE_CNST ArrayType getIndexArray_helper(const std::index_sequence<Idx...>&) {
+        return {Idx...};
+    }
+
+    template <template <typename, size_t> class ArrayLike, typename T, size_t N>
+    FK_HOST_DEVICE_CNST auto getIndexArray(const ArrayLike<size_t, N>&) -> ArrayLike<size_t, N> {
+        return getIndexArray_helper<ArrayLike<size_t, N>>(std::make_index_sequence<N>{});
+    }
+
+    template <typename T, typename ArrayType, size_t... Idx>
+    FK_HOST_DEVICE_CNST bool allValuesAre_helper(const ArrayType& value, const ArrayType& arrValues, const std::index_sequence<Idx...>&) {
+        return ((arrValues[Idx] == value) && ...);
+    }
+
+    template <template <typename, size_t> class ArrayLike, typename T, size_t N>
+    FK_HOST_DEVICE_CNST bool allValuesAre(const T& value, const ArrayLike<size_t, N>& arrValues) {
+        return allValuesAre_helper(value, arrValues, std::make_index_sequence<N>{});
+    }
+
 
 } // namespace fk
 
