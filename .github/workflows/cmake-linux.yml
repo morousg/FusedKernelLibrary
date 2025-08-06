@@ -25,19 +25,12 @@ jobs:
       matrix:        
         build_type: [Release]
         cpp_compiler: [g++,clang++]        
-        include:
-       
-          - os: linux
-            cpp_compiler: g++            
-
-        #  - os: jetsonnanoorin
-         #   cpp_compiler: clang++
-         
-        exclude: 
-          - os: linux                      
+        include: 
+            cpp_compiler: g++    
+ 
+        exclude:                     
             cpp_compiler: clang++           
-          #- os: windows-latest
-          #  cpp_compiler: clang
+ 
            
     steps:
     - uses: actions/checkout@v4
@@ -47,12 +40,10 @@ jobs:
       id: stringslinux      
       run: |      
           echo "build-output-dir=${{github.workspace}}/build" >> "$GITHUB_OUTPUT"        
-   
     
-
     - name: Configure CMake      
       run: |                 
-        cmake -G "Ninja" -B ${{steps.strings.outputs.build-output-dir}}
+        cmake -G "Unix Makefiles" -B ${{steps.strings.outputs.build-output-dir}}
         -DCMAKE_CXX_COMPILER=${{matrix.cpp_compiler}}        
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}}        
         -S ${{github.workspace}};        
@@ -60,7 +51,8 @@ jobs:
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).      
       run: >           
-        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+        core_count=$(nproc)
+        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} -parallel $core_count
                      
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
