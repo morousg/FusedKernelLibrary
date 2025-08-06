@@ -34,10 +34,16 @@ function (add_generated_test TARGET_NAME TEST_SOURCE EXTENSION DIR)
         if (MSVC)
             target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/diagnostics:caret>)
              target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
-        #    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+             add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
              #target_link_libraries(${TARGET_NAME_EXT} -manifest:embed -manifestinput:"${PROJECT_SOURCE_DIR}/myapp.manifest" 
         endif()
-        
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+            target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++11-compat>)
+            target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++11-extensions>)
+            target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++14-compat>)
+            target_compile_options(${TARGET_NAME_EXT} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++14-extensions>)
+        endif()
+
         add_optimization_flags(${TARGET_NAME_EXT})
         
         add_test(NAME  ${TARGET_NAME_EXT} COMMAND ${TARGET_NAME_EXT})          

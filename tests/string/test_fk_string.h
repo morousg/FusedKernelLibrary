@@ -1,4 +1,4 @@
-/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
+﻿/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ int launch() {
         fk::String str3(" ");
         fk::String str4("World!");
 
-        auto str5 = str1 + " Hi " + str2 + " brave " + " new " + str4;
+        auto str5 = str1 + " Hi " + str2 + " brave " +str3+ "new " + str4;
 
         if (!(str5 == fk::String(" Hi Hello brave  new World!"))) {
             std::cout << "String operator+ with const char* elements failed" << std::endl;
