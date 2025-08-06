@@ -261,7 +261,14 @@ namespace fk {
         using Base = typename VectorTraits<T>::base;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
             static_assert(std::is_floating_point_v<VBase<T>>, "NormalizeColorRangeDepth only works for floating point values");
-            return input * floatShiftFactor<CD>;
+            // The nvcc compiler will only be able to use the global constexpr floatShiftFactor<CD> variable if it is stored in 
+            // a local variable.
+            // By storing it into a local variable, you are forcing the value to exist in private memory, so that each thread has
+            // a copy of the value on registers.
+            // In a later stage, since the variable is constexpr, the compiler will be able to inline the value in the
+            // multiplication instruction, and won't be stored in private memory.
+            constexpr auto shiftFactor = floatShiftFactor<CD>;
+            return input * shiftFactor;
         }
     };
 
