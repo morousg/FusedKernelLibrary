@@ -24,16 +24,10 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         os: [windows]
-        build_type: [Release]        
+        build_type: [Release]
+        toolset: [v141,cuda=11.8,v143,cuda=12.9]        
         cpp_compiler: [cl]        
-        include:
-          - os: windows                       
-            cuda_version: 11.8
-            toolset_version: v141
-
-          - os: windows                      
-            cuda_version: 12.9
-            toolset_version: v143
+   
 
         #  - os: jetsonnanoorin
          #   cpp_compiler: clang++
@@ -54,7 +48,7 @@ jobs:
         $vsWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"   
         $vsInstallationPath = & $vsWhere -products * -latest -property installationPath
         & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation                
-        cmake -G "Visual Studio 17 2022"  -B ${{steps.strings.outputs.build-output-dir}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -T ${{matrix.toolset_version}},cuda=${{matrix.cuda_version}} -S ${{github.workspace}};        
+        cmake -G "Visual Studio 17 2022"  -B ${{steps.strings.outputs.build-output-dir}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -T ${{matrix.toolset}} -S ${{github.workspace}};        
  
     - name: Build  
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).      
