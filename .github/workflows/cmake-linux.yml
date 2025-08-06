@@ -25,14 +25,7 @@ jobs:
       matrix:        
         build_type: [Release]
         cpp_compiler: [g++,clang++]   
-        os: [linux]     
-        include: 
-          - os: linux
-            cpp_compiler: g++    
- 
-        exclude:     
-          - os: linux                
-            cpp_compiler: clang++           
+              
  
            
     steps:
