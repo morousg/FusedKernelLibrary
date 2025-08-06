@@ -1,6 +1,6 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: CMake on multiple platforms
+name: CMake on Windows
 
 on:
   #push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on:  self-hosted
+    runs-on:   [self-hosted, windows, x64]
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -23,53 +23,50 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [jetsonnanoorin]
+        os: [windows]
         build_type: [Release]
-        cpp_compiler: [g++,clang++]        
+        cpp_compiler: [cl,clang++]        
         include:
-          #- os: windows-latest
-           # cpp_compiler: cl
-           # cpp_compiler: cl
-          - os: jetsonnanoorin
-            cpp_compiler: g++
+          - os: windows                      
+            cpp_compiler: cl 
+    
+
         #  - os: jetsonnanoorin
          #   cpp_compiler: clang++
          
         exclude:
-         # - os: windows-latest
-         #   cpp_compiler: gcc
-          #- os: windows-latest
-          #  cpp_compiler: clang
-          - os: jetsonnanoorin
-            cpp_compiler: cl
-
-          - os: jetsonnanoorin
-            cpp_compiler: clang++
-
+          - os: windows                      
+            cpp_compiler: clang++    
+          
+           
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set reusable strings
+  
+    - name: Set reusable strings  
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      id: strings      
+      run: |      
+          echo "build-output-dir=${{github.workspace}}/build" >> "$env:GITHUB_OUTPUT"        
+             
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -G "Ninja" -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}        
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCUDA_ARCH="87;"
-        -S ${{ github.workspace }}
-
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
+    - name: Configure CMake      
+      run: |         
+        $vsWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"   
+        $vsInstallationPath = & $vsWhere -products * -latest -property installationPath
+        & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation        
+        $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe"
+        cmake -G "Ninja" -B ${{steps.strings.outputs.build-output-dir}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_VS_PLATFORM_NAME=x64 -S ${{github.workspace}};        
+ 
+    - name: Build  
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).      
+      run: |             
+        $vsWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"   
+        $vsInstallationPath = & $vsWhere -products * -latest -property installationPath
+        & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation 
+        $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe"
+        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}               
+          
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
