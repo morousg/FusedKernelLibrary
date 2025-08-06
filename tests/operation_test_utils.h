@@ -115,10 +115,11 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                                     std::is_fundamental_v<typename Operation::InputType> &&
                                     std::is_fundamental_v<typename Operation::OutputType>, void>> {
     template <size_t N>
-    static std::function<bool()> build(const std::string& testName,
-        const std::array<typename Operation::InputType, N>& inputElems,
-        const std::array<typename Operation::OutputType, N>& expectedElems) {
-        return [testName, inputElems, expectedElems]() {
+    static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
+                      const std::array<typename Operation::InputType, N>& inputElems,
+                      const std::array<typename Operation::OutputType, N>& expectedElems) {
+        const std::string testName = fk::typeToString<Operation>();
+        testCases[testName] = [testName, inputElems, expectedElems]() {
             const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
@@ -149,10 +150,11 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                                     (fk::validCUDAVec<typename Operation::InputType> ||
                                      fk::validCUDAVec<typename Operation::OutputType>), void>> {
     template <size_t N>
-    static std::function<bool()> build(const std::string& testName,
-        const std::array<typename Operation::InputType, N>& inputElems,
-        const std::array<typename Operation::OutputType, N>& expectedElems) {
-        return [testName, inputElems, expectedElems]() -> bool {
+    static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
+                             const std::array<typename Operation::InputType, N>& inputElems,
+                             const std::array<typename Operation::OutputType, N>& expectedElems) {
+        const std::string testName = fk::typeToString<Operation>();
+        testCases[testName] = [testName, inputElems, expectedElems]() -> bool {
             const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
@@ -189,10 +191,4 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
     }
 };
 
-#define ADD_UNARY_TEST(ID, OD, UnaryOperation, ...) \
-testCases[STRINGIFY(CONCAT(CONCAT(CONCAT(Test, UnaryOperation), _), VA_CONCAT(__VA_ARGS__)))] = \
-TestCaseBuilder<UnaryOperation<__VA_ARGS__>>::build(std::string(STRINGIFY(CONCAT(CONCAT(CONCAT(Test, UnaryOperation), _), VA_CONCAT(__VA_ARGS__)))), \
-    std::array<typename UnaryOperation<__VA_ARGS__>::InputType, COUNT_VARARGS(DEPAREN(ID))>{DEPAREN(ID)}, \
-    std::array<typename UnaryOperation<__VA_ARGS__>::OutputType, COUNT_VARARGS(DEPAREN(OD))>{DEPAREN(OD)});
-
-#endif
+#endif // FK_OPERATION_TEST_UTILS_H
