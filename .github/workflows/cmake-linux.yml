@@ -24,11 +24,14 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:        
         build_type: [Release]
-        cpp_compiler: [g++,clang++]        
+        cpp_compiler: [g++,clang++]   
+        os: [linux]     
         include: 
+          - os: linux
             cpp_compiler: g++    
  
-        exclude:                     
+        exclude:     
+          - os: linux                
             cpp_compiler: clang++           
  
            
