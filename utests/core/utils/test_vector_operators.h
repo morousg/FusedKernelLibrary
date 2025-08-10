@@ -274,9 +274,9 @@ template <typename VecType> bool testCompoundAssignmentOperators() {
 }
 
 // Test bitwise operators for integral types
-template <typename VecType> bool testBitwiseOperators() {
+template <typename VecType> void testBitwiseOperators() {
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
-    bool result = true;
+    
     if constexpr (std::is_integral_v<fk::VBase<VecType>>) {
         using BaseType = fk::VBase<VecType>;
         constexpr VecType a = fk::make_set<VecType>(static_cast<BaseType>(5));
@@ -297,7 +297,7 @@ template <typename VecType> bool testBitwiseOperators() {
         static_assert(fk::vecAnd(xor_result == fk::make_set<VecType>(static_cast<BaseType>(6))),
                       "Compound assignment with vector failed");
         // Test scalar bitwise operations
-        constexpr auto and_scalar_result = a & scalar;
+        constexpr auto and_scalar_result = a & scalar; 
         static_assert(fk::vecAnd(and_scalar_result == fk::make_set<VecType>(static_cast<BaseType>(1))),
                       "Compound assignment with vector failed");
 
@@ -308,18 +308,21 @@ template <typename VecType> bool testBitwiseOperators() {
         constexpr auto xor_scalar_result = a ^ scalar;
         static_assert(fk::vecAnd(xor_scalar_result == fk::make_set<VecType>(static_cast<BaseType>(4))),
                       "Compound assignment with vector failed");
+
         // Test scalar on left side using constexpr and static_assert
         constexpr auto scalar_and_result = scalar & a;
         static_assert(fk::vecAnd(scalar_and_result == fk::make_set<VecType>(static_cast<BaseType>(1))),
                       "Compound assignment with vector failed");
+
         constexpr auto scalar_or_result = scalar | a;
         static_assert(fk::vecAnd(scalar_or_result == fk::make_set<VecType>(static_cast<BaseType>(5))),
                       "Compound assignment with vector failed");
+        
         constexpr auto scalar_xor_result = scalar ^ a;
         static_assert(fk::vecAnd(scalar_xor_result == fk::make_set<VecType>(static_cast<BaseType>(4))),
                       "Compound assignment with vector failed");
     }
-    return result;
+ 
 }
 
 // Test actual computation for float2 to ensure operators work correctly
@@ -479,6 +482,8 @@ template <typename BaseInput, typename BaseOutput> void addOneTestAllChannelsOpT
     testComparisonOperatorTypes<Input1, bool1>();
     testScalarComparisonOperatorTypes<Input1, bool1>();
     testUnaryOperators<Input1>();
+    testBitwiseOperators<Input1>();
+    
 
     testCompoundAssignmentOperators<Input1>();
     // Vector of 2
@@ -488,6 +493,7 @@ template <typename BaseInput, typename BaseOutput> void addOneTestAllChannelsOpT
     testScalarComparisonOperatorTypes<Input2, bool2>();
     testUnaryOperators<Input2>();
     testCompoundAssignmentOperators<Input2>();
+    testBitwiseOperators<Input2>();
 
     // Vector of 3
     using Input3 = fk::VectorType_t<BaseInput, 3>;
@@ -496,6 +502,7 @@ template <typename BaseInput, typename BaseOutput> void addOneTestAllChannelsOpT
     testScalarComparisonOperatorTypes<Input3, bool3>();
     testUnaryOperators<Input3>();
     testCompoundAssignmentOperators<Input3>();
+    testBitwiseOperators<Input3>();
 
     // Vector of 4
     using Input4 = fk::VectorType_t<BaseInput, 4>;
@@ -504,6 +511,7 @@ template <typename BaseInput, typename BaseOutput> void addOneTestAllChannelsOpT
     testScalarComparisonOperatorTypes<Input4, bool4>();
     testUnaryOperators<Input4>();
     testCompoundAssignmentOperators<Input4>();
+    testBitwiseOperators<Input4>();
 }
 
 template <typename TypeList_, typename Type, size_t... Idx>
@@ -527,8 +535,8 @@ int launch() {
     // Test boolean operators
     using Fundamental = fk::RemoveType_t<0, fk::RemoveType_t<0, fk::RemoveType_t<0, fk::StandardTypes>>>;
     addAllTestsForOpTypes<Fundamental>(std::make_index_sequence<Fundamental::size>());
+     
 
-    // Test unary operators
 
     testUnaryOperators<float1>();
     testUnaryOperators<float2>();
@@ -547,11 +555,7 @@ int launch() {
     testCompoundAssignmentOperators<float2>();
     testCompoundAssignmentOperators<int4>();
     testCompoundAssignmentOperators<double1>();
-
-    // Test bitwise operators
-    testBitwiseOperators<int2>();
-    testBitwiseOperators<uchar4>();
-    testBitwiseOperators<short3>();
+    
 
     // previous test use static asserts, to they don't compile if the results are not correct
     //   the next one are at runtime, so we need to check the results manually
