@@ -82,6 +82,17 @@ namespace fk { // namespace fused kernel
     template <typename T, typename TypeList_t>
     constexpr bool one_of_v = one_of<T, TypeList_t>::value;
 
+    template <typename... Args>
+    struct all_of {};
+
+    template <typename T, typename... U>
+    struct all_of<T, TypeList<U...>> {
+        static constexpr bool value = std::conjunction_v<std::is_same<T, U>...>;
+    };
+
+    template <typename T, typename TypeList_t>
+    constexpr bool all_of_v = all_of<T, TypeList_t>::value;
+
     /**
      * @struct EnumType
      * @brief Struct to convert an enum value into a type

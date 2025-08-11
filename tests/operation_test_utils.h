@@ -96,12 +96,11 @@ constexpr inline bool equalValues(const T & val1, const T & val2) {
 template <typename T>
 constexpr inline bool equalInstances(const T& instance1, const T& instance2) {
     if constexpr (fk::validCUDAVec<T>) {
-        const auto i1 = fk::Array(instance1);
-        const auto i2 = fk::Array(instance2);
-        constexpr size_t N = fk::cn<T>;
-        constexpr auto indexArr = fk::getIndexArray(i1);
-        const fk::Array<bool, N> equalArray = fk::transformArray(indexArr,
-            [&] (const auto& idx) constexpr {
+        const auto i1 = fk::toArray(instance1);
+        const auto i2 = fk::toArray(instance2);
+        constexpr size_t N = static_cast<size_t>(fk::cn<T>);
+        const fk::Array<bool, N> equalArray = fk::transformArray(fk::makeIndexArray<N>(),
+            [&] (const size_t& idx) constexpr {
                 return equalValues(i1[idx], i2[idx]);
             }
         );
@@ -115,13 +114,13 @@ constexpr inline bool equalInstances(const T& instance1, const T& instance2) {
 }
 
 template <typename T>
-inline bool comparePtrs1D(const fk::Ptr1D<T>&ptr1, const fk::Ptr1D<T>&ptr2) {
+inline bool comparePtrs1D(const fk::Ptr<fk::ND::_1D, T>&ptr1, const fk::Ptr<fk::ND::_1D, T>&ptr2) {
     const fk::PtrDims<fk::ND::_1D> dims1 = ptr1.dims();
     const fk::PtrDims<fk::ND::_1D> dims2 = ptr2.dims();
     if (dims1.width != dims2.width) {
         return false;
     }
-    for (uint i = 0; i < ptr1.width; ++i) {
+    for (uint i = 0; i < dims1.width; ++i) {
         if (!equalInstances(ptr1.at(i), ptr2.at(i))) {
             return false;
         }
@@ -130,14 +129,14 @@ inline bool comparePtrs1D(const fk::Ptr1D<T>&ptr1, const fk::Ptr1D<T>&ptr2) {
 }
 
 template <typename T>
-inline bool comparePtrs2D(const fk::Ptr2D<T>& ptr1, const fk::Ptr2D<T>& ptr2) {
+inline bool comparePtrs2D(const fk::Ptr<fk::ND::_2D, T>& ptr1, const fk::Ptr<fk::ND::_2D, T>& ptr2) {
     const fk::PtrDims<fk::ND::_2D> dims1 = ptr1.dims();
     const fk::PtrDims<fk::ND::_2D> dims2 = ptr2.dims();
     if (dims1.width != dims2.width || dims1.height != dims2.height) {
         return false;
     }
-    for (uint y = 0; y < ptr1.height; ++y) {
-        for (uint x = 0; x < ptr1.width; ++x) {
+    for (uint y = 0; y < dims1.height; ++y) {
+        for (uint x = 0; x < dims1.width; ++x) {
             if (!equalInstances(ptr1.at(x, y), ptr2.at(x, y))) {
                 return false;
             }
@@ -147,16 +146,16 @@ inline bool comparePtrs2D(const fk::Ptr2D<T>& ptr1, const fk::Ptr2D<T>& ptr2) {
 }
 
 template <typename T>
-inline bool comparePtrs3D(const fk::Ptr3D<T>& ptr1, const fk::Ptr3D<T>& ptr2) {
+inline bool comparePtrs3D(const fk::Ptr<fk::ND::_3D, T>& ptr1, const fk::Ptr<fk::ND::_3D, T>& ptr2) {
     const fk::PtrDims<fk::ND::_3D> dims1 = ptr1.dims();
     const fk::PtrDims<fk::ND::_3D> dims2 = ptr2.dims();
     if (dims1.width != dims2.width || dims1.height != dims2.height ||
         dims1.planes != dims2.planes || dims1.color_planes != dims2.color_planes) {
         return false;
     }
-    for (uint z = 0; z < ptr1.planes; ++z) {
-        for (uint y = 0; y < ptr1.height; ++y) {
-            for (uint x = 0; x < ptr1.width; ++x) {
+    for (uint z = 0; z < dims1.planes; ++z) {
+        for (uint y = 0; y < dims1.height; ++y) {
+            for (uint x = 0; x < dims1.width; ++x) {
                 if (!equalInstances(ptr1.at(x, y, z), ptr2.at(x, y, z))) {
                     return false;
                 }
@@ -202,38 +201,33 @@ namespace test_case_builder::detail {
         stream.sync();
         return outputPtr;
     }
-    template <typename Operation, fk::ND D, size_t N>
-    auto launchRead(const std::string& testName,
-                    const std::array<typename Operation::ParamsType, N>& inputElems) {
+    template <typename Operation, fk::ND D, size_t N, typename BuildParams>
+    auto launchRead(const std::string& testName, fk::Stream stream,
+                    const std::array<BuildParams, N>& inputElems) {
         using OutputType = typename Operation::OutputType;
 
-        fk::Stream stream;
-       
-        for (auto&& input : inputElems) {
-            input.upload(stream);
-        }
-        auto readOp = Operation::build(inputElems);
-        using ReadOpType = std::decay_t<decltype(readOp)>;
-        fk::ActiveThreads readOutputDims = ReadOpType::Operation::getActiveThreads(readOp);
+        const auto readOp = Operation::build(inputElems);
      
-        std::array<fk::Ptr<D, OutputType>, N> outputElems = fk::transformArray(inputElems, [&](const auto& input) {
+        std::array<fk::Ptr<D, OutputType>, N> outputElems =
+            fk::transformArray(inputElems, [](const BuildParams& input) {
                 const auto iROp = Operation::build(input);
                 using ROp = typename std::decay_t<decltype(iROp)>::Operation;
                 const fk::Point point(0, 0, 0);
                 const uint num_elems_x = ROp::num_elems_x(point, iROp);
-                const uint num_elems_y = ROp::num_elems_y(point, iROp);
-                const uint num_elems_z = ROp::num_elems_z(point, iROp);
                 if constexpr (D == fk::ND::_1D) {
-                    return fk::Ptr1D<OutputType>(num_elems_x);
+                    return fk::Ptr<D, OutputType>(num_elems_x);
                 } else if constexpr (D == fk::ND::_2D) {
-                    return fk::Ptr2D<OutputType>(num_elems_x, num_elems_y);
+                    const uint num_elems_y = ROp::num_elems_y(point, iROp);
+                    return fk::Ptr<D, OutputType>(num_elems_x, num_elems_y);
                 } else {
-                    return fk::Ptr3D<OutputType>(num_elems_x, num_elems_y, num_elems_z);
+                    const uint num_elems_y = ROp::num_elems_y(point, iROp);
+                    const uint num_elems_z = ROp::num_elems_z(point, iROp);
+                    return fk::Ptr<D, OutputType>(num_elems_x, num_elems_y, num_elems_z);
                 }
             }
         );
        
-        auto writeOp = fk::PerThreadWrite<D, OutputType>::build(outputElems);
+        const auto writeOp = fk::PerThreadWrite<D, OutputType>::build(outputElems);
        
         std::cout << "Running test for " << "\033[1;33m" << testName << "\033[1;33m" << ": ";
         
@@ -254,8 +248,8 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                                     std::is_fundamental_v<typename Operation::OutputType>, void>> {
     template <size_t N>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                      const std::array<typename Operation::InputType, N>& inputElems,
-                      const std::array<typename Operation::OutputType, N>& expectedElems) {
+                               const std::array<typename Operation::InputType, N> inputElems,
+                               const std::array<typename Operation::OutputType, N> expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
         testCases[testName] = [testName, inputElems, expectedElems]() {
             const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
@@ -289,8 +283,8 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                                      fk::validCUDAVec<typename Operation::OutputType>), void>> {
     template <size_t N>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                             const std::array<typename Operation::InputType, N>& inputElems,
-                             const std::array<typename Operation::OutputType, N>& expectedElems) {
+                               const std::array<typename Operation::InputType, N> inputElems,
+                               const std::array<typename Operation::OutputType, N> expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
         testCases[testName] = [testName, inputElems, expectedElems]() -> bool {
             const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
@@ -331,13 +325,14 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
 
 template <typename Operation>
 struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::value, void>> {
-    template <fk::ND D, size_t N>
+    template <fk::ND D, size_t N, typename BuildParams>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                               const std::array<typename Operation::ParamsType, N>& inputElems,
-                               const std::array<fk::Ptr<D, typename Operation::OutputType>, N>& expectedElems) {
+                               fk::Stream stream, 
+                               const std::array<BuildParams, N> inputElems,
+                               const std::array<fk::Ptr<D, typename Operation::OutputType>, N> expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
-        testCases[testName] = [testName, inputElems, expectedElems]() -> bool { 
-            const auto outArray = test_case_builder::detail::launchRead<Operation, D>(testName, inputElems, expectedElems);
+        testCases[testName] = [testName, stream, inputElems = std::move(inputElems), expectedElems = std::move(expectedElems)]() -> bool {
+            const auto outArray = test_case_builder::detail::launchRead<Operation, D>(testName, stream, inputElems);
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
                 const auto& outputPtr = outArray[i];

@@ -416,6 +416,10 @@ namespace fk {
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
+
+        FK_HOST_FUSE InstantiableType build(const Ptr<ND::_2D, PixelBaseType>& data) {
+            return { data.ptr() };
+        }
     };
 
     enum class ColorConversionCodes {

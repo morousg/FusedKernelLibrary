@@ -30,15 +30,20 @@ namespace fk {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
-            int i = 0;
-            for (const auto& value : initList) {
-                at[i++] = value;
-            }
+        template <typename... Types>
+        FK_HOST_DEVICE_CNST Array(const Types&... values) : at{static_cast<T>(values)...} {
+            static_assert(all_of_v<T, TypeList<Types...>>, "Not all input types are the expected type T");
+            static_assert(sizeof...(Types) == SIZE, "The number of elements passed to the constructor does not correspond with the Array size.");
         }
-        FK_HOST_DEVICE_CNST T operator[](const int& index) const {
+        FK_HOST_DEVICE_CNST T operator[](const size_t& index) const {
             return at[index];
         }
+    };
+
+    template <typename T>
+    union Array<T, 0> {
+        enum { size = 0 };
+        FK_HOST_DEVICE_CNST Array() {}
     };
 
     template <typename T>
@@ -48,15 +53,9 @@ namespace fk {
         struct {
             T x;
         };
-        FK_HOST_DEVICE_CNST Array(const T& other) : x(other) {}
-        FK_HOST_DEVICE_CNST Array(const typename VectorType<T,1>::type_v& other) : x(other.x) {}
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
-            int i = 0;
-            for (const auto& value : initList) {
-                at[i++] = value;
-            }
-        }
-        FK_HOST_DEVICE_CNST T operator[](const int& index) const {
+        FK_HOST_DEVICE_CNST Array(const T& x) : at{ x } {}
+        FK_HOST_DEVICE_CNST Array(const typename VectorType<T, 1>::type_v& other) : x(other.x) {}
+        FK_HOST_DEVICE_CNST T operator[](const size_t& index) const {
             return at[index];
         }
         FK_HOST_DEVICE_CNST T operator()(const int& index) const {
@@ -75,19 +74,14 @@ namespace fk {
         struct {
             T x, y;
         };
+        FK_HOST_DEVICE_CNST Array(const T& x, const T& y) : at{ x, y } {}
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 2>& other) : x(other.x), y(other.y) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
-            int i = 0;
-            for (const auto& value : initList) {
-                at[i++] = value;
-            }
-        }
-        FK_HOST_DEVICE_CNST T operator[](const int& index) const {
+        FK_HOST_DEVICE_CNST T operator[](const size_t& index) const {
             return at[index];
         }
         // This indexing method, is more costly than the previous one, but
@@ -110,19 +104,14 @@ namespace fk {
         struct {
             T x, y, z;
         };
+        FK_HOST_DEVICE_CNST Array(const T& x, const T& y, const T& z) : at{ x, y, z } {}
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 3>& other) : x(other.x), y(other.y), z(other.z) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
-            int i = 0;
-            for (const auto& value : initList) {
-                at[i++] = value;
-            }
-        }
-        FK_HOST_DEVICE_CNST T operator[](const int& index) const {
+        FK_HOST_DEVICE_CNST T operator[](const size_t& index) const {
             return at[index];
         }
         // This indexing method, is more costly than the previous one, but
@@ -146,19 +135,14 @@ namespace fk {
         struct {
             T x, y, z, w;
         };
+        FK_HOST_DEVICE_CNST Array(const T& x, const T& y, const T& z, const T& w) : at{ x, y, z, w } {}
         FK_HOST_DEVICE_CNST Array(const VectorType_t<T, 4>& other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
         FK_HOST_DEVICE_CNST Array(const T& initValue) {
             for (int i = 0; i < size; i++) {
                 at[i] = initValue;
             }
         }
-        FK_HOST_DEVICE_CNST Array(const std::initializer_list<T>& initList) {
-            int i = 0;
-            for (const auto& value : initList) {
-                at[i++] = value;
-            }
-        }
-        FK_HOST_DEVICE_CNST T operator[](const int& index) const {
+        FK_HOST_DEVICE_CNST T operator[](const size_t& index) const {
             return at[index];
         }
         // This indexing method, is more costly than the previous one, but
@@ -228,13 +212,13 @@ namespace fk {
     constexpr bool allArraysSameSize_v = and_v<(arraySize<ArrayTypes> == BATCH)...>;
 
     template <template <typename, size_t> class ArrayLike, typename T, size_t N, typename F, std::size_t... Is>
-    FK_HOST_DEVICE_CNST auto transformArray_impl(const ArrayLike<T, N>& input, F&& func, std::index_sequence<Is...>) {
+    FK_HOST_CNST auto transformArray_impl(const ArrayLike<T, N>& input, F&& func, std::index_sequence<Is...>) {
         using ReturnType = std::invoke_result_t<F, T>;
         return ArrayLike<ReturnType, N>{ { func(input[Is])... } };
     }
 
     template <typename ArrayLike, typename F>
-    FK_HOST_DEVICE_CNST auto transformArray(const ArrayLike& input, F&& func) {
+    FK_HOST_CNST auto transformArray(const ArrayLike& input, F&& func) {
         return transformArray_impl(input, std::forward<F>(func), std::make_index_sequence<arraySize<ArrayLike>>{});
     }
 
@@ -244,17 +228,22 @@ namespace fk {
     }
 
     template <template <typename, size_t> class ArrayLike, typename T, size_t N>
-    FK_HOST_DEVICE_CNST auto getIndexArray(const ArrayLike<size_t, N>&) -> ArrayLike<size_t, N> {
+    FK_HOST_DEVICE_CNST auto getIndexArray(const ArrayLike<T, N>&) -> ArrayLike<size_t, N> {
         return getIndexArray_helper<ArrayLike<size_t, N>>(std::make_index_sequence<N>{});
     }
 
+    template <size_t N>
+    FK_HOST_DEVICE_CNST Array<size_t, N> makeIndexArray() {
+        return getIndexArray_helper<Array<size_t, N>>(std::make_index_sequence<N>{});
+    }
+
     template <typename T, typename ArrayType, size_t... Idx>
-    FK_HOST_DEVICE_CNST bool allValuesAre_helper(const ArrayType& value, const ArrayType& arrValues, const std::index_sequence<Idx...>&) {
+    FK_HOST_DEVICE_CNST bool allValuesAre_helper(const T& value, const ArrayType& arrValues, const std::index_sequence<Idx...>&) {
         return ((arrValues[Idx] == value) && ...);
     }
 
     template <template <typename, size_t> class ArrayLike, typename T, size_t N>
-    FK_HOST_DEVICE_CNST bool allValuesAre(const T& value, const ArrayLike<size_t, N>& arrValues) {
+    FK_HOST_DEVICE_CNST bool allValuesAre(const T& value, const ArrayLike<T, N>& arrValues) {
         return allValuesAre_helper(value, arrValues, std::make_index_sequence<N>{});
     }
 

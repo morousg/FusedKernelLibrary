@@ -58,11 +58,11 @@ namespace fk {
         uchar x, y;
     };
 
-    struct Char3 {
+    struct alignas(4) Char3 {
        signed char x, y, z;
     };
 
-    struct Uchar3 {
+    struct alignas(4) Uchar3 {
        uchar x, y, z;
     };
 

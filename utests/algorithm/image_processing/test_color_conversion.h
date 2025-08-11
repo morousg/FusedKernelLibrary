@@ -222,7 +222,106 @@ void testNormalizeColorRangeDepth() {
     TestCaseBuilder<NormalizeColorRangeDepthTest>::addTest(testCases, inputVals, expectedVals);
 }
 
-START_ADDING_TESTS
+void testReadYUV() {
+    fk::Stream stream;
+
+    // Test ReadYUV with UYVY format
+    using ReadYUVTest = fk::ReadYUV<fk::PixelFormat::UYVY>;
+
+    // Input and expected values
+    constexpr fk::Size res1_2(4, 2);
+    constexpr fk::Size res3(8, 8);
+    // Test 1
+    constexpr uchar ptr1[] =
+    { 128, 254, 129, 255, 128, 254, 129, 255,
+      128, 254, 129, 255, 128, 254, 129, 255 }; // UYVY pixel data
+    
+    constexpr uchar3 ptr1Expected[] =
+    { {254, 128, 129}, {255, 128, 129}, {254, 128, 129}, {255, 128, 129},
+      {254, 128, 129}, {255, 128, 129}, {254, 128, 129}, {255, 128, 129} }; // Expected YUV values
+    
+    // Test 2
+    constexpr uchar ptr2[] =
+    { 0,  2, 1,  3,  4,  6,  5,  7,
+      8, 10, 9, 11, 12, 14, 13, 15 }; // UYVY pixel data
+    
+    constexpr uchar3 ptr2Expected[] =
+    { { 2, 0, 1}, { 3, 0, 1}, { 6,  4,  5}, { 7,  4,  5},
+      {10, 8, 9}, {11, 8, 9}, {14, 12, 13}, {15, 12, 13}  }; // Expected YUV values
+
+    // Test 3
+    constexpr uchar ptr3[] =
+    { 0,  2,  1,  3,  4,  6,  5,  7,  8, 10,  9, 11, 12, 14, 13, 15,
+     16, 18, 17, 19, 20, 22, 21, 23, 24, 26, 25, 27, 28, 30, 29, 31,
+      0,  2,  1,  3,  4,  6,  5,  7,  8, 10,  9, 11, 12, 14, 13, 15,
+     16, 18, 17, 19, 20, 22, 21, 23, 24, 26, 25, 27, 28, 30, 29, 31,
+      0,  2,  1,  3,  4,  6,  5,  7,  8, 10,  9, 11, 12, 14, 13, 15,
+     16, 18, 17, 19, 20, 22, 21, 23, 24, 26, 25, 27, 28, 30, 29, 31,
+      0,  2,  1,  3,  4,  6,  5,  7,  8, 10,  9, 11, 12, 14, 13, 15,
+     16, 18, 17, 19, 20, 22, 21, 23, 24, 26, 25, 27, 28, 30, 29, 31 }; // UYVY pixel data
+
+    constexpr uchar3 ptr3Expected[] =
+    {{ 2,  0,  1}, { 3,  0,  1}, { 6,  4,  5}, { 7,  4,  5}, {10,  8,  9}, {11,  8,  9}, {14, 12, 13}, {15, 12, 13},
+     {18, 16, 17}, {19, 16, 17}, {22, 20, 21}, {23, 20, 21}, {26, 24, 25}, {27, 24, 25}, {30, 28, 29}, {31, 28, 29},
+     { 2,  0,  1}, { 3,  0,  1}, { 6,  4,  5}, { 7,  4,  5}, {10,  8,  9}, {11,  8,  9}, {14, 12, 13}, {15, 12, 13},
+     {18, 16, 17}, {19, 16, 17}, {22, 20, 21}, {23, 20, 21}, {26, 24, 25}, {27, 24, 25}, {30, 28, 29}, {31, 28, 29},
+     { 2,  0,  1}, { 3,  0,  1}, { 6,  4,  5}, { 7,  4,  5}, {10,  8,  9}, {11,  8,  9}, {14, 12, 13}, {15, 12, 13},
+     {18, 16, 17}, {19, 16, 17}, {22, 20, 21}, {23, 20, 21}, {26, 24, 25}, {27, 24, 25}, {30, 28, 29}, {31, 28, 29},
+     { 2,  0,  1}, { 3,  0,  1}, { 6,  4,  5}, { 7,  4,  5}, {10,  8,  9}, {11,  8,  9}, {14, 12, 13}, {15, 12, 13},
+     {18, 16, 17}, {19, 16, 17}, {22, 20, 21}, {23, 20, 21}, {26, 24, 25}, {27, 24, 25}, {30, 28, 29}, {31, 28, 29}, };
+
+    // Allocate Ptr's
+    // We need to allocate a pitch that is at least width * 2 bytes for UYVY format
+    std::array<fk::Ptr<fk::ND::_2D, uchar>, 3> inputVals = {
+      // Fix: make pitch to be respected when different than 0, even in host
+      fk::Ptr<fk::ND::_2D, uchar>(res1_2.width, res1_2.height, 32u * 4u),
+      fk::Ptr<fk::ND::_2D, uchar>(res1_2.width, res1_2.height, 32u * 4u),
+      fk::Ptr<fk::ND::_2D, uchar>(  res3.width,   res3.height, 32u * 4u)
+    };
+
+    std::array<fk::Ptr<fk::ND::_2D, uchar3>, 3> expectedVals = {
+      fk::Ptr<fk::ND::_2D, uchar3>(res1_2.width, res1_2.height, 0, fk::MemType::Host),
+      fk::Ptr<fk::ND::_2D, uchar3>(res1_2.width, res1_2.height, 0, fk::MemType::Host),
+      fk::Ptr<fk::ND::_2D, uchar3>(  res3.width,   res3.height, 0, fk::MemType::Host)
+    };
+
+    // Copy values
+    auto input1 = inputVals[0];
+    auto input2 = inputVals[1];
+    auto input3 = inputVals[2];
+    for (int y = 0; y < res3.height; ++y) {
+        for (int x = 0; x < res3.width * 2; ++x) {
+            if (y < res1_2.height) {
+                if (x < (res1_2.width * 2)) {
+                    input1.at(x, y) = ptr1[y * (res1_2.width * 2) + x];
+                    input2.at(x, y) = ptr2[y * (res1_2.width * 2) + x];
+                }
+                input3.at(x, y) = ptr3[y * (res3.width * 2) + x];
+            } else {
+                input3.at(x, y) = ptr3[y * (res3.width * 2) + x];
+            }
+        }
+        for (int x = 0; x < res3.width; ++x) {
+            if (y < res1_2.height) {
+                if (x < res1_2.width) {
+                    expectedVals[0].at(x, y) = ptr1Expected[y * res1_2.width + x];
+                    expectedVals[1].at(x, y) = ptr2Expected[y * res1_2.width + x];
+                }
+                expectedVals[2].at(x, y) = ptr3Expected[y * res3.width + x];
+            } else {
+                expectedVals[2].at(x, y) = ptr3Expected[y * res3.width + x];
+            }
+        }
+    }
+
+    input1.upload(stream);
+    input2.upload(stream);
+    input3.upload(stream);
+
+    TestCaseBuilder<ReadYUVTest>::addTest(testCases, stream, inputVals, expectedVals);
+}
+
+void addTests() {
 // Test UYVY pixel format traits
 testUYVYPixelFormatTraits();
 
@@ -246,8 +345,17 @@ testDenormalizePixel();
 testNormalizePixel();
 testSaturateDenormalizePixel();
 testNormalizeColorRangeDepth();
-STOP_ADDING_TESTS
+
+// Test ReadYUV operation
+testReadYUV();
+}
 
 int launch() {
-    RUN_ALL_TESTS
+    addTests(); 
+    bool correct{ true }; for (const auto& [testName, testFunc] : testCases) {
+        if (!testFunc()) {
+            correct = false;
+        }
+    } 
+    return correct ? 0 : -1;
 }
