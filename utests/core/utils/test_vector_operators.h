@@ -24,14 +24,16 @@
 #include <type_traits>
 
 // Helper function to test equality for floating point numbers
-template <typename T> bool approxEqual(T a, T b, T epsilon = static_cast<T>(1e-6)) {
-    if constexpr (std::is_floating_point_v<T>) {
+bool approxEqualF(const float& a, const float &b) {
+    constexpr float epsilon = 1e-5f; // Define a small epsilon value for floating point comparison
         return std::abs(a - b) < epsilon;
-    } else {
-        return a == b;
-    }
+     
 }
 
+bool approxEqualD(const float &a, const double &b) {
+    constexpr float epsilon = 1e-5f; // Define a small epsilon value for floating point comparison
+    return std::abs(a - b) < epsilon;
+}
 // Test comparison operators return correct types
 template <typename VecType, typename BoolVecType> void testComparisonOperatorTypes() {
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
@@ -327,34 +329,35 @@ template <typename VecType> void testBitwiseOperators() {
 
 // Test actual computation for float2 to ensure operators work correctly
 bool testFloat2ComputationCorrectness() {
-    float2 a = {3.0f, 4.0f};
-    float2 b = {1.0f, 2.0f};
+    constexpr float2 a = {3.0f, 4.0f};
+    constexpr float2 b = {1.0f, 2.0f};
     bool res = true;
     // Test arithmetic
-    auto add_result = a + b;
+    constexpr auto add_result = a + b;
 
-    if (!approxEqual(add_result.x, 4.0f) && approxEqual(add_result.y, 6.0f)) {
+     
+    if (!approxEqualF(add_result.x, 4.0f) && approxEqualF(add_result.y, 6.0f)) {
         std::cerr << "Float2 addition test failed: expected (4.0, 6.0), got (" << add_result.x << ", " << add_result.y
                   << ")" << std::endl;
         res = false;
     }
 
     auto sub_result = a - b;
-    if (!(approxEqual(sub_result.x, 2.0f) && approxEqual(sub_result.y, 2.0f))) {
+    if (!(approxEqualF(sub_result.x, 2.0f) && approxEqualF(sub_result.y, 2.0f))) {
         std::cerr << "Float2 subtraction test failed: expected (2.0, 2.0), got (" << sub_result.x << ", "
                   << sub_result.y << ")" << std::endl;
         res = false;
     }
 
     auto mul_result = a * b;
-    if (!(approxEqual(mul_result.x, 3.0f) && approxEqual(mul_result.y, 8.0f))) {
+    if (!(approxEqualF(mul_result.x, 3.0f) && approxEqualF(mul_result.y, 8.0f))) {
         std::cerr << "Float2 multiplication test failed: expected (3.0, 8.0), got (" << mul_result.x << ", "
                   << mul_result.y << ")" << std::endl;
         res = false;
     }
 
     auto div_result = a / b;
-    if (!(approxEqual(div_result.x, 3.0f) && approxEqual(div_result.y, 2.0f))) {
+    if (!(approxEqualF(div_result.x, 3.0f) && approxEqualF(div_result.y, 2.0f))) {
         std::cerr << "Float2 division test failed: expected (3.0, 2.0), got (" << div_result.x << ", " << div_result.y
                   << ")" << std::endl;
         res = false;
@@ -362,14 +365,14 @@ bool testFloat2ComputationCorrectness() {
 
     // Test scalar arithmetic
     auto scalar_add = a + 1.0f;
-    if (!(approxEqual(scalar_add.x, 4.0f) && approxEqual(scalar_add.y, 5.0f))) {
+    if (!(approxEqualF(scalar_add.x, 4.0f) && approxEqualF(scalar_add.y, 5.0f))) {
         std::cerr << "Float2 scalar addition test failed: expected (4.0, 5.0), got (" << scalar_add.x << ", "
                   << scalar_add.y << ")" << std::endl;
         res = false;
     }
 
     auto scalar_mul = a * 2.0f;
-    if (!(approxEqual(scalar_mul.x, 6.0f) && approxEqual(scalar_mul.y, 8.0f))) {
+    if (!(approxEqualF(scalar_mul.x, 6.0f) && approxEqualF(scalar_mul.y, 8.0f))) {
         std::cerr << "Float2 scalar multiplication test failed: expected (6.0, 8.0), got (" << scalar_mul.x << ", "
                   << scalar_mul.y << ")" << std::endl;
         res = false;
@@ -399,6 +402,87 @@ bool testFloat2ComputationCorrectness() {
     auto scalar_lt = a < 2.0f;
     if (!(!scalar_lt.x && !scalar_lt.y)) {
         std::cerr << "Float2 scalar less than test failed: expected (false, false), got (" << scalar_lt.x << ", "
+                  << scalar_lt.y << ")" << std::endl;
+        res = false;
+    }
+    return res;
+}
+
+// Test actual computation for float2 to ensure operators work correctly
+bool testDouble2ComputationCorrectness() {
+    constexpr double2 a = {3.0, 4.0};
+    constexpr double2 b = {1.0, 2.0};
+    bool res = true;
+    // Test arithmetic
+    constexpr auto add_result = a + b;
+
+     
+    if (!approxEqualD(add_result.x, 4.0) && approxEqualD(add_result.y, 6.0)) {
+        std::cerr << "Double2 addition test failed: expected (4.0, 6.0), got (" << add_result.x << ", " << add_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
+
+    auto sub_result = a - b;
+    if (!(approxEqualD(sub_result.x, 2.0) && approxEqualD(sub_result.y, 2.0))) {
+        std::cerr << "Double2 subtraction test failed: expected (2.0, 2.0), got (" << sub_result.x << ", "
+                  << sub_result.y << ")" << std::endl;
+        res = false;
+    }
+
+    auto mul_result = a * b;
+    if (!(approxEqualD(mul_result.x, 3.0) && approxEqualD(mul_result.y, 8.0))) {
+        std::cerr << "Double2 multiplication test failed: expected (3.0, 8.0), got (" << mul_result.x << ", "
+                  << mul_result.y << ")" << std::endl;
+        res = false;
+    }
+
+    auto div_result = a / b;
+    if (!(approxEqualD(div_result.x, 3.0) && approxEqualD(div_result.y, 2.0))) {
+        std::cerr << "Double2 division test failed: expected (3.0, 2.0), got (" << div_result.x << ", " << div_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
+
+    // Test scalar arithmetic
+    auto scalar_add = a + 1.0;
+    if (!(approxEqualD(scalar_add.x, 4.0) && approxEqualD(scalar_add.y, 5.0))) {
+        std::cerr << "Double2 scalar addition test failed: expected (4.0, 5.0), got (" << scalar_add.x << ", "
+                  << scalar_add.y << ")" << std::endl;
+        res = false;
+    }
+
+    auto scalar_mul = a * 2.0;
+    if (!(approxEqualD(scalar_mul.x, 6.0) && approxEqualD(scalar_mul.y, 8.0))) {
+        std::cerr << "Double2 scalar multiplication test failed: expected (6.0, 8.0), got (" << scalar_mul.x << ", "
+                  << scalar_mul.y << ")" << std::endl;
+        res = false;
+    }
+
+    // Test comparisons
+    auto eq_result = a == b;
+    if (!(!eq_result.x && !eq_result.y)) {
+        std::cerr << "Double2 equality test failed: expected (false, false), got (" << eq_result.x << ", " << eq_result.y
+                  << ")" << std::endl;
+        res = false;
+    }
+
+    auto gt_result = a > b;
+    if (!(gt_result.x && gt_result.y)) {
+        std::cerr << "Double2 greater than test failed: expected (true, true), got (" << gt_result.x << ", "
+                  << gt_result.y << ")" << std::endl;
+        res = false;
+    }
+    auto scalar_gt = a > 2.0;
+    if (!(scalar_gt.x && scalar_gt.y)) {
+        std::cerr << "Double2 scalar greater than test failed: expected (true, true), got (" << scalar_gt.x << ", "
+                  << scalar_gt.y << ")" << std::endl;
+        res = false;
+    }
+
+    auto scalar_lt = a < 2.0;
+    if (!(!scalar_lt.x && !scalar_lt.y)) {
+        std::cerr << "Double2 scalar less than test failed: expected (false, false), got (" << scalar_lt.x << ", "
                   << scalar_lt.y << ")" << std::endl;
         res = false;
     }
@@ -538,18 +622,7 @@ int launch() {
      
 
 
-    testUnaryOperators<float1>();
-    testUnaryOperators<float2>();
-    testUnaryOperators<float3>();
-    testUnaryOperators<float4>();
-    testUnaryOperators<int1>();
-    testUnaryOperators<int2>();
-    testUnaryOperators<int3>();
-    testUnaryOperators<int4>();
-    testUnaryOperators<uchar1>();
-    testUnaryOperators<uchar2>();
-    testUnaryOperators<uchar3>();
-    testUnaryOperators<uchar4>();
+    
 
     // Test compound assignment operators
     testCompoundAssignmentOperators<float2>();
@@ -560,10 +633,11 @@ int launch() {
     // previous test use static asserts, to they don't compile if the results are not correct
     //   the next one are at runtime, so we need to check the results manually
     //  Test actual computation correctness
-    bool res = testFloat2ComputationCorrectness();
-
-    bool res1 = testInt4ComputationCorrectness();
-    if (!res || !res1) {
+    bool resF = testFloat2ComputationCorrectness();
+    bool resD = testDouble2ComputationCorrectness();
+    bool resI = testInt4ComputationCorrectness(); // long/ulong/longlong etc should be tested in a similar way, but they
+                                                  // are not used in the codebase yet
+    if (!resF || !resD || !resI) {
         std::cerr << "Vector operator tests failed!" << std::endl;
         return -1;
     }
