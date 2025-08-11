@@ -45,11 +45,15 @@ namespace fk {
             return dims.width;
         }
         FK_HOST_FUSE void d_malloc(RawPtr<ND::_1D, T>& ptr_a) {
-            gpuErrchk(cudaMalloc(&ptr_a.data, sizeof(T) * ptr_a.dims.width));
-            ptr_a.dims.pitch = sizeof(T) * ptr_a.dims.width;
+            if (ptr_a.dims.pitch == 0) {
+                ptr_a.dims.pitch = sizeof(T) * ptr_a.dims.width;
+            }
+            gpuErrchk(cudaMalloc(&ptr_a.data, ptr_a.dims.pitch));
         }
         FK_HOST_FUSE void h_malloc_init(PtrDims<ND::_1D>& dims) {
-            dims.pitch = sizeof(T) * dims.width;
+            if (dims.pitch == 0) {
+                dims.pitch = sizeof(T) * dims.width;
+            }
         }
     };
 
@@ -71,7 +75,9 @@ namespace fk {
             }
         }
         FK_HOST_FUSE void h_malloc_init(PtrDims<ND::_2D>& dims) {
-            dims.pitch = sizeof(T) * dims.width;
+            if (dims.pitch == 0) {
+                dims.pitch = sizeof(T) * dims.width;
+            }
         }
     };
 
@@ -91,7 +97,9 @@ namespace fk {
             ptr_a.dims.plane_pitch = ptr_a.dims.pitch * ptr_a.dims.height;
         }
         FK_HOST_FUSE void h_malloc_init(PtrDims<ND::_3D>& dims) {
-            dims.pitch = sizeof(T) * dims.width;
+            if (dims.pitch == 0) {
+                dims.pitch = sizeof(T) * dims.width;
+            }
             dims.plane_pitch = dims.pitch * dims.height;
         }
     };
@@ -109,7 +117,9 @@ namespace fk {
             gpuErrchk(cudaMalloc(&ptr_a.data, PtrImpl<ND::T3D, T>::sizeInBytes(ptr_a.dims)));
         }
         FK_HOST_FUSE void h_malloc_init(PtrDims<ND::T3D>& dims) {
-            dims.pitch = sizeof(T) * dims.width;
+            if (dims.pitch == 0) {
+                dims.pitch = sizeof(T) * dims.width;
+            }
             dims.plane_pitch = dims.pitch * dims.height;
             dims.color_planes_pitch = dims.plane_pitch * dims.planes;
         }
@@ -134,7 +144,11 @@ namespace fk {
         int deviceID;
 
         inline constexpr Ptr(const RawPtr<D, T>& ptr_a_, RefPtr* ref_, const MemType& type_, const int& devID) :
-            ref(ref_), ptr_a(ptr_a_), ptr_pinned(ptr_a_), type(type_), deviceID(devID) {}
+            ref(ref_), ptr_a(ptr_a_), ptr_pinned(ptr_a_), type(type_), deviceID(devID) {
+            if (ref) {
+                ref->cnt.fetch_add(1);
+            }
+        }
 
         inline constexpr void allocDevice() {
             #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
@@ -187,52 +201,50 @@ namespace fk {
         }
 
         inline constexpr void freePtr() {
+            if (ref && ref->cnt.load() < 1) {
+                throw std::runtime_error("Reference count is less than 1, cannot free memory.");
+            }
             if (ref && ref->cnt.fetch_sub(1) == 1) {
-                // Store what we need locally BEFORE deleting ref
-                void* ptrToFree = ref->ptr;
-                void* pinnedPtrToFree = ref->pinnedPtr;
-
-                // Delete ref immediately - don't access it after this point
-                delete ref;
-                ref = nullptr;
-
                 switch (type) {
                 case MemType::Device:
                     {
                         #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
-                        gpuErrchk(cudaFree(ptrToFree));
+                        gpuErrchk(cudaFree(ref->ptr));
                         #else
                         throw std::runtime_error("Device memory deallocation not supported in non-CUDA compilation.");
                         #endif
+                        break;
                     }
-                    break;
                 case MemType::Host:
                     { 
-                        free(ptrToFree);
+                        free(ref->ptr);
+                        break;
                     }
-                    break;
                 case MemType::HostPinned:
                     {
                         #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
-                        gpuErrchk(cudaFreeHost(ptrToFree));
+                        gpuErrchk(cudaFreeHost(ref->ptr));
                         #else
                         throw std::runtime_error("Host pinned memory deallocation not supported in non-CUDA compilation.");
                         #endif
+                        break;
                     }
-                    break;
                 case MemType::DeviceAndPinned:
                 {
 #if defined(__NVCC__) || defined(__HIP__) || defined(NVRTC_ENABLED)
-                    gpuErrchk(cudaFree(ptrToFree));
-                    gpuErrchk(cudaFreeHost(pinnedPtrToFree));
+                    gpuErrchk(cudaFree(ref->ptr));
+                    gpuErrchk(cudaFreeHost(ref->pinnedPtr));
 #else
                     throw std::runtime_error("Device and Host pinned memory deallocation not supported in non-CUDA compilation.");
 #endif
+                    break;
                 }
-                break;
                 default:
                     break;
                 }
+
+                delete ref;
+                ref = nullptr;
             }
         }
 
@@ -261,7 +273,7 @@ namespace fk {
 
         inline constexpr Ptr(RefPtr* ref_, const RawPtr<D, T>& ptr_a_, const RawPtr<D, T>& ptr_pinned_, const MemType& type_, const int& devID) :
             ref(ref_), ptr_a(ptr_a_), ptr_pinned(ptr_pinned_), type(type_), deviceID(devID) {
-            if (ref != nullptr) {
+            if (ref) {
                 ref->cnt.fetch_add(1);  // Increment reference count
             }
         }
