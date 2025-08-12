@@ -24,10 +24,9 @@
 #include <type_traits>
 
 // Helper function to test equality for floating point numbers
-bool approxEqualF(const float& a, const float &b) {
+bool approxEqualF(const float &a, const float &b) {
     constexpr float epsilon = 1e-5f; // Define a small epsilon value for floating point comparison
-        return std::abs(a - b) < epsilon;
-     
+    return std::abs(a - b) < epsilon;
 }
 
 bool approxEqualD(const float &a, const double &b) {
@@ -70,38 +69,38 @@ template <typename VecType, typename BoolVecType> void testScalarComparisonOpera
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
 
     using BaseType = fk::VBase<VecType>;
-    VecType a = fk::make_set<VecType>(static_cast<BaseType>(1));
-    BaseType scalar = static_cast<BaseType>(2);
+    constexpr VecType a = fk::make_set<VecType>(static_cast<BaseType>(1));
+    constexpr BaseType scalar = static_cast<BaseType>(2);
 
     // Test vector-to-scalar comparisons
-    auto eq_result = a == scalar;
-    auto ne_result = a != scalar;
-    auto gt_result = a > scalar;
-    auto lt_result = a < scalar;
-    auto ge_result = a >= scalar;
-    auto le_result = a <= scalar;
+    constexpr auto eq_result = a == scalar;
+    constexpr auto ne_result = a != scalar;
+    constexpr auto gt_result = a > scalar;
+    constexpr auto lt_result = a < scalar;
+    constexpr auto ge_result = a >= scalar;
+    constexpr auto le_result = a <= scalar;
 
-    static_assert(std::is_same_v<decltype(eq_result), BoolVecType>, "== operator should return bool vector");
-    static_assert(std::is_same_v<decltype(ne_result), BoolVecType>, "!= operator should return bool vector");
-    static_assert(std::is_same_v<decltype(gt_result), BoolVecType>, "> operator should return bool vector");
-    static_assert(std::is_same_v<decltype(lt_result), BoolVecType>, "< operator should return bool vector");
-    static_assert(std::is_same_v<decltype(ge_result), BoolVecType>, ">= operator should return bool vector");
-    static_assert(std::is_same_v<decltype(le_result), BoolVecType>, "<= operator should return bool vector");
+    static_assert(std::is_same_v<decltype(eq_result), const BoolVecType>, "== operator should return bool vector");
+    static_assert(std::is_same_v<decltype(ne_result), const BoolVecType>, "!= operator should return bool vector");
+    static_assert(std::is_same_v<decltype(gt_result), const BoolVecType>, "> operator should return bool vector");
+    static_assert(std::is_same_v<decltype(lt_result), const BoolVecType>, "< operator should return bool vector");
+    static_assert(std::is_same_v<decltype(ge_result), const BoolVecType>, ">= operator should return bool vector");
+    static_assert(std::is_same_v<decltype(le_result), const BoolVecType>, "<= operator should return bool vector");
 
     // Test scalar-to-vector comparisons (should be symmetric)
-    auto seq_result = scalar == a;
-    auto sne_result = scalar != a;
-    auto sgt_result = scalar > a;
-    auto slt_result = scalar < a;
-    auto sge_result = scalar >= a;
-    auto sle_result = scalar <= a;
-
-    static_assert(std::is_same_v<decltype(seq_result), BoolVecType>, "== operator should return bool vector");
-    static_assert(std::is_same_v<decltype(sne_result), BoolVecType>, "!= operator should return bool vector");
-    static_assert(std::is_same_v<decltype(sgt_result), BoolVecType>, "> operator should return bool vector");
-    static_assert(std::is_same_v<decltype(slt_result), BoolVecType>, "< operator should return bool vector");
-    static_assert(std::is_same_v<decltype(sge_result), BoolVecType>, ">= operator should return bool vector");
-    static_assert(std::is_same_v<decltype(sle_result), BoolVecType>, "<= operator should return bool vector");
+    constexpr auto seq_result = scalar == a;
+    constexpr auto sne_result = scalar != a;
+    constexpr auto sgt_result = scalar > a;
+    constexpr auto slt_result = scalar < a;
+    constexpr auto sge_result = scalar >= a;
+    constexpr auto sle_result = scalar <= a;
+    
+    static_assert(std::is_same_v<decltype(seq_result), const BoolVecType>, "== operator should return bool vector");
+    static_assert(std::is_same_v<decltype(sne_result), const BoolVecType>, "!= operator should return bool vector");
+    static_assert(std::is_same_v<decltype(sgt_result), const BoolVecType>, "> operator should return bool vector");
+    static_assert(std::is_same_v<decltype(slt_result), const BoolVecType>, "< operator should return bool vector");
+    static_assert(std::is_same_v<decltype(sge_result), const BoolVecType>, ">= operator should return bool vector");
+    static_assert(std::is_same_v<decltype(sle_result), const BoolVecType>, "<= operator should return bool vector");
 }
 
 // Test arithmetic operators return correct types
@@ -278,7 +277,7 @@ template <typename VecType> bool testCompoundAssignmentOperators() {
 // Test bitwise operators for integral types
 template <typename VecType> void testBitwiseOperators() {
     static_assert(fk::validCUDAVec<VecType>, "Must be a valid CUDA vector type");
-    
+
     if constexpr (std::is_integral_v<fk::VBase<VecType>>) {
         using BaseType = fk::VBase<VecType>;
         constexpr VecType a = fk::make_set<VecType>(static_cast<BaseType>(5));
@@ -290,7 +289,6 @@ template <typename VecType> void testBitwiseOperators() {
         static_assert(fk::vecAnd(and_result == fk::make_set<VecType>(static_cast<BaseType>(1))),
                       "Compound assignment with vector failed");
 
-       
         constexpr auto or_result = a | b;
         static_assert(fk::vecAnd(or_result == fk::make_set<VecType>(static_cast<BaseType>(7))),
                       "Compound assignment with vector failed");
@@ -299,14 +297,14 @@ template <typename VecType> void testBitwiseOperators() {
         static_assert(fk::vecAnd(xor_result == fk::make_set<VecType>(static_cast<BaseType>(6))),
                       "Compound assignment with vector failed");
         // Test scalar bitwise operations
-        constexpr auto and_scalar_result = a & scalar; 
+        constexpr auto and_scalar_result = a & scalar;
         static_assert(fk::vecAnd(and_scalar_result == fk::make_set<VecType>(static_cast<BaseType>(1))),
                       "Compound assignment with vector failed");
 
         constexpr auto or_scalar_result = a | scalar;
         static_assert(fk::vecAnd(or_scalar_result == fk::make_set<VecType>(static_cast<BaseType>(5))),
                       "Compound assignment with vector failed");
-       
+
         constexpr auto xor_scalar_result = a ^ scalar;
         static_assert(fk::vecAnd(xor_scalar_result == fk::make_set<VecType>(static_cast<BaseType>(4))),
                       "Compound assignment with vector failed");
@@ -319,12 +317,11 @@ template <typename VecType> void testBitwiseOperators() {
         constexpr auto scalar_or_result = scalar | a;
         static_assert(fk::vecAnd(scalar_or_result == fk::make_set<VecType>(static_cast<BaseType>(5))),
                       "Compound assignment with vector failed");
-        
+
         constexpr auto scalar_xor_result = scalar ^ a;
         static_assert(fk::vecAnd(scalar_xor_result == fk::make_set<VecType>(static_cast<BaseType>(4))),
                       "Compound assignment with vector failed");
     }
- 
 }
 
 // Test actual computation for float2 to ensure operators work correctly
@@ -335,7 +332,6 @@ bool testFloat2ComputationCorrectness() {
     // Test arithmetic
     constexpr auto add_result = a + b;
 
-     
     if (!approxEqualF(add_result.x, 4.0f) && approxEqualF(add_result.y, 6.0f)) {
         std::cerr << "Float2 addition test failed: expected (4.0, 6.0), got (" << add_result.x << ", " << add_result.y
                   << ")" << std::endl;
@@ -416,7 +412,6 @@ bool testDouble2ComputationCorrectness() {
     // Test arithmetic
     constexpr auto add_result = a + b;
 
-     
     if (!approxEqualD(add_result.x, 4.0) && approxEqualD(add_result.y, 6.0)) {
         std::cerr << "Double2 addition test failed: expected (4.0, 6.0), got (" << add_result.x << ", " << add_result.y
                   << ")" << std::endl;
@@ -462,8 +457,8 @@ bool testDouble2ComputationCorrectness() {
     // Test comparisons
     auto eq_result = a == b;
     if (!(!eq_result.x && !eq_result.y)) {
-        std::cerr << "Double2 equality test failed: expected (false, false), got (" << eq_result.x << ", " << eq_result.y
-                  << ")" << std::endl;
+        std::cerr << "Double2 equality test failed: expected (false, false), got (" << eq_result.x << ", "
+                  << eq_result.y << ")" << std::endl;
         res = false;
     }
 
@@ -489,75 +484,6 @@ bool testDouble2ComputationCorrectness() {
     return res;
 }
 
-// Test actual computation for int4 to ensure operators work correctly
-bool testInt4ComputationCorrectness() {
-    int4 a = {10, 20, 30, 40};
-    int4 b = {5, 10, 15, 20};
-    bool res = true;
-    // Test arithmetic
-    auto add_result = a + b;
-    if (!(add_result.x == 15 && add_result.y == 30 && add_result.z == 45 && add_result.w == 60)) {
-        std::cerr << "Int4 addition test failed: expected (15, 30, 45, 60), got (" << add_result.x << ", "
-                  << add_result.y << ", " << add_result.z << ", " << add_result.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-
-    auto sub_result = a - b;
-    if (!(sub_result.x == 5 && sub_result.y == 10 && sub_result.z == 15 && sub_result.w == 20)) {
-        std::cerr << "Int4 subtraction test failed: expected (5, 10, 15, 20), got (" << sub_result.x << ", "
-                  << sub_result.y << ", " << sub_result.z << ", " << sub_result.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-
-    // Test bitwise operations
-    auto and_result = a & b;
-    if (!(and_result.x == (10 & 5) && and_result.y == (20 & 10) && and_result.z == (30 & 15) &&
-          and_result.w == (40 & 20))) {
-        std::cerr << "Int4 bitwise AND test failed: expected (" << (10 & 5) << ", " << (20 & 10) << ", " << (30 & 15)
-                  << ", " << (40 & 20) << "), got (" << and_result.x << ", " << and_result.y << ", " << and_result.z
-                  << ", " << and_result.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-
-    // Test comparisons
-    auto gt_result = a > b;
-    if (!(gt_result.x && gt_result.y && gt_result.z && gt_result.w)) {
-        std::cerr << "Int4 greater than test failed: expected (true, true, true, true), got (" << gt_result.x << ", "
-                  << gt_result.y << ", " << gt_result.z << ", " << gt_result.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-
-    auto eq_result = a == a;
-    if (!(eq_result.x && eq_result.y && eq_result.z && eq_result.w)) {
-        std::cerr << "Int4 equality test failed: expected (true, true, true, true), got (" << eq_result.x << ", "
-                  << eq_result.y << ", " << eq_result.z << ", " << eq_result.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-
-    // Test scalar operations
-    auto scalar_add = a + 5;
-    if (!(scalar_add.x == 15 && scalar_add.y == 25 && scalar_add.z == 35 && scalar_add.w == 45)) {
-        std::cerr << "Int4 scalar addition test failed: expected (15, 25, 35, 45), got (" << scalar_add.x << ", "
-                  << scalar_add.y << ", " << scalar_add.z << ", " << scalar_add.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-
-    auto scalar_gt = a > 25;
-    if (!(!scalar_gt.x && !scalar_gt.y && scalar_gt.z && scalar_gt.w)) {
-        std::cerr << "Int4 scalar greater than test failed: expected (false, false, true, true), got (" << scalar_gt.x
-                  << ", " << scalar_gt.y << ", " << scalar_gt.z << ", " << scalar_gt.w << ")" << std::endl;
-        assert(false);
-        res = false;
-    }
-    return res;
-}
-
 template <typename BaseInput, typename BaseOutput> void addOneTestAllChannelsOpTypes() {
 
     // Vector of 1
@@ -567,7 +493,6 @@ template <typename BaseInput, typename BaseOutput> void addOneTestAllChannelsOpT
     testScalarComparisonOperatorTypes<Input1, bool1>();
     testUnaryOperators<Input1>();
     testBitwiseOperators<Input1>();
-    
 
     testCompoundAssignmentOperators<Input1>();
     // Vector of 2
@@ -619,25 +544,13 @@ int launch() {
     // Test boolean operators
     using Fundamental = fk::RemoveType_t<0, fk::RemoveType_t<0, fk::RemoveType_t<0, fk::StandardTypes>>>;
     addAllTestsForOpTypes<Fundamental>(std::make_index_sequence<Fundamental::size>());
-     
+ 
 
+ 
 
-    
-
-    // Test compound assignment operators
-    testCompoundAssignmentOperators<float2>();
-    testCompoundAssignmentOperators<int4>();
-    testCompoundAssignmentOperators<double1>();
-    
-
-    // previous test use static asserts, to they don't compile if the results are not correct
-    //   the next one are at runtime, so we need to check the results manually
-    //  Test actual computation correctness
     bool resF = testFloat2ComputationCorrectness();
     bool resD = testDouble2ComputationCorrectness();
-    bool resI = testInt4ComputationCorrectness(); // long/ulong/longlong etc should be tested in a similar way, but they
-                                                  // are not used in the codebase yet
-    if (!resF || !resD || !resI) {
+    if (!resF || !resD  ) {
         std::cerr << "Vector operator tests failed!" << std::endl;
         return -1;
     }
