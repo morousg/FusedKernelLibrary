@@ -20,9 +20,9 @@
 
 // Test PixelFormatTraits for UYVY
 void testUYVYPixelFormatTraits() {
-    constexpr int expectedSpace = static_cast<int>(fk::ColorSpace::YUV422);
-    constexpr int expectedDepth = static_cast<int>(fk::ColorDepth::p8bit);
-    constexpr int expectedCn = 3;
+    constexpr fk::ColorSpace expectedSpace = fk::ColorSpace::YUV422;
+    constexpr fk::ColorDepth expectedDepth = fk::ColorDepth::p8bit;
+    constexpr size_t expectedCn = 3;
     
     static_assert(fk::PixelFormatTraits<fk::PixelFormat::UYVY>::space == expectedSpace, "UYVY space should be YUV422");
     static_assert(fk::PixelFormatTraits<fk::PixelFormat::UYVY>::depth == expectedDepth, "UYVY depth should be p8bit");

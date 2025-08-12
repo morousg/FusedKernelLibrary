@@ -20,6 +20,7 @@
 #include <fused_kernel/algorithms/basic_ops/algebraic.h>
 #include <fused_kernel/algorithms/image_processing/saturate.h>
 #include <fused_kernel/algorithms/basic_ops/cast.h>
+#include <fused_kernel/algorithms/image_processing/image.h>
 
 namespace fk {
     template <typename I>
@@ -75,39 +76,13 @@ namespace fk {
         }
     };
 
-    enum class ColorSpace { YUV420, YUV422, YUV444 };
-    template <ColorSpace CS>
-    struct CS_t { ColorSpace value{ CS }; };
+    
 
-    enum class ColorRange { Limited, Full };
-    enum class ColorPrimitives { bt601, bt709, bt2020 };
-
-    enum class ColorDepth { p8bit, p10bit, p12bit, f24bit };
-    template <ColorDepth CD>
-    struct CD_t { ColorDepth value{ CD }; };
-    using ColorDepthTypes = TypeList<CD_t<ColorDepth::p8bit>, CD_t<ColorDepth::p10bit>, CD_t<ColorDepth::p12bit>, CD_t<ColorDepth::f24bit>>;
-    using ColorDepthPixelBaseTypes = TypeList<uchar, ushort, ushort, float>;
-    using ColorDepthPixelTypes = TypeList<uchar3, ushort3, ushort3, float3>;
-    template <ColorDepth CD>
-    using ColorDepthPixelBaseType = EquivalentType_t<CD_t<CD>, ColorDepthTypes, ColorDepthPixelBaseTypes>;
-    template <ColorDepth CD>
-    using ColorDepthPixelType = EquivalentType_t<CD_t<CD>, ColorDepthTypes, ColorDepthPixelTypes>;
-
-
-    enum class PixelFormat { NV12, NV21, YV12, P010, P016, P216, P210, Y216, Y210, Y416, UYVY };
     template <PixelFormat PF>
-    struct PixelFormatTraits;
-    template <> struct PixelFormatTraits<PixelFormat::NV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::NV21> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::YV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::P010> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::P210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::Y210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::Y416> { enum { space = static_cast<int>(ColorSpace::YUV444), depth = static_cast<int>(ColorDepth::p12bit), cn = 4 }; };
-    template <> struct PixelFormatTraits<PixelFormat::UYVY> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
+    using PackedPixelType = VectorType_t<ColorDepthPixelBaseType<static_cast<ColorDepth>(PixelFormatTraits<PF>::depth)>, PixelFormatTraits<PF>::cn>;
 
     template <PixelFormat PF, bool ALPHA>
-    using YUVOutputPixelType = VectorType_t<ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>, ALPHA ? 4 : PixelFormatTraits<PF>::cn>;
+    using YUVOutputPixelType = VectorType_t<ColorDepthPixelBaseType<static_cast<ColorDepth>(PixelFormatTraits<PF>::depth)>, ALPHA ? 4 : PixelFormatTraits<PF>::cn>;
 
     struct SubCoefficients {
         const float luma;
@@ -279,7 +254,7 @@ namespace fk {
     public:
         FK_STATIC_STRUCT(ConvertYUVToRGB, SelfType)
         static constexpr ColorDepth CD = (ColorDepth)PixelFormatTraits<PF>::depth;
-        using Parent = UnaryOperation<ColorDepthPixelType<CD>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
+        using Parent = UnaryOperation<PackedPixelType<PF>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
         DECLARE_UNARY_PARENT
 
         private:
@@ -339,7 +314,7 @@ namespace fk {
         using SelfType = ReadYUV<PF>;
     public:
         FK_STATIC_STRUCT(ReadYUV, SelfType)
-        using PixelBaseType = ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>;
+        using PixelBaseType = ColorDepthPixelBaseType<PixelFormatTraits<PF>::depth>;
         using Parent = ReadOperation<PixelBaseType,
                                      RawPtr<ND::_2D, PixelBaseType>,
                                      ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>,
@@ -347,7 +322,9 @@ namespace fk {
                                      ReadYUV<PF>>;
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
-            if constexpr (PF == PixelFormat::NV12 || PF == PixelFormat::P010 || PF == PixelFormat::P016 || PF == PixelFormat::P210 || PF == PixelFormat::P216) {
+            if constexpr (PF == PixelFormat::NV12 || PF == PixelFormat::P010 ||
+                          PF == PixelFormat::P016 || PF == PixelFormat::P210 ||
+                          PF == PixelFormat::P216) {
                 // Planar luma
                 const PixelBaseType Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
 
