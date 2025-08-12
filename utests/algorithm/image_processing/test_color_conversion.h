@@ -286,19 +286,16 @@ void testReadYUV() {
     };
 
     // Copy values
-    auto input1 = inputVals[0];
-    auto input2 = inputVals[1];
-    auto input3 = inputVals[2];
     for (int y = 0; y < res3.height; ++y) {
         for (int x = 0; x < res3.width * 2; ++x) {
             if (y < res1_2.height) {
                 if (x < (res1_2.width * 2)) {
-                    input1.at(x, y) = ptr1[y * (res1_2.width * 2) + x];
-                    input2.at(x, y) = ptr2[y * (res1_2.width * 2) + x];
+                    inputVals[0].at(x, y) = ptr1[y * (res1_2.width * 2) + x];
+                    inputVals[1].at(x, y) = ptr2[y * (res1_2.width * 2) + x];
                 }
-                input3.at(x, y) = ptr3[y * (res3.width * 2) + x];
+                inputVals[2].at(x, y) = ptr3[y * (res3.width * 2) + x];
             } else {
-                input3.at(x, y) = ptr3[y * (res3.width * 2) + x];
+                inputVals[2].at(x, y) = ptr3[y * (res3.width * 2) + x];
             }
         }
         for (int x = 0; x < res3.width; ++x) {
@@ -314,14 +311,27 @@ void testReadYUV() {
         }
     }
 
-    input1.upload(stream);
-    input2.upload(stream);
-    input3.upload(stream);
+    inputVals[0].upload(stream);
+    inputVals[1].upload(stream);
+    inputVals[2].upload(stream);
+
+    inputVals[0].download(stream);
+    inputVals[1].download(stream);
+    inputVals[2].download(stream);
+
+    stream.sync();
+
+    std::cout << "Input 1" << std::endl;
+    printPtr(inputVals[0]);
+    std::cout << "Input 2" << std::endl;
+    printPtr(inputVals[1]);
+    std::cout << "Input 3" << std::endl;
+    printPtr(inputVals[2]);
 
     TestCaseBuilder<ReadYUVTest>::addTest(testCases, stream, inputVals, expectedVals);
 }
 
-void addTests() {
+START_ADDING_TESTS
 // Test UYVY pixel format traits
 testUYVYPixelFormatTraits();
 
@@ -348,14 +358,8 @@ testNormalizeColorRangeDepth();
 
 // Test ReadYUV operation
 testReadYUV();
-}
+STOP_ADDING_TESTS
 
 int launch() {
-    addTests(); 
-    bool correct{ true }; for (const auto& [testName, testFunc] : testCases) {
-        if (!testFunc()) {
-            correct = false;
-        }
-    } 
-    return correct ? 0 : -1;
+    RUN_ALL_TESTS
 }

@@ -128,6 +128,109 @@ inline bool comparePtrs1D(const fk::Ptr<fk::ND::_1D, T>&ptr1, const fk::Ptr<fk::
     return true;
 }
 
+template <fk::ND D, typename T>
+void printPtr(const fk::Ptr<D, T>& ptr) {
+    if constexpr (D == fk::ND::_1D) {
+        const auto dims = ptr.dims();
+        std::cout << "{ ";
+        for (uint i = 0; i < dims.width; ++i) {
+            if constexpr (fk::validCUDAVec<T>) {
+                const auto val = ptr.at(i);
+                const auto arr = fk::toArray(val);
+                std::cout << "(";
+                for (size_t j = 0; j < fk::cn<T>; ++j) {
+                    if (j > 0) std::cout << ", ";
+                    if constexpr (sizeof(fk::VBase<T>) < 4) {
+                        std::cout << static_cast<int>(arr[j]);
+                    } else {
+                        std::cout << arr[j];
+                    }
+                }
+                std::cout << ")";
+            } else {
+                const auto val = ptr.at(i);
+                if constexpr (sizeof(T) < 4) {
+                    std::cout << static_cast<int>(val);
+                } else {
+                    std::cout << val;
+                }
+            }
+            if (i < dims.width - 1) std::cout << ", ";
+        }
+        std::cout << " }" << std::endl;
+
+    } else if constexpr (D == fk::ND::_2D) {
+        const auto dims = ptr.dims();
+        std::cout << "{" << std::endl;
+        for (uint y = 0; y < dims.height; ++y) {
+            std::cout << "  ";
+            for (uint x = 0; x < dims.width; ++x) {
+                if constexpr (fk::validCUDAVec<T>) {
+                    const auto val = ptr.at(x, y);
+                    const auto arr = fk::toArray(val);
+                    std::cout << "(";
+                    for (size_t j = 0; j < fk::cn<T>; ++j) {
+                        if (j > 0) std::cout << ", ";
+                        if constexpr (sizeof(fk::VBase<T>) < 4) {
+                            std::cout << static_cast<int>(arr[j]);
+                        } else {
+                            std::cout << arr[j];
+                        }
+                    }
+                    std::cout << ")";
+                } else {
+                    const auto val = ptr.at(x, y);
+                    if constexpr (sizeof(T) < 4) {
+                        std::cout << static_cast<int>(val);
+                    } else {
+                        std::cout << val;
+                    }
+                }
+                if (x < dims.width - 1) std::cout << ", ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "}" << std::endl;
+
+    } else if constexpr (D == fk::ND::_3D) {
+        const auto dims = ptr.dims();
+        for (uint z = 0; z < dims.planes; ++z) {
+            std::cout << "Plane " << z << ":" << std::endl;
+            std::cout << "{" << std::endl;
+            for (uint y = 0; y < dims.height; ++y) {
+                std::cout << "  ";
+                for (uint x = 0; x < dims.width; ++x) {
+                    if constexpr (fk::validCUDAVec<T>) {
+                        const auto val = ptr.at(x, y, z);
+                        const auto arr = fk::toArray(val);
+                        std::cout << "(";
+                        for (size_t j = 0; j < fk::cn<T>; ++j) {
+                            if (j > 0) std::cout << ", ";
+                            if constexpr (sizeof(fk::VBase<T>) < 4) {
+                                std::cout << static_cast<int>(arr[j]);
+                            } else {
+                                std::cout << arr[j];
+                            }
+                        }
+                        std::cout << ")";
+                    } else {
+                        const auto val = ptr.at(x, y, z);
+                        if constexpr (sizeof(T) < 4) {
+                            std::cout << static_cast<int>(val);
+                        } else {
+                            std::cout << val;
+                        }
+                    }
+                    if (x < dims.width - 1) std::cout << ", ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << "}" << std::endl;
+            if (z < dims.planes - 1) std::cout << std::endl;
+        }
+    }
+}
+
 template <typename T>
 inline bool comparePtrs2D(const fk::Ptr<fk::ND::_2D, T>& ptr1, const fk::Ptr<fk::ND::_2D, T>& ptr2) {
     const fk::PtrDims<fk::ND::_2D> dims1 = ptr1.dims();
@@ -138,6 +241,8 @@ inline bool comparePtrs2D(const fk::Ptr<fk::ND::_2D, T>& ptr1, const fk::Ptr<fk:
     for (uint y = 0; y < dims1.height; ++y) {
         for (uint x = 0; x < dims1.width; ++x) {
             if (!equalInstances(ptr1.at(x, y), ptr2.at(x, y))) {
+                printPtr(ptr1);
+                printPtr(ptr2);
                 return false;
             }
         }
@@ -206,7 +311,11 @@ namespace test_case_builder::detail {
                     const std::array<BuildParams, N>& inputElems) {
         using OutputType = typename Operation::OutputType;
 
-        const auto readOp = Operation::build(inputElems);
+        auto readOps = fk::transformArray(inputElems,
+            [](const BuildParams& input) {
+                return Operation::build(input);
+            }
+        );
      
         std::array<fk::Ptr<D, OutputType>, N> outputElems =
             fk::transformArray(inputElems, [](const BuildParams& input) {
@@ -226,13 +335,19 @@ namespace test_case_builder::detail {
                 }
             }
         );
-       
-        const auto writeOp = fk::PerThreadWrite<D, OutputType>::build(outputElems);
-       
+
+        auto writeOps = fk::transformArray(outputElems,
+            [](const fk::Ptr<D, OutputType>& output) {
+                return fk::PerThreadWrite<D, OutputType>::build(output);
+            }
+        );
+
         std::cout << "Running test for " << "\033[1;33m" << testName << "\033[1;33m" << ": ";
         
-        fk::Executor<fk::TransformDPP<>>::executeOperations(stream, readOp, writeOp);
-            
+        for (int i = 0; i < N; ++i) {
+            const auto activeThreads = std::decay_t<decltype(readOps[i])>::Operation::getActiveThreads(readOps[i]);
+            fk::Executor<fk::TransformDPP<>>::executeOperations(stream, readOps[i], writeOps[i]);
+        }
         for (auto&& output : outputElems) {
             output.download(stream);
         }
@@ -328,10 +443,10 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::va
     template <fk::ND D, size_t N, typename BuildParams>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
                                fk::Stream stream, 
-                               const std::array<BuildParams, N> inputElems,
-                               const std::array<fk::Ptr<D, typename Operation::OutputType>, N> expectedElems) {
+                               const std::array<BuildParams, N>& inputElems,
+                               const std::array<fk::Ptr<D, typename Operation::OutputType>, N>& expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
-        testCases[testName] = [testName, stream, inputElems = std::move(inputElems), expectedElems = std::move(expectedElems)]() -> bool {
+        testCases[testName] = [testName, stream, inputElems, expectedElems]() -> bool {
             const auto outArray = test_case_builder::detail::launchRead<Operation, D>(testName, stream, inputElems);
             bool result{ true };
             for (size_t i = 0; i < N; ++i) {
