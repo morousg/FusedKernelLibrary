@@ -213,7 +213,7 @@ namespace fk {
 
     template <template <typename, size_t> class ArrayLike, typename T, size_t N, typename F, std::size_t... Is>
     FK_HOST_CNST auto transformArray_impl(const ArrayLike<T, N>& input, F&& func, std::index_sequence<Is...>) {
-        using ReturnType = std::invoke_result_t<F, T>;
+        using ReturnType = decltype(func(std::declval<std::decay_t<decltype(input[0])>>()));
         return ArrayLike<ReturnType, N>{ { func(input[Is])... } };
     }
 
