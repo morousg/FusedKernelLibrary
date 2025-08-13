@@ -131,6 +131,9 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.pitch;
         }
+        FK_HOST_FUSE InstantiableType build(const Ptr<D, T>& ptr) {
+            return InstantiableType{ {ptr.ptr()} };
+        }
     };
 
     template <typename T>

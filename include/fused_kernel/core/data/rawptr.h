@@ -164,7 +164,7 @@ namespace fk {
         using type = T;
         T data[W];
         static constexpr StaticPtrDims1D<W> dims{};
-        static constexpr ND nd{ ND::_1D };
+        static constexpr ND NDim{ ND::_1D };
     };
 
     template<typename T, int W, int H>
@@ -172,7 +172,7 @@ namespace fk {
         using type = T;
         T data[H][W];
         static constexpr StaticPtrDims2D<W, H> dims{};
-        static constexpr ND nd{ ND::_2D };
+        static constexpr ND NDim{ ND::_2D };
     };
 
     template<typename T, int W, int H, int P>
@@ -180,7 +180,7 @@ namespace fk {
         using type = T;
         T data[P][H][W];
         static constexpr StaticPtrDims3D<W, H, P> dims{};
-        static constexpr ND nd{ ND::_3D };
+        static constexpr ND NDim{ ND::_3D };
     };
 
     template <enum ND D>

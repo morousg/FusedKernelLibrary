@@ -80,9 +80,7 @@ void addOneTest() {
     constexpr std::array<InputType, 3> inputVals{ fk::minValue<InputType>, halfPositiveRange<InputType>(), fk::maxValue<InputType> };
     constexpr std::array<OutputType, 3> outputVals{ expectedMinVal, expectedHalfMaxValue, expectedMaxVal};
     
-    const std::string testName = "Testfk::SaturateCast_" + niceType(fk::typeToString<InputType>()) + "_" + niceType(fk::typeToString<OutputType>());
-    testCases[testName] = 
-        TestCaseBuilder<fk::SaturateCast<InputType, OutputType>>::build(testName, inputVals, outputVals);
+    TestCaseBuilder<fk::SaturateCast<InputType, OutputType>>::addTest(testCases, inputVals, outputVals);
 }
 
 template <typename BaseInput, typename BaseOutput>

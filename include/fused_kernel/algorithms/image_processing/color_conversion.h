@@ -20,6 +20,7 @@
 #include <fused_kernel/algorithms/basic_ops/algebraic.h>
 #include <fused_kernel/algorithms/image_processing/saturate.h>
 #include <fused_kernel/algorithms/basic_ops/cast.h>
+#include <fused_kernel/algorithms/image_processing/raw_image.h>
 
 namespace fk {
     template <typename I>
@@ -75,39 +76,13 @@ namespace fk {
         }
     };
 
-    enum class ColorSpace { YUV420, YUV422, YUV444 };
-    template <ColorSpace CS>
-    struct CS_t { ColorSpace value{ CS }; };
+    
 
-    enum class ColorRange { Limited, Full };
-    enum class ColorPrimitives { bt601, bt709, bt2020 };
-
-    enum class ColorDepth { p8bit, p10bit, p12bit, f24bit };
-    template <ColorDepth CD>
-    struct CD_t { ColorDepth value{ CD }; };
-    using ColorDepthTypes = TypeList<CD_t<ColorDepth::p8bit>, CD_t<ColorDepth::p10bit>, CD_t<ColorDepth::p12bit>, CD_t<ColorDepth::f24bit>>;
-    using ColorDepthPixelBaseTypes = TypeList<uchar, ushort, ushort, float>;
-    using ColorDepthPixelTypes = TypeList<uchar3, ushort3, ushort3, float3>;
-    template <ColorDepth CD>
-    using ColorDepthPixelBaseType = EquivalentType_t<CD_t<CD>, ColorDepthTypes, ColorDepthPixelBaseTypes>;
-    template <ColorDepth CD>
-    using ColorDepthPixelType = EquivalentType_t<CD_t<CD>, ColorDepthTypes, ColorDepthPixelTypes>;
-
-
-    enum class PixelFormat { NV12, NV21, YV12, P010, P016, P216, P210, Y216, Y210, Y416, UYVY };
     template <PixelFormat PF>
-    struct PixelFormatTraits;
-    template <> struct PixelFormatTraits<PixelFormat::NV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::NV21> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::YV12> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::P010> { enum { space = static_cast<int>(ColorSpace::YUV420), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::P210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::Y210> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p10bit), cn = 3 }; };
-    template <> struct PixelFormatTraits<PixelFormat::Y416> { enum { space = static_cast<int>(ColorSpace::YUV444), depth = static_cast<int>(ColorDepth::p12bit), cn = 4 }; };
-    template <> struct PixelFormatTraits<PixelFormat::UYVY> { enum { space = static_cast<int>(ColorSpace::YUV422), depth = static_cast<int>(ColorDepth::p8bit), cn = 3 }; };
+    using PackedPixelType = VectorType_t<ColorDepthPixelBaseType<static_cast<ColorDepth>(PixelFormatTraits<PF>::depth)>, PixelFormatTraits<PF>::cn>;
 
     template <PixelFormat PF, bool ALPHA>
-    using YUVOutputPixelType = VectorType_t<ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>, ALPHA ? 4 : PixelFormatTraits<PF>::cn>;
+    using YUVOutputPixelType = VectorType_t<ColorDepthPixelBaseType<static_cast<ColorDepth>(PixelFormatTraits<PF>::depth)>, ALPHA ? 4 : PixelFormatTraits<PF>::cn>;
 
     struct SubCoefficients {
         const float luma;
@@ -279,7 +254,7 @@ namespace fk {
     public:
         FK_STATIC_STRUCT(ConvertYUVToRGB, SelfType)
         static constexpr ColorDepth CD = (ColorDepth)PixelFormatTraits<PF>::depth;
-        using Parent = UnaryOperation<ColorDepthPixelType<CD>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
+        using Parent = UnaryOperation<PackedPixelType<PF>, ReturnType, ConvertYUVToRGB<PF, CR, CP, ALPHA, ReturnType>>;
         DECLARE_UNARY_PARENT
 
         private:
@@ -334,28 +309,34 @@ namespace fk {
     };
 
     template <PixelFormat PF>
+    class Image;
+
+    template <PixelFormat PF>
     struct ReadYUV {
     private:
         using SelfType = ReadYUV<PF>;
     public:
         FK_STATIC_STRUCT(ReadYUV, SelfType)
-        using PixelBaseType = ColorDepthPixelBaseType<(ColorDepth)PixelFormatTraits<PF>::depth>;
+        using PixelBaseType = ColorDepthPixelBaseType<PixelFormatTraits<PF>::depth>;
         using Parent = ReadOperation<PixelBaseType,
-                                     RawPtr<ND::_2D, PixelBaseType>,
+                                     RawImage<PF>,
                                      ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>,
                                      TF::DISABLED,
                                      ReadYUV<PF>>;
         DECLARE_READ_PARENT
         FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params) {
-            if constexpr (PF == PixelFormat::NV12 || PF == PixelFormat::P010 || PF == PixelFormat::P016 || PF == PixelFormat::P210 || PF == PixelFormat::P216) {
+            const auto rawPtr = params.data;
+            if constexpr (PF == PixelFormat::NV12 || PF == PixelFormat::P010 ||
+                          PF == PixelFormat::P016 || PF == PixelFormat::P210 ||
+                          PF == PixelFormat::P216) {
                 // Planar luma
-                const PixelBaseType Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
+                const PixelBaseType Y = *PtrAccessor<ND::_2D>::cr_point(thread, rawPtr);
 
                 // Packed chroma
-                const PtrDims<ND::_2D> dims = params.dims;
+                const PtrDims<ND::_2D> dims = rawPtr.dims;
                 using VectorType2 = VectorType_t<PixelBaseType, 2>;
                 const RawPtr<ND::_2D, VectorType2> chromaPlane{
-                    reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
+                    reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(rawPtr.data) + dims.pitch * dims.height),
                     { dims.width >> 1, dims.height >> 1, dims.pitch }
                 };
                 const ColorSpace CS = static_cast<ColorSpace>(PixelFormatTraits<PF>::space);
@@ -365,48 +346,44 @@ namespace fk {
                 return { Y, UV.x, UV.y };
             } else if constexpr (PF == PixelFormat::NV21) {
                 // Planar luma
-                const uchar Y = *PtrAccessor<ND::_2D>::cr_point(thread, params);
+                const uchar Y = *PtrAccessor<ND::_2D>::cr_point(thread, rawPtr);
 
                 // Packed chroma
-                const PtrDims<ND::_2D> dims = params.dims;
+                const PtrDims<ND::_2D> dims = rawPtr.dims;
                 const RawPtr<ND::_2D, uchar2> chromaPlane{
-                    reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(params.data) + dims.pitch * dims.height),
+                    reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(rawPtr.data) + dims.pitch * dims.height),
                                               { dims.width >> 1, dims.height >> 1, dims.pitch }
                 };
                 const uchar2 VU = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane);
 
                 return { Y, VU.y, VU.x };
-            } else if constexpr (PF == PixelFormat::Y216 || PF == PixelFormat::Y210) {
-                const PtrDims<ND::_2D> dims = params.dims;
-                const RawPtr<ND::_2D, ushort4> image{ reinterpret_cast<ushort4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
-                const ushort4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
-                const bool isEvenThread = IsEven<uint>::exec(thread.x);
+            } else if constexpr (PF == PixelFormat::Y216 || PF == PixelFormat::Y210 || PF == PixelFormat::UYVY) {
+                const PtrDims<ND::_2D> dims = rawPtr.dims;
+                using VectorType4 = VectorType_t<PixelBaseType, 4>;
+                const RawPtr<ND::_2D, VectorType4> image{ reinterpret_cast<VectorType4*>(rawPtr.data), {dims.width >> 2, dims.height, dims.pitch} };
+                const VectorType4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
 
-                return { isEvenThread ? pixel.x : pixel.z, pixel.y, pixel.w };
-            } else if constexpr (PF == PixelFormat::UYVY) {
-                const PtrDims<ND::_2D> dims = params.dims;
-                // UYVY Ptr initialization: width = number of pixels in x axis, pitch = number of bytes in x axis
-                // For UYVY format: pitch = (width * 2) + padding, where padding can be 0 or greater
-                const RawPtr<ND::_2D, uchar4> image{ reinterpret_cast<uchar4*>(params.data), {dims.width >> 1, dims.height, dims.pitch} };
-                const uchar4 pixel = *PtrAccessor<ND::_2D>::cr_point({ thread.x >> 1, thread.y, thread.z }, image);
-                const bool isEvenThread = IsEven<uint>::exec(thread.x);
-
-                return { isEvenThread ? pixel.y : pixel.w, pixel.x, pixel.z };
+                const bool isEvenThread = IsEven<int>::exec(thread.x);
+                if constexpr (PF == PixelFormat::UYVY) {
+                    return { isEvenThread ? pixel.y : pixel.w, pixel.x, pixel.z };
+                } else {
+                    return { isEvenThread ? pixel.x : pixel.z, pixel.y, pixel.w };
+                }
             } else if constexpr (PF == PixelFormat::Y416) {
                 // AVYU
                 // We use ushort as the type, to be compatible with the rest of the cases
-                const RawPtr<ND::_2D, ushort4> readImage{ params.data, params.dims };
-                const ushort4 pixel = *PtrAccessor<ND::_2D>::cr_point(thread, params);
+                const RawPtr<ND::_2D, ushort4> readImage{ reinterpret_cast<ushort4*>(rawPtr.data), rawPtr.dims };
+                const ushort4 pixel = *PtrAccessor<ND::_2D>::cr_point(thread, readImage);
                 return { pixel.z, pixel.w, pixel.y, pixel.x };
             }
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
-            return opData.params.dims.width;
+            return opData.params.width;
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
-            return opData.params.dims.height;
+            return opData.params.height;
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
@@ -415,6 +392,124 @@ namespace fk {
 
         FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
+        }
+
+        FK_HOST_FUSE InstantiableType build(const Image<PF>& data) {
+            return { data.ptr() };
+        }
+    };
+
+    template <PixelFormat PF>
+    struct WriteYUV {
+    private:
+        using SelfType = WriteYUV<PF>;
+    public:
+        FK_STATIC_STRUCT(WriteYUV, SelfType)
+        using PixelBaseType = ColorDepthPixelBaseType<PixelFormatTraits<PF>::depth>;
+        using Parent = WriteOperation<ColorDepthPixelType<(ColorDepth)PixelFormatTraits<PF>::depth>,
+                                      RawImage<PF>,
+                                      PixelBaseType, 
+                                      TF::DISABLED,
+                                      WriteYUV<PF>>;
+        DECLARE_WRITE_PARENT
+        FK_HOST_DEVICE_FUSE void exec(const Point& thread, const InputType& input, const ParamsType& params) {
+            const auto rawPtr = params.data;
+            if constexpr (PF == PixelFormat::NV12 || PF == PixelFormat::P010 ||
+                          PF == PixelFormat::P016 || PF == PixelFormat::P210 ||
+                          PF == PixelFormat::P216) {
+                // Planar luma
+                *PtrAccessor<ND::_2D>::point(thread, rawPtr) = input.x;
+
+                // Packed chroma
+                using VectorType2 = VectorType_t<PixelBaseType, 2>;
+                const PtrDims<ND::_2D> dims = rawPtr.dims;
+                const RawPtr<ND::_2D, VectorType2> chromaPlane{
+                    reinterpret_cast<VectorType2*>(reinterpret_cast<uchar*>(rawPtr.data) + dims.pitch * dims.height),
+                    { dims.width >> 1, dims.height >> 1, dims.pitch }
+                };
+                constexpr ColorSpace CS = PixelFormatTraits<PF>::space;
+                if constexpr (CS == ColorSpace::YUV420) {
+                    // Chroma subsampling 4:2:0
+                    if (IsEven<int>::exec(thread.x) && IsEven<int>::exec(thread.y)) {
+                        *PtrAccessor<ND::_2D>::point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane) = make_<VectorType2>(input.y, input.z);
+                    }
+                } else {
+                    // Chroma subsampling 4:2:2
+                    if (IsEven<int>::exec(thread.x)) {
+                        *PtrAccessor<ND::_2D>::point({ thread.x >> 1, thread.y, thread.z }, chromaPlane) = make_<VectorType2>(input.y, input.z);
+                    }
+                }
+            } else if constexpr (PF == PixelFormat::NV21) {
+                // Planar luma
+                *PtrAccessor<ND::_2D>::point(thread, rawPtr) = input.x;
+
+                // Packed chroma
+                const PtrDims<ND::_2D> dims = rawPtr.dims;
+                const RawPtr<ND::_2D, uchar2> chromaPlane{
+                    reinterpret_cast<uchar2*>(reinterpret_cast<uchar*>(rawPtr.data) + dims.pitch * dims.height),
+                                              { dims.width >> 1, dims.height >> 1, dims.pitch }
+                };
+                *PtrAccessor<ND::_2D>::point({ thread.x >> 1, thread.y >> 1, thread.z }, chromaPlane) = make_<uchar2>(input.z, input.y);
+            } else if constexpr (PF == PixelFormat::Y216 || PF == PixelFormat::Y210 || PF == PixelFormat::UYVY) {
+                const PtrDims<ND::_2D> dims = rawPtr.dims;
+                using VectorType2 = VectorType_t<PixelBaseType, 2>;
+                const RawPtr<ND::_2D, VectorType2> imageV2{ reinterpret_cast<VectorType2*>(rawPtr.data), {dims.width >> 1, dims.height, dims.pitch} };
+                //*PtrAccessor<ND::_2D>::point({ (thread.x >> 1) * 2, thread.y, thread.z }, imageV2);
+                //*PtrAccessor<ND::_2D>::point({ (thread.x >> 1) * 4, thread.y, thread.z }, rawPtr);
+
+                const bool isEvenThread = IsEven<int>::exec(thread.x);
+                // input = { Y, U, V }
+                if constexpr (PF == PixelFormat::UYVY) {
+                    // Writting UYVY from two threads
+                    // Optimizable with shuffle instructions
+                    if (isEvenThread) {
+                        // Write UY__
+                        *PtrAccessor<ND::_2D>::point({ (thread.x >> 1) * 2, thread.y, thread.z }, imageV2) = make_<VectorType2>(input.y, input.x);
+                        // Write __V_
+                        *PtrAccessor<ND::_2D>::point({ ((thread.x >> 1) * 4) + 2, thread.y, thread.z }, rawPtr) = input.z;
+                    } else {
+                        // Write ___Y
+                        *PtrAccessor<ND::_2D>::point({ ((thread.x >> 1) * 4) + 3, thread.y, thread.z }, rawPtr) = input.x;
+                    }
+                } else {
+                    // Writing YUYV from two threads
+                    // Optimizable with shuffle instructions
+                    if (isEvenThread) {
+                        // Write YU__
+                        *PtrAccessor<ND::_2D>::point({ (thread.x >> 1) * 2, thread.y, thread.z }, imageV2) = make_<VectorType2>(input.x, input.y);
+                        // Write ___V
+                        *PtrAccessor<ND::_2D>::point({ ((thread.x >> 1) * 4) + 3, thread.y, thread.z }, rawPtr) = input.z;
+                    } else {
+                        // Write __Y_
+                        *PtrAccessor<ND::_2D>::point({ ((thread.x >> 1) * 4) + 2, thread.y, thread.z }, rawPtr) = input.x;
+                    }
+                }
+            } else if constexpr (PF == PixelFormat::Y416) {
+                // AVYU
+                // We use ushort as the type, to be compatible with the rest of the cases
+                const RawPtr<ND::_2D, ushort4> readImage{ reinterpret_cast<ushort4*>(rawPtr.data), rawPtr.dims };
+                *PtrAccessor<ND::_2D>::point(thread, readImage) = make_<ushort4>(input.w, input.z, input.x, input.y);
+            }
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
+            return opData.params.width;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
+            return opData.params.height;
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
+            return 1;
+        }
+
+        FK_HOST_DEVICE_FUSE ActiveThreads getActiveThreads(const OperationDataType& opData) {
+            return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
+        }
+
+        FK_HOST_FUSE InstantiableType build(const Image<PF>& data) {
+            return { data.ptr() };
         }
     };
 
