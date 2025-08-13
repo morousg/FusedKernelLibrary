@@ -22,17 +22,33 @@ int launch() {
     constexpr auto readIOp = fk::PerThreadRead<fk::ND::_2D, uchar3>::build(
         fk::RawPtr<fk::ND::_2D, uchar3>{ nullptr, { 128, 128, 128 * sizeof(uchar3) }});
 
+    // Test BLEND deinterlacing
     constexpr auto deinterlaceBlendIOp = fk::Deinterlace<fk::DeinterlaceType::BLEND>::build(readIOp);
 
     static_assert(std::is_same_v<std::decay_t<decltype(deinterlaceBlendIOp)>,
         fk::ReadBack<fk::Deinterlace<fk::DeinterlaceType::BLEND, fk::Read<fk::PerThreadRead<fk::ND::_2D, uchar3>>>>>,
         "Unexpected type for deinterlaceBlendIOp");
 
+    // Test INTER_LINEAR deinterlacing
     constexpr auto deinterlaceInterLinearIOp = fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR>::build(readIOp);
 
     static_assert(std::is_same_v<std::decay_t<decltype(deinterlaceInterLinearIOp)>,
         fk::ReadBack<fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR, fk::Read<fk::PerThreadRead<fk::ND::_2D, uchar3>>>>>,
         "Unexpected type for deinterlaceInterLinearIOp");
+
+    // Test that both deinterlace types are different template instantiations
+    static_assert(!std::is_same_v<decltype(deinterlaceBlendIOp), decltype(deinterlaceInterLinearIOp)>,
+        "BLEND and INTER_LINEAR should be different types");
+
+    // Test enum values
+    static_assert(fk::DeinterlaceType::BLEND != fk::DeinterlaceType::INTER_LINEAR,
+        "DeinterlaceType enum values should be different");
+
+    // Test that parameters are properly sized
+    static_assert(sizeof(fk::DeinterlaceParameters<fk::DeinterlaceType::BLEND>) >= sizeof(fk::Size),
+        "DeinterlaceParameters should contain at least a Size");
+    static_assert(sizeof(fk::DeinterlaceParameters<fk::DeinterlaceType::INTER_LINEAR>) >= sizeof(fk::Size),
+        "DeinterlaceParameters should contain at least a Size");
 
     return 0;
 }

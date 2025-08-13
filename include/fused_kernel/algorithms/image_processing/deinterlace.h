@@ -16,6 +16,7 @@
 #define FK_DEINTERLACE
 
 #include <fused_kernel/core/execution_model/operation_model/operation_model.h>
+#include <fused_kernel/core/execution_model/memory_operations.h>
 #include <fused_kernel/algorithms/image_processing/interpolation.h>
 #include <fused_kernel/core/data/size.h>
 
