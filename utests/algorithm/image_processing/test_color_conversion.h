@@ -17,6 +17,7 @@
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
 #include <fused_kernel/core/utils/type_to_string.h>
 #include <tests/operation_test_utils.h>
+#include <fused_kernel/algorithms/image_processing/image.h>
 
 // Test PixelFormatTraits for UYVY
 void testUYVYPixelFormatTraits() {
@@ -272,11 +273,11 @@ void testReadYUV() {
 
     // Allocate Ptr's
     // We need to allocate a pitch that is at least width * 2 bytes for UYVY format
-    std::array<fk::Ptr<fk::ND::_2D, uchar>, 3> inputVals = {
+    std::array<fk::Image<fk::PixelFormat::UYVY>, 3> inputVals = {
       // Fix: make pitch to be respected when different than 0, even in host
-      fk::Ptr<fk::ND::_2D, uchar>(res1_2.width, res1_2.height, 32u * 4u),
-      fk::Ptr<fk::ND::_2D, uchar>(res1_2.width, res1_2.height, 32u * 4u),
-      fk::Ptr<fk::ND::_2D, uchar>(  res3.width,   res3.height, 32u * 4u)
+      fk::Image<fk::PixelFormat::UYVY>(res1_2.width, res1_2.height),
+      fk::Image<fk::PixelFormat::UYVY>(res1_2.width, res1_2.height),
+      fk::Image<fk::PixelFormat::UYVY>(res3.width,   res3.height)
     };
 
     std::array<fk::Ptr<fk::ND::_2D, uchar3>, 3> expectedVals = {
@@ -285,29 +286,33 @@ void testReadYUV() {
       fk::Ptr<fk::ND::_2D, uchar3>(  res3.width,   res3.height, 0, fk::MemType::Host)
     };
 
-    // Copy values
-    for (int y = 0; y < res3.height; ++y) {
-        for (int x = 0; x < res3.width * 2; ++x) {
-            if (y < res1_2.height) {
-                if (x < (res1_2.width * 2)) {
-                    inputVals[0].at(x, y) = ptr1[y * (res1_2.width * 2) + x];
-                    inputVals[1].at(x, y) = ptr2[y * (res1_2.width * 2) + x];
-                }
-                inputVals[2].at(x, y) = ptr3[y * (res3.width * 2) + x];
-            } else {
-                inputVals[2].at(x, y) = ptr3[y * (res3.width * 2) + x];
-            }
+    // Copy values test 1 and 2
+    for (int y = 0; y < inputVals[0].getData().dims().height; ++y) {
+        for (int x = 0; x < inputVals[0].getData().dims().width; ++x) {
+            inputVals[0].getData().at(x, y) = ptr1[y * (res1_2.width * 2) + x];
+            inputVals[1].getData().at(x, y) = ptr2[y * (res1_2.width * 2) + x];
         }
+    }
+
+    // Copy expected values for test 1 and 2
+    for (int y = 0; y < res1_2.height; ++y) {
+        for (int x = 0; x < res1_2.width; ++x) {
+            expectedVals[0].at(x, y) = ptr1Expected[y * res1_2.width + x];
+            expectedVals[1].at(x, y) = ptr2Expected[y * res1_2.width + x];
+        }
+    }
+
+    // Copy values test 3
+    for (int y = 0; y < inputVals[2].getData().dims().height; ++y) {
+        for (int x = 0; x < inputVals[2].getData().dims().width; ++x) {
+            inputVals[2].getData().at(x, y) = ptr3[y * (res3.width * 2) + x];
+        }
+    }
+
+    // Copy expected values for test 3
+    for (int y = 0; y < res3.height; ++y) {
         for (int x = 0; x < res3.width; ++x) {
-            if (y < res1_2.height) {
-                if (x < res1_2.width) {
-                    expectedVals[0].at(x, y) = ptr1Expected[y * res1_2.width + x];
-                    expectedVals[1].at(x, y) = ptr2Expected[y * res1_2.width + x];
-                }
-                expectedVals[2].at(x, y) = ptr3Expected[y * res3.width + x];
-            } else {
-                expectedVals[2].at(x, y) = ptr3Expected[y * res3.width + x];
-            }
+            expectedVals[2].at(x, y) = ptr3Expected[y * res3.width + x];
         }
     }
 
@@ -322,11 +327,11 @@ void testReadYUV() {
     stream.sync();
 
     std::cout << "Input 1" << std::endl;
-    printPtr(inputVals[0]);
+    printPtr(inputVals[0].getData());
     std::cout << "Input 2" << std::endl;
-    printPtr(inputVals[1]);
+    printPtr(inputVals[1].getData());
     std::cout << "Input 3" << std::endl;
-    printPtr(inputVals[2]);
+    printPtr(inputVals[2].getData());
 
     TestCaseBuilder<ReadYUVTest>::addTest(testCases, stream, inputVals, expectedVals);
 }

@@ -68,9 +68,16 @@ namespace fk {
         using Parent = UnaryOperation<I, bool, IsEven<I>>;
         DECLARE_UNARY_PARENT
         using AcceptedTypes = TypeList<uchar, ushort, uint, ulong, ulonglong>;
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input) {
+        using SigendTypes = TypeList<char, short, int, long, longlong>;
+        template <typename IType = InputType>
+        FK_HOST_DEVICE_FUSE std::enable_if_t<one_of_v<IType, AcceptedTypes>, OutputType> exec(const InputType& input) {
             static_assert(one_of_v<I, AcceptedTypes>, "Input type not valid for UnaryIsEven");
             return (input & 1u) == 0;
+        }
+        template <typename IType = InputType>
+        FK_HOST_DEVICE_FUSE std::enable_if_t<one_of_v<IType, SigendTypes>, OutputType> exec(const InputType& input) {
+            using UT = std::make_unsigned_t<IType>;
+            return IsEven<UT>::exec(static_cast<UT>(input));
         }
     };
 
