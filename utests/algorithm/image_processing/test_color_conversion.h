@@ -320,19 +320,6 @@ void testReadYUV() {
     inputVals[1].upload(stream);
     inputVals[2].upload(stream);
 
-    inputVals[0].download(stream);
-    inputVals[1].download(stream);
-    inputVals[2].download(stream);
-
-    stream.sync();
-
-    std::cout << "Input 1" << std::endl;
-    printPtr(inputVals[0].getData());
-    std::cout << "Input 2" << std::endl;
-    printPtr(inputVals[1].getData());
-    std::cout << "Input 3" << std::endl;
-    printPtr(inputVals[2].getData());
-
     TestCaseBuilder<ReadYUVTest>::addTest(testCases, stream, inputVals, expectedVals);
 }
 

@@ -363,8 +363,8 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                                     std::is_fundamental_v<typename Operation::OutputType>, void>> {
     template <size_t N>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                               const std::array<typename Operation::InputType, N> inputElems,
-                               const std::array<typename Operation::OutputType, N> expectedElems) {
+                               const std::array<typename Operation::InputType, N>& inputElems,
+                               const std::array<typename Operation::OutputType, N>& expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
         testCases[testName] = [testName, inputElems, expectedElems]() {
             const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
@@ -398,8 +398,8 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
                                      fk::validCUDAVec<typename Operation::OutputType>), void>> {
     template <size_t N>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                               const std::array<typename Operation::InputType, N> inputElems,
-                               const std::array<typename Operation::OutputType, N> expectedElems) {
+                               const std::array<typename Operation::InputType, N>& inputElems,
+                               const std::array<typename Operation::OutputType, N>& expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
         testCases[testName] = [testName, inputElems, expectedElems]() -> bool {
             const auto outputPtr = test_case_builder::detail::launchUnary<Operation>(testName, inputElems);
@@ -442,7 +442,7 @@ template <typename Operation>
 struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::value, void>> {
     template <fk::ND D, size_t N, typename BuildParams>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                               fk::Stream stream, 
+                               fk::Stream& stream, 
                                const std::array<BuildParams, N>& inputElems,
                                const std::array<fk::Ptr<D, typename Operation::OutputType>, N>& expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
