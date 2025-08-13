@@ -82,6 +82,7 @@ for (const auto& [testName, testFunc] : testCases) { \
         correct = false; \
     } \
 } \
+testCases.clear(); \
 return correct ? 0 : -1;
 
 template <typename T>
