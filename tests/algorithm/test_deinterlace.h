@@ -30,7 +30,7 @@ int launch() {
         "Unexpected type for deinterlaceBlendIOp");
 
     // Test INTER_LINEAR deinterlacing
-    constexpr auto deinterlaceInterLinearIOp = fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR>::build(readIOp);
+    constexpr auto deinterlaceInterLinearIOp = fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR>::build(fk::DeinterlaceLinear::USE_EVEN, readIOp);
 
     static_assert(std::is_same_v<std::decay_t<decltype(deinterlaceInterLinearIOp)>,
         fk::ReadBack<fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR, fk::Read<fk::PerThreadRead<fk::ND::_2D, uchar3>>>>>,
@@ -43,12 +43,6 @@ int launch() {
     // Test enum values
     static_assert(fk::DeinterlaceType::BLEND != fk::DeinterlaceType::INTER_LINEAR,
         "DeinterlaceType enum values should be different");
-
-    // Test that parameters are properly sized
-    static_assert(sizeof(fk::DeinterlaceParameters<fk::DeinterlaceType::BLEND>) >= sizeof(fk::Size),
-        "DeinterlaceParameters should contain at least a Size");
-    static_assert(sizeof(fk::DeinterlaceParameters<fk::DeinterlaceType::INTER_LINEAR>) >= sizeof(fk::Size),
-        "DeinterlaceParameters should contain at least a Size");
 
     return 0;
 }
