@@ -43,22 +43,22 @@ namespace fk {
         Size src_size;
     };
 
-    template <enum InterpolationType INTER_T, typename BackFunction_ = void>
+    template <enum InterpolationType INTER_T, typename BackIOp_ = void>
     struct Interpolate;
 
-    template <typename BackFunction_>
-    struct Interpolate<InterpolationType::INTER_LINEAR, BackFunction_> {
+    template <typename BackIOp_>
+    struct Interpolate<InterpolationType::INTER_LINEAR, BackIOp_> {
     private:
-        using SelfType = Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>;
-        using ReadOutputType = typename BackFunction_::Operation::OutputType;
+        using SelfType = Interpolate<InterpolationType::INTER_LINEAR, BackIOp_>;
+        using ReadOutputType = typename BackIOp_::Operation::OutputType;
     public:
         FK_STATIC_STRUCT(Interpolate, SelfType)
         using Parent = TernaryOperation<float2, InterpolationParameters<InterpolationType::INTER_LINEAR>,
-                                        BackFunction_, VectorType_t<float, cn<ReadOutputType>>,
-                                        Interpolate<InterpolationType::INTER_LINEAR, BackFunction_>>;
+                                        BackIOp_, VectorType_t<float, cn<ReadOutputType>>,
+                                        Interpolate<InterpolationType::INTER_LINEAR, BackIOp_>>;
         DECLARE_TERNARY_PARENT
 
-        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params, const BackFunction& back_function) {
+        FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const ParamsType& params, const BackIOp& backIOp) {
             const float src_x = input.x;
             const float src_y = input.y;
 
@@ -81,8 +81,8 @@ namespace fk {
                                               Point(x1, y2_read),
                                               Point(x2_read, y2_read) };
 
-            const BackFunction readIOp = back_function;
-            using ReadOperation = typename BackFunction::Operation;
+            const BackIOp readIOp = backIOp;
+            using ReadOperation = typename BackIOp::Operation;
 
             const ReadOutputType src_reg0x0 = ReadOperation::exec(readPoints._0x0, readIOp);
             const ReadOutputType src_reg1x0 = ReadOperation::exec(readPoints._1x0, readIOp);

@@ -102,16 +102,16 @@ namespace fk {
         using InputType = I;
         using OutputType = O;
         using ParamsType = P;
-        using BackFunction = BF;
+        using BackIOp = BF;
         using InstanceType = TernaryType;
         using OperationDataType = OperationData<TOperationImpl>;
         using InstantiableType = TernaryInstantiableOperation<TOperationImpl>;
         static constexpr bool IS_FUSED_OP = IS_FUSED;
         FK_HOST_DEVICE_FUSE OutputType exec(const InputType& input, const OperationDataType& opData) {
-            return TOperationImpl::exec(input, opData.params, opData.back_function);
+            return TOperationImpl::exec(input, opData.params, opData.backIOp);
         }
         FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType& opData) { return InstantiableType{ opData }; }
-        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackFunction& backFunc) {
+        FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType& params, const BackIOp& backFunc) {
             return InstantiableType{ {params, backFunc} };
         }
     };
@@ -120,7 +120,7 @@ namespace fk {
   using InputType = typename Parent::InputType;                                                                        \
   using OutputType = typename Parent::OutputType;                                                                      \
   using ParamsType = typename Parent::ParamsType;                                                                      \
-  using BackFunction = typename Parent::BackFunction;                                                                  \
+  using BackIOp = typename Parent::BackIOp;                                                                  \
   using InstanceType = typename Parent::InstanceType;                                                                  \
   using OperationDataType = typename Parent::OperationDataType;                                                        \
   using InstantiableType = typename Parent::InstantiableType;                                                          \
@@ -129,7 +129,7 @@ namespace fk {
     return Parent::exec(input, opData);                                                                                \
   }                                                                                                                    \
   FK_HOST_DEVICE_FUSE InstantiableType build(const OperationDataType &opData) { return Parent::build(opData); }        \
-  FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType &params, const BackFunction &backFunc) {                 \
+  FK_HOST_DEVICE_FUSE InstantiableType build(const ParamsType &params, const BackIOp &backFunc) {                 \
     return Parent::build(params, backFunc);                                                                            \
   }
     // END PARENT COMPUTE OPERATIONS
@@ -252,20 +252,20 @@ DECLARE_READ_PARENT_DEVICE_BASIC
         using ReadDataType = RT;
         using OutputType = O;
         using ParamsType = P;
-        using BackFunction = B;
+        using BackIOp = B;
         using InstanceType = ReadBackType;
         using OperationDataType = OperationData<RBOperationImpl>;
         using InstantiableType = ReadBackInstantiableOperation<RBOperationImpl>;
         static constexpr bool IS_FUSED_OP = IS_FUSED;
         static constexpr bool THREAD_FUSION = false;
 
-        template <typename BF = BackFunction>
+        template <typename BF = BackIOp>
         FK_DEVICE_FUSE std::enable_if_t<!std::is_same_v<BF, NullType>, OutputType> exec(const Point& thread,
             const OperationDataType& opData) {
-            return RBOperationImpl::exec(thread, opData.params, opData.back_function);
+            return RBOperationImpl::exec(thread, opData.params, opData.backIOp);
         }
         FK_HOST_DEVICE_FUSE auto build(const OperationDataType& opData) { return InstantiableType{ opData }; }
-        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params, const BackFunction& backFunc) {
+        FK_HOST_DEVICE_FUSE auto build(const ParamsType& params, const BackIOp& backFunc) {
             return InstantiableType{ {params, backFunc} };
         };
     };
@@ -274,7 +274,7 @@ DECLARE_READ_PARENT_DEVICE_BASIC
   using ReadDataType = typename Parent::ReadDataType;                                                                  \
   using OutputType = typename Parent::OutputType;                                                                      \
   using ParamsType = typename Parent::ParamsType;                                                                      \
-  using BackFunction = typename Parent::BackFunction;                                                                  \
+  using BackIOp = typename Parent::BackIOp;                                                                  \
   using InstanceType = typename Parent::InstanceType;                                                                  \
   using OperationDataType = typename Parent::OperationDataType;                                                        \
   using InstantiableType = typename Parent::InstantiableType;                                                          \

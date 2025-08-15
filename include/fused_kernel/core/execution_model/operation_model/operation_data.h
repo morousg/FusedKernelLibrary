@@ -44,28 +44,28 @@ namespace fk {
 
     using BFList = TypeList<ReadBackType, TernaryType>;
     template <typename OpOrDF>
-    constexpr bool hasNoBackFunction_v = !one_of_v<typename OpOrDF::InstanceType, BFList>;
+    constexpr bool hasNoBackIOp_v = !one_of_v<typename OpOrDF::InstanceType, BFList>;
 
-    // hasBackFunction trait
+    // hasBackIOp trait
     template <typename, typename = std::void_t<>>
-    struct hasBackFunction : std::false_type {};
+    struct hasBackIOp : std::false_type {};
 
     template <typename T>
-    struct hasBackFunction<T, std::void_t<typename T::BackFunction>> : std::true_type {};
+    struct hasBackIOp<T, std::void_t<typename T::BackIOp>> : std::true_type {};
 
     template <typename T>
-    constexpr bool hasBackFunction_v = hasBackFunction<T>::value;
+    constexpr bool hasBackIOp_v = hasBackIOp<T>::value;
 
-    // hasParamsAndBackFunction trait
+    // hasParamsAndBackIOp trait
     template <typename, typename = std::void_t<>>
-    struct hasParamsAndBackFunction : std::false_type {};
+    struct hasParamsAndBackIOp : std::false_type {};
 
     template <typename T>
-    struct hasParamsAndBackFunction<T, std::void_t<typename T::ParamsType,
-        typename T::BackFunction>> : std::true_type {};
+    struct hasParamsAndBackIOp<T, std::void_t<typename T::ParamsType,
+        typename T::BackIOp>> : std::true_type {};
 
     template <typename T>
-    constexpr bool hasParamsAndBackFunction_v = hasParamsAndBackFunction<T>::value;
+    constexpr bool hasParamsAndBackIOp_v = hasParamsAndBackIOp<T>::value;
 
     // OperationData implementation selectors
     template <typename Operation>
@@ -80,7 +80,7 @@ namespace fk {
     struct OperationData;
 
     template <typename Operation>
-    struct OperationData<Operation, std::enable_if_t<hasParamsNoArray<Operation>&& hasNoBackFunction_v<Operation>, void>> {
+    struct OperationData<Operation, std::enable_if_t<hasParamsNoArray<Operation>&& hasNoBackIOp_v<Operation>, void>> {
 #ifdef COPYABLE_IOPS
         FK_HOST_DEVICE_CNST OperationData() {};
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_) : params(params_) {}
@@ -89,7 +89,7 @@ namespace fk {
     };
 
     template <typename Operation>
-    struct OperationData<Operation, std::enable_if_t<hasParamsArray<Operation>&& hasNoBackFunction_v<Operation>, void>> {
+    struct OperationData<Operation, std::enable_if_t<hasParamsArray<Operation>&& hasNoBackIOp_v<Operation>, void>> {
 #ifdef COPYABLE_IOPS
         FK_HOST_DEVICE_CNST OperationData() {};
         __host__ __forceinline__ OperationData(const typename Operation::ParamsType& params_) {
@@ -106,36 +106,36 @@ namespace fk {
     };
 
     template <typename Operation>
-    struct OperationData<Operation, std::enable_if_t<hasParamsAndBackFunction_v<Operation> &&
+    struct OperationData<Operation, std::enable_if_t<hasParamsAndBackIOp_v<Operation> &&
         !std::is_array_v<typename Operation::ParamsType> &&
-        !std::is_array_v<typename Operation::BackFunction>, void>> {
+        !std::is_array_v<typename Operation::BackIOp>, void>> {
 #ifdef COPYABLE_IOPS
         FK_HOST_DEVICE_CNST OperationData() {};
         FK_HOST_DEVICE_CNST OperationData(const typename Operation::ParamsType& params_,
-            const typename Operation::BackFunction& back_function_) :
-            params(params_), back_function(back_function_) {}
+            const typename Operation::BackIOp& backIOp_) :
+            params(params_), backIOp(backIOp_) {}
 #endif
         typename Operation::ParamsType params;
-        typename Operation::BackFunction back_function;
+        typename Operation::BackIOp backIOp;
     };
 
     template <typename Operation>
-    struct OperationData<Operation, std::enable_if_t<hasParamsAndBackFunction_v<Operation> &&
+    struct OperationData<Operation, std::enable_if_t<hasParamsAndBackIOp_v<Operation> &&
         (std::is_array_v<typename Operation::ParamsType> ||
-            std::is_array_v<typename Operation::BackFunction>), void>> {
+            std::is_array_v<typename Operation::BackIOp>), void>> {
 #ifdef COPYABLE_IOPS
         __host__ __forceinline__ OperationData() {};
         __host__ __forceinline__ OperationData(const typename Operation::ParamsType& params_,
-            const typename Operation::BackFunction& back_function_) {
+            const typename Operation::BackIOp& backIOp_) {
             if constexpr (std::is_array_v<typename Operation::ParamsType>) {
                 std::copy(std::begin(params_), std::end(params_), std::begin(params));
             } else {
                 params = params_;
             }
-            if constexpr (std::is_array_v<typename Operation::BackFunction>) {
-                std::copy(std::begin(back_function_), std::end(back_function_), std::begin(back_function));
+            if constexpr (std::is_array_v<typename Operation::BackIOp>) {
+                std::copy(std::begin(backIOp_), std::end(backIOp_), std::begin(backIOp));
             } else {
-                back_function = back_function_;
+                backIOp = backIOp_;
             }
         }
         __host__ __forceinline__ OperationData<Operation>& operator=(const OperationData<Operation>& other) {
@@ -145,17 +145,17 @@ namespace fk {
                 } else {
                     params = other.params;
                 }
-                if constexpr (std::is_array_v<typename Operation::BackFunction>) {
-                    std::copy(std::begin(other.back_function), std::end(other.back_function), std::begin(back_function));
+                if constexpr (std::is_array_v<typename Operation::BackIOp>) {
+                    std::copy(std::begin(other.backIOp), std::end(other.backIOp), std::begin(backIOp));
                 } else {
-                    back_function = other.back_function;
+                    backIOp = other.backIOp;
                 }
             }
             return *this;
         }
 #endif
         typename Operation::ParamsType params;
-        typename Operation::BackFunction back_function;
+        typename Operation::BackIOp backIOp;
     };
 } // namespace fk
 

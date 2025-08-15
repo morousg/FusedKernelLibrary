@@ -400,8 +400,8 @@ namespace fk {
         using Op = typename IOp::Operation;
         if constexpr (is_fused_operation<Op>::value) {
             return InstantiableFusedOperationToOperationTuple<IOp>::value(iOp);
-        } else if constexpr (hasParamsAndBackFunction_v<Op>) {
-            return OperationTuple<Op>{ {iOp.params, iOp.back_function} };
+        } else if constexpr (hasParamsAndBackIOp_v<Op>) {
+            return OperationTuple<Op>{ {iOp.params, iOp.backIOp} };
         } else if constexpr (hasParams_v<Op>) {
             return OperationTuple<Op>{ {iOp.params} };
         } else { // UnaryType case
