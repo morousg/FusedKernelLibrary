@@ -58,28 +58,28 @@ namespace fk {
         InterpolationParameters<IType> params;
     };
 
-    template <enum InterpolationType IType, enum AspectRatio AR = AspectRatio::IGNORE_AR, typename BackFunction_ = void>
+    template <enum InterpolationType IType, enum AspectRatio AR = AspectRatio::IGNORE_AR, typename BackIOp_ = void>
     struct Resize {
     private:
-        using SelfType = Resize<IType, AR, BackFunction_>;
+        using SelfType = Resize<IType, AR, BackIOp_>;
     public:
         FK_STATIC_STRUCT(Resize, SelfType)
-        using InterpolateOutputType = typename Interpolate<IType, BackFunction_>::OutputType;
-        using Parent = ReadBackOperation<typename BackFunction_::Operation::OutputType,
+        using InterpolateOutputType = typename Interpolate<IType, BackIOp_>::OutputType;
+        using Parent = ReadBackOperation<typename BackIOp_::Operation::OutputType,
                                          ResizeReadParams<IType, AR, std::conditional_t<AR == AspectRatio::IGNORE_AR, void, InterpolateOutputType>>,
-                                         BackFunction_,
-                                         typename Interpolate<IType, BackFunction_>::OutputType,
-                                         Resize<IType, AR, BackFunction_>>;
+                                         BackIOp_,
+                                         typename Interpolate<IType, BackIOp_>::OutputType,
+                                         Resize<IType, AR, BackIOp_>>;
         DECLARE_READBACK_PARENT
 
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
             if constexpr (AR == AspectRatio::IGNORE_AR) {
-                return exec_resize(thread, params, back_function);
+                return exec_resize(thread, params, backIOp);
             } else { // Assuming PRESERVE_AR or PRESERVE_AR_RN_EVEN
                 if (thread.x >= params.x1 && thread.x <= params.x2 &&
                     thread.y >= params.y1 && thread.y <= params.y2) {
                     const Point roiThread(thread.x - params.x1, thread.y - params.y1, thread.z);
-                    return exec_resize(roiThread, params, back_function);
+                    return exec_resize(roiThread, params, backIOp);
                 } else {
                     return params.defaultValue;
                 }
@@ -105,8 +105,8 @@ namespace fk {
         template <enum AspectRatio AR_ = AR>
         FK_HOST_FUSE
         std::enable_if_t<AR_ == AspectRatio::IGNORE_AR, InstantiableType>
-        build(const BackFunction& backFunction, const Size& dstSize) {
-            const Size srcSize = Num_elems<BackFunction>::size(Point(), backFunction);
+        build(const BackIOp& backIOp, const Size& dstSize) {
+            const Size srcSize = Num_elems<BackIOp>::size(Point(), backIOp);
             const double cfx = static_cast<double>(dstSize.width) / static_cast<double>(srcSize.width);
             const double cfy = static_cast<double>(dstSize.height) / static_cast<double>(srcSize.height);
             const ParamsType resizeParams{
@@ -115,14 +115,14 @@ namespace fk {
                 { srcSize }
             };
 
-            return { {resizeParams, backFunction} };
+            return { {resizeParams, backIOp} };
         }
 
         template <enum AspectRatio AR_ = AR>
         FK_HOST_FUSE
         std::enable_if_t<AR_ != AspectRatio::IGNORE_AR, InstantiableType>
-        build(const BackFunction& backFunction, const Size& dstSize, const OutputType& backgroundValue) {
-            const Size srcSize = Num_elems<BackFunction>::size(Point(), backFunction);
+        build(const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
+            const Size srcSize = Num_elems<BackIOp>::size(Point(), backIOp);
 
             const Size targetSize = compute_target_size(srcSize, dstSize);
 
@@ -144,7 +144,7 @@ namespace fk {
                 /*defaultValue*/ backgroundValue
                 };
 
-                return { {resizeParams, backFunction} };
+                return { {resizeParams, backIOp} };
 
             } else {
                 const int x1 = static_cast<int>((dstSize.width - targetSize.width) / 2);
@@ -161,11 +161,11 @@ namespace fk {
                 /*defaultValue*/ backgroundValue
                 };
 
-                return { {resizeParams, backFunction} };
+                return { {resizeParams, backIOp} };
             }
         }
 
-        template <typename BF = BackFunction_>
+        template <typename BF = BackIOp_>
         FK_HOST_FUSE
         std::enable_if_t<std::is_same_v<BF, Read<PerThreadRead<ND::_2D, ReadDataType>>>, InstantiableType>
         build(const RawPtr<ND::_2D, ReadDataType>& input, const Size& dSize, const double& fx, const double& fy) {
@@ -180,7 +180,7 @@ namespace fk {
         }
 
         private:
-            FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+            FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
                 const float fx = params.src_conv_factors.x;
                 const float fy = params.src_conv_factors.y;
 
@@ -190,7 +190,7 @@ namespace fk {
                 // We don't set Interpolate as the BackFuntion of Resize, because we won't use any other function than Interpolate
                 // Therefore, we consider Interpolate to be part of the Resize implementation, and not a template variable.
                 // But, it would be relatively easy to change Interpolate with anything else if needed.
-                return Interpolate<IType, BackFunction>::exec(rezisePoint, { params.params, back_function });
+                return Interpolate<IType, BackIOp>::exec(rezisePoint, { params.params, backIOp });
             }
 
             FK_HOST_FUSE Size compute_target_size(const Size& srcSize, const Size& dstSize) {
@@ -317,15 +317,15 @@ namespace fk {
         DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
         template <typename BF, enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ == AspectRatio::IGNORE_AR && isAnyReadType<BF>, ReadBack<Resize<IType, AR_, BF>>>
-        build(const BF& backFunction, const Size& dstSize) {
-            return Resize<IType, AR_, BF>::build(backFunction, dstSize);
+        build(const BF& backIOp, const Size& dstSize) {
+            return Resize<IType, AR_, BF>::build(backIOp, dstSize);
         }
 
         template <typename BF, enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ != AspectRatio::IGNORE_AR && isAnyReadType<BF>, ReadBack<Resize<IType, AR_, BF>>>
-        build(const BF& backFunction, const Size& dstSize,
+        build(const BF& backIOp, const Size& dstSize,
               const typename Resize<IType, AR_, BF>::OutputType& backgroundValue) {
-            return Resize<IType, AR_, BF>::build(backFunction, dstSize, backgroundValue);
+            return Resize<IType, AR_, BF>::build(backIOp, dstSize, backgroundValue);
         }
 
         template <enum AspectRatio AR_ = AR>
