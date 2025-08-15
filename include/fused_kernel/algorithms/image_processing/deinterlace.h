@@ -159,18 +159,19 @@ namespace fk {
             return ReadBack<Deinterlace<DType, BackIOp>>{ {iOp.params, backIOp} };
         }
 
-        template <typename BF>
-        FK_HOST_FUSE auto build(const BF& backIOp) {
-            static_assert(DType == DeinterlaceType::BLEND, "This build method only works for DeinterlaceType::BLEND");
-            return Deinterlace<DeinterlaceType::BLEND, BF>::build(backIOp);
+        template <typename BIOp, DeinterlaceType DT = DType>
+        FK_HOST_FUSE auto build(const BIOp& backIOp)
+            -> std::enable_if_t<DT == DeinterlaceType::BLEND, ReadBack<Deinterlace<DeinterlaceType::BLEND, BIOp>>> {
+            return Deinterlace<DeinterlaceType::BLEND, BIOp>::build(backIOp);
         }
 
-        template <typename BIOp>
-        FK_HOST_FUSE auto build(const DeinterlaceLinear& lin, const BIOp& backIOp) {
-            static_assert(DType == DeinterlaceType::INTER_LINEAR, "This build method only works for DeinterlaceType::INTER_LINEAR");
-            const ParamsType deinterlaceParams{ static_cast<bool>(lin) };
-            return Deinterlace<DeinterlaceType::INTER_LINEAR, BIOp>::build(deinterlaceParams, backIOp);
+        template <typename BIOp, DeinterlaceType DT = DType>
+        FK_HOST_FUSE auto build(const DeinterlaceLinear& lin, const BIOp& backIOp)
+            -> std::enable_if_t<DT == DeinterlaceType::INTER_LINEAR, ReadBack<Deinterlace<DeinterlaceType::INTER_LINEAR, BIOp>>> {
+            const DeinterlaceParameters<DeinterlaceType::INTER_LINEAR> deinterlaceParams{ static_cast<bool>(lin) };
+            return { {deinterlaceParams, backIOp} };
         }
+
     };
 
 } // namespace fk
