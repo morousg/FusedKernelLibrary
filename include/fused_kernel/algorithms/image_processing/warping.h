@@ -67,24 +67,24 @@ namespace fk {
         }
     };
 
-    template<enum WarpType WT, typename BackIOp = void>
+    template<enum WarpType WT, typename BackIOp_ = void>
     struct Warping {
     private:
-        using SelfType = Warping<WT, BackIOp>;
+        using SelfType = Warping<WT, BackIOp_>;
     public:
         FK_STATIC_STRUCT(Warping, SelfType)
-        using Parent = ReadBackOperation<typename BackIOp::Operation::ReadDataType,
+        using Parent = ReadBackOperation<typename BackIOp_::Operation::ReadDataType,
                                          WarpingParameters<WT>,
-                                         BackIOp,
-                                         VectorType_t<float, cn<typename BackIOp::Operation::ReadDataType>>,
-                                         Warping<WT, BackIOp>>;
+                                         BackIOp_,
+                                         VectorType_t<float, cn<typename BackIOp_::Operation::ReadDataType>>,
+                                         Warping<WT, BackIOp_>>;
         DECLARE_READBACK_PARENT
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
             const float2 coord = WarpingCoords<WT>::exec(thread, params);
-            const Size sourceSize(BackFunction::Operation::num_elems_x(thread, back_function),
-                                  BackFunction::Operation::num_elems_y(thread, back_function));
+            const Size sourceSize(BackIOp::Operation::num_elems_x(thread, backIOp),
+                                  BackIOp::Operation::num_elems_y(thread, backIOp));
             if ((coord.x >= 0.f && coord.x < sourceSize.width) && (coord.y >= 0.f && coord.y < sourceSize.height)) {
-                return Interpolate<InterpolationType::INTER_LINEAR, BackIOp>::exec(coord, {sourceSize}, back_function);
+                return Interpolate<InterpolationType::INTER_LINEAR, BackIOp_>::exec(coord, {sourceSize}, backIOp);
             } else {
                 return make_set<OutputType>(0.f);
             }

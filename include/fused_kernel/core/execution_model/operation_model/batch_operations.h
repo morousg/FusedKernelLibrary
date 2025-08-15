@@ -444,8 +444,8 @@ namespace fk {
     return Parent::exec(thread, opData);                                                                               \
   }                                                                                                                    \
   FK_HOST_DEVICE_FUSE auto build(const OperationDataType &opData) { return Parent::build(opData); }                    \
-  FK_HOST_DEVICE_FUSE auto build(const ParamsType &params, const BackFunction &back_function) {                        \
-    return Parent::build(params, back_function);                                                                       \
+  FK_HOST_DEVICE_FUSE auto build(const ParamsType &params, const BackIOp &backIOp) {                        \
+    return Parent::build(params, backIOp);                                                                       \
   }                                                                                                                    \
   DECLARE_READ_PARENT_BATCH
 
@@ -498,8 +498,8 @@ namespace fk {
 #define DECLARE_READBACK_PARENT_INCOMPLETE                                                                             \
   DECLARE_READBACK_PARENT_ALIAS                                                                                        \
   FK_HOST_DEVICE_FUSE auto build(const OperationDataType &opData) { return Parent::build(opData); }                    \
-  FK_HOST_DEVICE_FUSE auto build(const ParamsType &params, const BackFunction &back_function) {                        \
-    return Parent::build(params, back_function);                                                                       \
+  FK_HOST_DEVICE_FUSE auto build(const ParamsType &params, const BackIOp &backIOp) {                        \
+    return Parent::build(params, backIOp);                                                                       \
   }                                                                                                                    \
   DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
   // END MEMORY OPERATIONS BATCH BUILDERS

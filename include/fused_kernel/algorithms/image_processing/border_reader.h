@@ -40,7 +40,7 @@ namespace fk {
         ReadType value;
     };
 
-    template <enum BorderType BT, typename BackIOp = void, typename Enabler = void>
+    template <enum BorderType BT, typename BackIOp_ = void, typename Enabler = void>
     struct BorderReader;
     
     template <enum BorderType BT>
@@ -107,57 +107,57 @@ namespace fk {
 #define BORDER_READER_DETAILS(BT) \
 private: \
     using SelfType = \
-        BorderReader<BT, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>>; \
-    using IOType = typename BackIOp::Operation::OutputType; \
+        BorderReader<BT, BackIOp_, std::enable_if_t<!std::is_same_v<BackIOp_, void>, void>>; \
+    using IOType = typename BackIOp_::Operation::OutputType; \
 public: \
     FK_STATIC_STRUCT(BorderReader, SelfType) \
     using Parent = ReadBackOperation<IOType, BorderReaderParameters<BT, IOType>, \
-        BackIOp, IOType, SelfType>; \
+        BackIOp_, IOType, SelfType>; \
     DECLARE_READBACK_PARENT \
 FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) { \
-    return BackFunction::Operation::num_elems_x(thread, opData.back_function); \
+    return BackIOp::Operation::num_elems_x(thread, opData.backIOp); \
 } \
 FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) { \
-    return BackFunction::Operation::num_elems_y(thread, opData.back_function); \
+    return BackIOp::Operation::num_elems_y(thread, opData.backIOp); \
 } \
 FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) { \
-    return BackFunction::Operation::num_elems_z(thread, opData.back_function); \
+    return BackIOp::Operation::num_elems_z(thread, opData.backIOp); \
 }
 
 #define BORDER_READER_EXEC \
-FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) { \
-    const int last_col = BackFunction::Operation::num_elems_x(thread, back_function) - 1; \
-    const int last_row = BackFunction::Operation::num_elems_y(thread, back_function) - 1; \
+FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackIOp& backIOp) { \
+    const int last_col = BackIOp::Operation::num_elems_x(thread, backIOp) - 1; \
+    const int last_row = BackIOp::Operation::num_elems_y(thread, backIOp) - 1; \
     const Point new_thread(idx_col(thread.x, last_col), idx_row(thread.y, last_row), thread.z); \
-    return BackFunction::Operation::exec(new_thread, back_function); \
+    return BackIOp::Operation::exec(new_thread, backIOp); \
 }
 
-    template <typename BackIOp>
-    struct BorderReader<BorderType::CONSTANT, BackIOp,
-                        std::enable_if_t<!std::is_same_v<BackIOp, void> &&
-                                         !std::is_same_v<BackIOp, TypeList<void, typename BackIOp::Operation::ReadDataType>>, void>> {
+    template <typename BackIOp_>
+    struct BorderReader<BorderType::CONSTANT, BackIOp_,
+                        std::enable_if_t<!std::is_same_v<BackIOp_, void> &&
+                                         !std::is_same_v<BackIOp_, TypeList<void, typename BackIOp_::Operation::ReadDataType>>, void>> {
         BORDER_READER_DETAILS(BorderType::CONSTANT)
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
-            const int width = BackFunction::Operation::num_elems_x(thread, back_function);
-            const int height = BackFunction::Operation::num_elems_y(thread, back_function);
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
+            const int width = BackIOp::Operation::num_elems_x(thread, backIOp);
+            const int height = BackIOp::Operation::num_elems_y(thread, backIOp);
             if (thread.x >= 0 && thread.x < width && thread.y >= 0 && thread.y < height) {
-                return BackFunction::Operation::exec(thread, back_function);
+                return BackIOp::Operation::exec(thread, backIOp);
             } else {
                 return params.value;
             }
         }
-        FK_HOST_FUSE auto build(const BackFunction& backFunction, const ReadDataType& defaultValue) {
-            return InstantiableType{ OperationDataType{{defaultValue}, backFunction} };
+        FK_HOST_FUSE auto build(const BackIOp& backIOp, const ReadDataType& defaultValue) {
+            return InstantiableType{ OperationDataType{{defaultValue}, backIOp} };
         }
     };
 
-    template <typename BackIOp>
-    struct BorderReader<BorderType::REPLICATE, BackIOp,
-                        std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
+    template <typename BackIOp_>
+    struct BorderReader<BorderType::REPLICATE, BackIOp_,
+                        std::enable_if_t<!std::is_same_v<BackIOp_, void>, void>> {
         BORDER_READER_DETAILS(BorderType::REPLICATE)
         BORDER_READER_EXEC
-        FK_HOST_FUSE auto build(const BackFunction& backFunction) {
-            return InstantiableType{ OperationDataType{{}, backFunction} };
+        FK_HOST_FUSE auto build(const BackIOp& backIOp) {
+            return InstantiableType{ OperationDataType{{}, backIOp} };
         }
     private:
         FK_HOST_DEVICE_FUSE int idx_row_low(const int& y) {
@@ -180,13 +180,13 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
         }
     };
 
-    template <typename BackIOp>
-    struct BorderReader<BorderType::REFLECT, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
+    template <typename BackIOp_>
+    struct BorderReader<BorderType::REFLECT, BackIOp_, std::enable_if_t<!std::is_same_v<BackIOp_, void>, void>> {
         BORDER_READER_DETAILS(BorderType::REFLECT)
         BORDER_READER_EXEC
 
-        FK_HOST_FUSE auto build(const BackFunction& backFunction) {
-            return InstantiableType{ OperationDataType{{}, backFunction} };
+        FK_HOST_FUSE auto build(const BackIOp& backIOp) {
+            return InstantiableType{ OperationDataType{{}, backIOp} };
         }
     private:
         FK_HOST_DEVICE_FUSE int idx_row_low(const int& y, const int& last_row) {
@@ -209,18 +209,18 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
         }
     };
 
-    template <typename BackIOp>
-    struct BorderReader<BorderType::WRAP, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
+    template <typename BackIOp_>
+    struct BorderReader<BorderType::WRAP, BackIOp_, std::enable_if_t<!std::is_same_v<BackIOp_, void>, void>> {
         BORDER_READER_DETAILS(BorderType::WRAP)
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
-            const int width = BackFunction::Operation::num_elems_x(thread, back_function);
-            const int height = BackFunction::Operation::num_elems_y(thread, back_function);
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
+            const int width = BackIOp::Operation::num_elems_x(thread, backIOp);
+            const int height = BackIOp::Operation::num_elems_y(thread, backIOp);
             const Point new_thread(idx_col(thread.x, width), idx_row(thread.y, height), thread.z);
-            return BackFunction::Operation::exec(new_thread, back_function);
+            return BackIOp::Operation::exec(new_thread, backIOp);
         }
 
-        FK_HOST_FUSE auto build(const BackFunction& backFunction) {
-            return InstantiableType{ OperationDataType{{}, backFunction} };
+        FK_HOST_FUSE auto build(const BackIOp& backIOp) {
+            return InstantiableType{ OperationDataType{{}, backIOp} };
         }
     private:
         FK_HOST_DEVICE_FUSE int idx_row_low(const int& y, const int& height) {
@@ -243,13 +243,13 @@ FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& param
         }
     };
 
-    template <typename BackIOp>
-    struct BorderReader<BorderType::REFLECT_101, BackIOp, std::enable_if_t<!std::is_same_v<BackIOp, void>, void>> {
+    template <typename BackIOp_>
+    struct BorderReader<BorderType::REFLECT_101, BackIOp_, std::enable_if_t<!std::is_same_v<BackIOp_, void>, void>> {
         BORDER_READER_DETAILS(BorderType::REFLECT_101)
         BORDER_READER_EXEC
 
-        FK_HOST_FUSE auto build(const BackFunction& backFunction) {
-            return InstantiableType{ OperationDataType{{}, backFunction} };
+        FK_HOST_FUSE auto build(const BackIOp& backIOp) {
+            return InstantiableType{ OperationDataType{{}, backIOp} };
         }
     private:
         FK_HOST_DEVICE_FUSE int idx_row_low(const int& y, const int& last_row) {

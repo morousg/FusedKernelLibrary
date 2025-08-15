@@ -20,21 +20,21 @@
 #include <fused_kernel/core/data/point.h>
 
 namespace fk {
-    template <typename BackIOp = void>
+    template <typename BackIOp_ = void>
     struct Crop {
     private:
-        using SelfType = Crop<BackIOp>;
+        using SelfType = Crop<BackIOp_>;
     public:
         FK_STATIC_STRUCT(Crop, SelfType)
-        using Parent = ReadBackOperation<typename BackIOp::Operation::OutputType,
+        using Parent = ReadBackOperation<typename BackIOp_::Operation::OutputType,
                                          Rect,
-                                         BackIOp,
-                                         typename BackIOp::Operation::OutputType,
-                                         Crop<BackIOp>>;
+                                         BackIOp_,
+                                         typename BackIOp_::Operation::OutputType,
+                                         Crop<BackIOp_>>;
         DECLARE_READBACK_PARENT
-        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackFunction& back_function) {
+        FK_HOST_DEVICE_FUSE OutputType exec(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
             const Point newThread(thread.x + params.x, thread.y + params.y);
-            return BackFunction::Operation::exec(newThread, back_function);
+            return BackIOp::Operation::exec(newThread, backIOp);
         }
 
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
@@ -53,8 +53,8 @@ namespace fk {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
 
-        FK_HOST_FUSE InstantiableType build(const BackFunction& backFunction, const Rect& rect) {
-            return InstantiableType{ { rect, backFunction } };
+        FK_HOST_FUSE InstantiableType build(const BackIOp& backIOp, const Rect& rect) {
+            return InstantiableType{ { rect, backIOp } };
         }
     };
 
