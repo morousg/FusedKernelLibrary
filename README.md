@@ -1,6 +1,12 @@
 # Fused Kernel Library (FKL)
 
-The Fused Kernel Library is a C++17  implementation of a methodology (publication pending) that allows to define a set of  code elements that need to be executed inside a kernel, in the same order that they are expressed. The library currently has CPU and CUDA backends, but other GPU language implemenations (such as HIP)  are possible
+This repository provides the official implementation of the Fused Kernel Library. An preprint is available from arxiv:
+
+The Fused Kernel Library: A C++ API to Develop Highly-Efficient GPU Libraries
+Oscar Amoros [ORCID](https://orcid.org/0009-0008-1442-5348), Albert Andaluz[ORCID](https://orcid.org/0009-0004-2185-781X), Johnny Nunez [ORCID](https://orcid.org/0009-0000-3865-6468) and Antonio J. Pena [ORCID](https://orcid.org/0000-0002-3575-4617)
+Paper: https://arxiv.org/abs/2508.07071v1
+  
+The Fused Kernel Library is a C++17  implementation of a methodology (publication pending) that allows to define a set of  code elements that need to be executed inside a kernel, in the same order that they are expressed. The library currently has CPU and CUDA backends, but other GPU language implemenations (such as HIP)  are possible.
 
 It automatically implements Vertical and Horizontal fusion, and also implements two new Fusion techniques, Backwards Vertical Fusion (akin to OpenCV Filters, but with an standard generic API), and Divergent Horizontal Fusion.
 
