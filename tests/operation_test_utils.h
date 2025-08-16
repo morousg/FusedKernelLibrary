@@ -22,6 +22,7 @@
 #include <iostream>
 
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
+#include <fused_kernel/core/utils/type_to_string.h>
 #include <fused_kernel/core/execution_model/executors.h>
 
 // This helper simply forces one more round of macro expansion.
