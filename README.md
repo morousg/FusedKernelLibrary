@@ -76,7 +76,7 @@ First of all, take into account that there is no CUDA kernel launch until we cal
 ```C++
 const auto mySender = PerThreadRead<_2D, uchar3>::build(inputImage)
 ```
-In this line we are specifying that we want to read a 4K (2D) image, where a single CUDA thread will be responsible of processing a single pixel.
+In this line we are specifying that we want to read a 4K (2D) image, where we will have one CUDA thread per each pixel.
 
 The variable mySender will contain an object representing an Instantiable Operation that combines all the operations specified with the then() method.
 
