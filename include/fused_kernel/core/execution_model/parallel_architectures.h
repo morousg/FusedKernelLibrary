@@ -15,6 +15,8 @@
 #ifndef PARALLEL_ARCHITECTURES_H
 #define PARALLEL_ARCHITECTURES_H
 
+#include <string_view>
+
 namespace fk {
 
 #define PARALLEL_ARCHITECTURES \

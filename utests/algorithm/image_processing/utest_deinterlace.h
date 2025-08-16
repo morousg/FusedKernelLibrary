@@ -1,4 +1,4 @@
-/* Copyright 2025 Grup Mediapro S.L.U (Oscar Amoros Hguet)
+/* Copyright 2025 Oscar Amoros Huguet
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,16 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef FK_IMAGE_PROCESSING
-#define FK_IMAGE_PROCESSING
+#include <tests/operation_test_utils.h>
 
-#include <fused_kernel/algorithms/image_processing/border_reader.h>
-#include <fused_kernel/algorithms/image_processing/color_conversion.h>
-#include <fused_kernel/algorithms/image_processing/crop.h>
+#include <fused_kernel/fused_kernel.h>
 #include <fused_kernel/algorithms/image_processing/deinterlace.h>
-#include <fused_kernel/algorithms/image_processing/interpolation.h>
-#include <fused_kernel/algorithms/image_processing/resize.h>
-#include <fused_kernel/algorithms/image_processing/saturate.h>
-#include <fused_kernel/algorithms/image_processing/warping.h>
 
-#endif // FK_IMAGE_PROCESSING
+int launch() {
+    return 0;
+}
