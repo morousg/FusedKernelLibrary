@@ -353,14 +353,14 @@ VEC_UNARY_OP(-, int, int)
 VEC_UNARY_OP(-, float, float)
 VEC_UNARY_OP(-, double, double)
 
-VEC_UNARY_OP(!, uchar, uchar)
-VEC_UNARY_OP(!, char, uchar)
-VEC_UNARY_OP(!, ushort, uchar)
-VEC_UNARY_OP(!, short, uchar)
-VEC_UNARY_OP(!, int, uchar)
-VEC_UNARY_OP(!, uint, uchar)
-VEC_UNARY_OP(!, float, uchar)
-VEC_UNARY_OP(!, double, uchar)
+VEC_UNARY_OP(!, uchar, bool)
+VEC_UNARY_OP(!, char, bool)
+VEC_UNARY_OP(!, ushort, bool)
+VEC_UNARY_OP(!, short, bool)
+VEC_UNARY_OP(!, int, bool)
+VEC_UNARY_OP(!, uint, bool)
+VEC_UNARY_OP(!, float, bool)
+VEC_UNARY_OP(!, double, bool)
 
 VEC_UNARY_OP(~, uchar, uchar)
 VEC_UNARY_OP(~, char, char)
@@ -480,7 +480,7 @@ VEC_COMPOUND_OP(/=, uint, uint)
 #undef VEC_COMPOUND_OP
 
 // binary operators (vec & vec)
-#define VEC_BINARY_OP_DIFF_TYPES(op, input_type1, input_type2, output_type) \
+/*#define VEC_BINARY_OP_DIFF_TYPES(op, input_type1, input_type2, output_type) \
 FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type1 ## 1 & a, const input_type2 ## 1 & b) \
 { \
     return fk::make::type<output_type ## 1>(a.x op b.x); \
@@ -499,10 +499,89 @@ FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type1 ## 4 & a, con
 }
 
 VEC_BINARY_OP_DIFF_TYPES(+, uchar, float, float)
+VEC_BINARY_OP_DIFF_TYPES(+, uchar, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, char, float, float)
+VEC_BINARY_OP_DIFF_TYPES(+, char, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, ushort, float, float)
+VEC_BINARY_OP_DIFF_TYPES(+, ushort, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, short, float, float)
+VEC_BINARY_OP_DIFF_TYPES(+, short, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, int, float, float)
+VEC_BINARY_OP_DIFF_TYPES(+, int, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, uint, float, float)
+VEC_BINARY_OP_DIFF_TYPES(+, uint, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, float, double, double)
+VEC_BINARY_OP_DIFF_TYPES(+, uchar, int, int)
+VEC_BINARY_OP_DIFF_TYPES(+, char, int, int)
+VEC_BINARY_OP_DIFF_TYPES(+, ushort, int, int)
+VEC_BINARY_OP_DIFF_TYPES(+, short, int, int)
 
-#undef VEC_BINARY_OP_DIFF_TYPES
+#undef VEC_BINARY_OP_DIFF_TYPES*/
 
-#define VEC_BINARY_OP(op, input_type, output_type) \
+// We don't need to check for I2 being a vector type, because the enable_if condition ensures it is a cuda vector if the two previous conditions are false
+#define VEC_BINARY_UNIVERSAL(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
+    -> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && !(std::is_fundamental_v<I1> && std::is_fundamental_v<I2>), \
+                        typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                                (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
+    using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                      (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v; \
+    if constexpr (fk::validCUDAVec<I1> && fk::validCUDAVec<I2>) { \
+        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels for addition"); \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b.x); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z); \
+        } else { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+        } \
+    } else if constexpr (fk::validCUDAVec<I1>) { \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b, a.y op b); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b); \
+        } else { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b, a.w op b); \
+        } \
+    } else { \
+        if constexpr (fk::cn<I2> == 1) { \
+            return fk::make_<O>(a op b.x); \
+        } else if constexpr (fk::cn<I2> == 2) { \
+            return fk::make_<O>(a op b.x, a op b.y); \
+        } else if constexpr (fk::cn<I2> == 3) { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z); \
+        } else { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z, a op b.w); \
+        } \
+    } \
+}
+
+VEC_BINARY_UNIVERSAL(+)
+VEC_BINARY_UNIVERSAL(-)
+VEC_BINARY_UNIVERSAL(*)
+VEC_BINARY_UNIVERSAL(/ )
+VEC_BINARY_UNIVERSAL(== )
+VEC_BINARY_UNIVERSAL(!= )
+VEC_BINARY_UNIVERSAL(> )
+VEC_BINARY_UNIVERSAL(< )
+VEC_BINARY_UNIVERSAL(>= )
+VEC_BINARY_UNIVERSAL(<= )
+VEC_BINARY_UNIVERSAL(&&)
+VEC_BINARY_UNIVERSAL(|| )
+VEC_BINARY_UNIVERSAL(&)
+VEC_BINARY_UNIVERSAL(| )
+VEC_BINARY_UNIVERSAL(^)
+
+
+#undef VEC_BINARY_UNIVERSAL
+
+
+/*#define VEC_BINARY_OP(op, input_type, output_type) \
 FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, const input_type ## 1 & b) \
 { \
     return fk::make::type<output_type ## 1>(a.x op b.x); \
@@ -660,11 +739,11 @@ VEC_BINARY_OP(^, short, short)
 VEC_BINARY_OP(^, int, int)
 VEC_BINARY_OP(^, uint, uint)
 
-#undef VEC_BINARY_OP
+#undef VEC_BINARY_OP*/
 
     // binary operators (vec & scalar)
 
-#define SCALAR_BINARY_OP(op, input_type, scalar_type, output_type) \
+/*#define SCALAR_BINARY_OP(op, input_type, scalar_type, output_type) \
 FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, const scalar_type& s) \
 { \
     return fk::make::type<output_type ## 1>(a.x op s); \
@@ -882,7 +961,7 @@ SCALAR_BINARY_OP(^, ushort, ushort, ushort)
 SCALAR_BINARY_OP(^, short, short, short)
 SCALAR_BINARY_OP(^, int, int, int)
 SCALAR_BINARY_OP(^, uint, uint, uint)
-#undef SCALAR_BINARY_OP
+#undef SCALAR_BINARY_OP*/
 // ######################## VECTOR OPERATORS ##########################
 
 namespace fk {
