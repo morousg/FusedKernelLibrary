@@ -16,10 +16,12 @@
 #include <fused_kernel/algorithms/image_processing/saturate.h>
 #include <fused_kernel/algorithms/basic_ops/cast.h>
 #include <fused_kernel/core/utils/cuda_vector_utils.h>
+#include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/utils/type_to_string.h>
 #include <fused_kernel/core/utils/vlimits.h>
 #include <tests/operation_test_utils.h>
 
+#define AUX_HEADER 1
 inline std::string niceType(const std::string& input) {
     // Map "unsigned type" to specific type names
     static const std::unordered_map<std::string, std::string> unsignedTypeMap = {
@@ -122,13 +124,12 @@ void addAllTestsFor(const std::index_sequence<Idx...>&) {
     // For each type in TypeList_, add tests with each type in TypeList_
     (addAllTestsFor_helper<TypeList_, fk::TypeAt_t<Idx, TypeList_>>(std::make_index_sequence<TypeList_::size>{}), ...);
 }
+ 
+template <typename OutputTypeList, typename InputType, size_t... Idx>
+void addAllOutputTestsForInput(const std::index_sequence<Idx...>&) {
+    // For each OutputType in OutputTypeList, add tests with fixed InputType
+    (addOneTestAllChannels<InputType, fk::TypeAt_t<Idx, OutputTypeList>>(), ...);
+}
 
-START_ADDING_TESTS
-using Fundamental = fk::RemoveType_t<0, fk::StandardTypes>;
-addAllTestsFor<Fundamental>(std::make_index_sequence<Fundamental::size>());
-STOP_ADDING_TESTS
+ 
 
-// You can add more tests for other type combinations as needed.
-int launch() {
-    RUN_ALL_TESTS
-};
