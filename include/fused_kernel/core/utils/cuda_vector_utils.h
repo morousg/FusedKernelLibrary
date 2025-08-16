@@ -328,156 +328,57 @@ inline constexpr typename std::enable_if_t<fk::validCUDAVec<T>, std::ostream&> o
 #endif
 
 // ####################### VECTOR OPERATORS ##########################
-
-#define VEC_UNARY_OP(op, input_type, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a) \
-{ \
-    return fk::make::type<output_type ## 1>(op (a.x)); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a) \
-{ \
-    return fk::make::type<output_type ## 2>(op (a.x), op (a.y)); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a) \
-{ \
-    return fk::make::type<output_type ## 3>(op (a.x), op (a.y), op (a.z)); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a) \
-{ \
-    return fk::make::type<output_type ## 4>(op (a.x), op (a.y), op (a.z), op (a.w)); \
+// Implemented in a way that the return types follow the c++ standard, for each vector component
+// The user is responsible for knowing the type conversion hazards, inherent to the C++ language.
+#define VEC_UNARY_UNIVERSAL(op) \
+template <typename T> \
+FK_HOST_DEVICE_CNST auto operator op(const T& a) -> std::enable_if_t<fk::validCUDAVec<T>, fk::VectorType_t<decltype( op ## std::declval<T>()), fk::cn<T>>> { \
+    using O = fk::VectorType_t<decltype( op ## std::declval<T>()), fk::cn<T>>; \
+    if constexpr (fk::cn<T> == 1) { \
+        return fk::make_<O>( op ## a.x); \
+    } else if constexpr (fk::cn<T> == 2) { \
+        return fk::make_<O>( op ## a.x, op ## a.y); \
+    } else if constexpr (fk::cn<T> == 3) { \
+        return fk::make_<O>( op ## a.x, op ## a.y, op ## a.z); \
+    } else { \
+        return fk::make_<O>( op ## a.x, op ## a.y, op ## a.z, op ## a.w); \
+    } \
 }
 
-VEC_UNARY_OP(-, char, char)
-VEC_UNARY_OP(-, short, short)
-VEC_UNARY_OP(-, int, int)
-VEC_UNARY_OP(-, float, float)
-VEC_UNARY_OP(-, double, double)
+VEC_UNARY_UNIVERSAL(-)
+VEC_UNARY_UNIVERSAL(!)
+VEC_UNARY_UNIVERSAL(~)
 
-VEC_UNARY_OP(!, uchar, bool)
-VEC_UNARY_OP(!, char, bool)
-VEC_UNARY_OP(!, ushort, bool)
-VEC_UNARY_OP(!, short, bool)
-VEC_UNARY_OP(!, int, bool)
-VEC_UNARY_OP(!, uint, bool)
-VEC_UNARY_OP(!, float, bool)
-VEC_UNARY_OP(!, double, bool)
+#undef VEC_UNARY_UNIVERSAL
 
-VEC_UNARY_OP(~, uchar, uchar)
-VEC_UNARY_OP(~, char, char)
-VEC_UNARY_OP(~, ushort, ushort)
-VEC_UNARY_OP(~, short, short)
-VEC_UNARY_OP(~, int, int)
-VEC_UNARY_OP(~, uint, uint)
-
-#undef VEC_UNARY_OP
-
-#define VEC_COMPOUND_OP(op, modificable_type, input_type) \
-FK_HOST_DEVICE_CNST modificable_type ## 1& operator op(modificable_type ## 1 & a, const input_type ## 1 & b) { \
-    a.x op b.x; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 2& operator op(modificable_type ## 2 & a, const input_type ## 2 & b) { \
-    a.x op b.x; \
-    a.y op b.y; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 3& operator op(modificable_type ## 3 & a, const input_type ## 3 & b) { \
-    a.x op b.x; \
-    a.y op b.y; \
-    a.z op b.z; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 4& operator op(modificable_type ## 4 & a, const input_type ## 4 & b) { \
-    a.x op b.x; \
-    a.y op b.y; \
-    a.z op b.z; \
-    a.w op b.w; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 1& operator op(modificable_type ## 1 & a, const input_type& s) { \
-    a.x op s; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 2& operator op(modificable_type ## 2 & a, const input_type& s) { \
-    a.x op s; \
-    a.y op s; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 3& operator op(modificable_type ## 3 & a, const input_type& s) { \
-    a.x op s; \
-    a.y op s; \
-    a.z op s; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 4& operator op(modificable_type ## 4 & a, const input_type& s) { \
-    a.x op s; \
-    a.y op s; \
-    a.z op s; \
-    a.w op s; \
+#define VEC_COMPOUND_UNIVERSAL(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(I1& a, const I2& b) \
+-> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && !(std::is_fundamental_v<I1>&& std::is_fundamental_v<I2>), I1> { \
+    static_assert(fk::validCUDAVec<I1>, "First operand must be a valid CUDA vector type. You can not store a vector type on an scalar type."); \
+    if constexpr (fk::IsCudaVector<I2>::value) { \
+        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels"); \
+        a.x op b.x; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b.y; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b.z; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b.w; } \
+    } else { \
+        a.x op b; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b; } \
+    } \
     return a; \
 }
 
-VEC_COMPOUND_OP(-=, char, char)
-VEC_COMPOUND_OP(-=, short, short)
-VEC_COMPOUND_OP(-=, int, int)
-VEC_COMPOUND_OP(-=, float, float)
-VEC_COMPOUND_OP(-=, double, double)
-VEC_COMPOUND_OP(-=, uchar, uchar)
-VEC_COMPOUND_OP(-=, char, uchar)
-VEC_COMPOUND_OP(-=, ushort, uchar)
-VEC_COMPOUND_OP(-=, short, uchar)
-VEC_COMPOUND_OP(-=, int, uchar)
-VEC_COMPOUND_OP(-=, uint, uchar)
-VEC_COMPOUND_OP(-=, float, uchar)
-VEC_COMPOUND_OP(-=, double, uchar)
-VEC_COMPOUND_OP(-=, uint, uint)
+VEC_COMPOUND_UNIVERSAL(-=)
+VEC_COMPOUND_UNIVERSAL(+=)
+VEC_COMPOUND_UNIVERSAL(*=)
+VEC_COMPOUND_UNIVERSAL(/=)
+VEC_COMPOUND_UNIVERSAL(&=)
+VEC_COMPOUND_UNIVERSAL(|=)
 
-VEC_COMPOUND_OP(+=, char, char)
-VEC_COMPOUND_OP(+=, short, short)
-VEC_COMPOUND_OP(+=, int, int)
-VEC_COMPOUND_OP(+=, float, float)
-VEC_COMPOUND_OP(+=, double, double)
-VEC_COMPOUND_OP(+=, uchar, uchar)
-VEC_COMPOUND_OP(+=, char, uchar)
-VEC_COMPOUND_OP(+=, ushort, uchar)
-VEC_COMPOUND_OP(+=, short, uchar)
-VEC_COMPOUND_OP(+=, int, uchar)
-VEC_COMPOUND_OP(+=, uint, uchar)
-VEC_COMPOUND_OP(+=, float, uchar)
-VEC_COMPOUND_OP(+=, double, uchar)
-VEC_COMPOUND_OP(+=, uint, uint)
-
-VEC_COMPOUND_OP(*=, char, char)
-VEC_COMPOUND_OP(*=, short, short)
-VEC_COMPOUND_OP(*=, int, int)
-VEC_COMPOUND_OP(*=, float, float)
-VEC_COMPOUND_OP(*=, double, double)
-VEC_COMPOUND_OP(*=, uchar, uchar)
-VEC_COMPOUND_OP(*=, char, uchar)
-VEC_COMPOUND_OP(*=, ushort, uchar)
-VEC_COMPOUND_OP(*=, short, uchar)
-VEC_COMPOUND_OP(*=, int, uchar)
-VEC_COMPOUND_OP(*=, uint, uchar)
-VEC_COMPOUND_OP(*=, float, uchar)
-VEC_COMPOUND_OP(*=, double, uchar)
-VEC_COMPOUND_OP(*=, uint, uint)
-
-VEC_COMPOUND_OP(/=, char, char)
-VEC_COMPOUND_OP(/=, short, short)
-VEC_COMPOUND_OP(/=, int, int)
-VEC_COMPOUND_OP(/=, float, float)
-VEC_COMPOUND_OP(/=, double, double)
-VEC_COMPOUND_OP(/=, uchar, uchar)
-VEC_COMPOUND_OP(/=, char, uchar)
-VEC_COMPOUND_OP(/=, ushort, uchar)
-VEC_COMPOUND_OP(/=, short, uchar)
-VEC_COMPOUND_OP(/=, int, uchar)
-VEC_COMPOUND_OP(/=, uint, uchar)
-VEC_COMPOUND_OP(/=, float, uchar)
-VEC_COMPOUND_OP(/=, double, uchar)
-VEC_COMPOUND_OP(/=, uint, uint)
-
-#undef VEC_COMPOUND_OP
+#undef VEC_COMPOUND_UNIVERSAL
 
 // We don't need to check for I2 being a vector type, because the enable_if condition ensures it is a cuda vector if the two previous conditions are false
 #define VEC_BINARY_UNIVERSAL(op) \
@@ -489,7 +390,7 @@ FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
     using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
                                       (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v; \
     if constexpr (fk::validCUDAVec<I1> && fk::validCUDAVec<I2>) { \
-        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels for addition"); \
+        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels"); \
         if constexpr (fk::cn<I1> == 1) { \
             return fk::make_<O>(a.x op b.x); \
         } else if constexpr (fk::cn<I1> == 2) { \
@@ -525,17 +426,17 @@ FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
 VEC_BINARY_UNIVERSAL(+)
 VEC_BINARY_UNIVERSAL(-)
 VEC_BINARY_UNIVERSAL(*)
-VEC_BINARY_UNIVERSAL(/ )
-VEC_BINARY_UNIVERSAL(== )
-VEC_BINARY_UNIVERSAL(!= )
-VEC_BINARY_UNIVERSAL(> )
-VEC_BINARY_UNIVERSAL(< )
-VEC_BINARY_UNIVERSAL(>= )
-VEC_BINARY_UNIVERSAL(<= )
+VEC_BINARY_UNIVERSAL(/)
+VEC_BINARY_UNIVERSAL(==)
+VEC_BINARY_UNIVERSAL(!=)
+VEC_BINARY_UNIVERSAL(>)
+VEC_BINARY_UNIVERSAL(<)
+VEC_BINARY_UNIVERSAL(>=)
+VEC_BINARY_UNIVERSAL(<=)
 VEC_BINARY_UNIVERSAL(&&)
-VEC_BINARY_UNIVERSAL(|| )
+VEC_BINARY_UNIVERSAL(||)
 VEC_BINARY_UNIVERSAL(&)
-VEC_BINARY_UNIVERSAL(| )
+VEC_BINARY_UNIVERSAL(|)
 VEC_BINARY_UNIVERSAL(^)
 
 #undef VEC_BINARY_UNIVERSAL
