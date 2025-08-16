@@ -430,6 +430,8 @@ void test_mixed_type_operations() {
     // Test some operations that should definitely fail
     TEST_BINARY_OP("bitwise_and_float_float", float2, float2, can_bitwise_and);  // floats don't support bitwise ops
     TEST_UNARY_OP("bitwise_not", float1, can_bitwise_not);  // floats don't support bitwise ops
+    TEST_BINARY_OP("bitwise_and_double_double", double2, double2, can_bitwise_and);  // doubles don't support bitwise ops
+    TEST_UNARY_OP("bitwise_not", double1, can_bitwise_not);  // doubles don't support bitwise ops
 }
 
 // Test additional vector types
