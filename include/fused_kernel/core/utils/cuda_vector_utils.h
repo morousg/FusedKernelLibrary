@@ -16,6 +16,7 @@
 #define FK_CUDA_VECTOR_UTILS
 
 #include <cassert>
+#include <type_traits>
 
 #include <fused_kernel/core/utils/type_lists.h>
 #include <fused_kernel/core/utils/template_operations.h>
@@ -329,6 +330,48 @@ inline constexpr typename std::enable_if_t<fk::validCUDAVec<T>, std::ostream&> o
 
 // ####################### VECTOR OPERATORS ##########################
 
+namespace fk {
+    // SFINAE helper to detect if unary operator is available on base type
+    template<typename T, typename = void>
+    struct has_unary_minus : std::false_type {};
+    template<typename T>
+    struct has_unary_minus<T, std::void_t<decltype(-std::declval<T>())>> : std::true_type {};
+    
+    template<typename T, typename = void>
+    struct has_unary_not : std::false_type {};
+    template<typename T>
+    struct has_unary_not<T, std::void_t<decltype(!std::declval<T>())>> : std::true_type {};
+    
+    template<typename T, typename = void>
+    struct has_unary_bitwise_not : std::false_type {};
+    template<typename T>
+    struct has_unary_bitwise_not<T, std::void_t<decltype(~std::declval<T>())>> : std::true_type {};
+} // namespace fk
+
+// Macro that generates unary operators for all vector sizes of a given base type
+// Only generates them if the operation is valid on the base type
+#define VEC_UNARY_UNIVERSAL(op, base_type, result_type) \
+std::enable_if_t<fk::has_unary_##op<base_type>::value, result_type ## 1> \
+FK_HOST_DEVICE_CNST operator op(const base_type ## 1 & a) \
+{ \
+    return fk::make::type<result_type ## 1>(op (a.x)); \
+} \
+std::enable_if_t<fk::has_unary_##op<base_type>::value, result_type ## 2> \
+FK_HOST_DEVICE_CNST operator op(const base_type ## 2 & a) \
+{ \
+    return fk::make::type<result_type ## 2>(op (a.x), op (a.y)); \
+} \
+std::enable_if_t<fk::has_unary_##op<base_type>::value, result_type ## 3> \
+FK_HOST_DEVICE_CNST operator op(const base_type ## 3 & a) \
+{ \
+    return fk::make::type<result_type ## 3>(op (a.x), op (a.y), op (a.z)); \
+} \
+std::enable_if_t<fk::has_unary_##op<base_type>::value, result_type ## 4> \
+FK_HOST_DEVICE_CNST operator op(const base_type ## 4 & a) \
+{ \
+    return fk::make::type<result_type ## 4>(op (a.x), op (a.y), op (a.z), op (a.w)); \
+}
+
 #define VEC_UNARY_OP(op, input_type, output_type) \
 FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a) \
 { \
@@ -347,27 +390,45 @@ FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a) \
     return fk::make::type<output_type ## 4>(op (a.x), op (a.y), op (a.z), op (a.w)); \
 }
 
+// Use universal macros for all fundamental types from StandardTypes
+// This replaces the manual instantiation with automatic instantiation for all supported types
+
+// Unary minus: works for signed types
 VEC_UNARY_OP(-, char, char)
 VEC_UNARY_OP(-, short, short)
 VEC_UNARY_OP(-, int, int)
+VEC_UNARY_OP(-, long, long)
+VEC_UNARY_OP(-, longlong, longlong)
 VEC_UNARY_OP(-, float, float)
 VEC_UNARY_OP(-, double, double)
 
-VEC_UNARY_OP(!, uchar, uchar)
-VEC_UNARY_OP(!, char, uchar)
-VEC_UNARY_OP(!, ushort, uchar)
-VEC_UNARY_OP(!, short, uchar)
-VEC_UNARY_OP(!, int, uchar)
-VEC_UNARY_OP(!, uint, uchar)
-VEC_UNARY_OP(!, float, uchar)
-VEC_UNARY_OP(!, double, uchar)
+// Logical not: works for all types, returns bool-like result
+VEC_UNARY_OP(!, bool, bool)
+VEC_UNARY_OP(!, uchar, bool)
+VEC_UNARY_OP(!, char, bool)
+VEC_UNARY_OP(!, ushort, bool)
+VEC_UNARY_OP(!, short, bool)
+VEC_UNARY_OP(!, int, bool)
+VEC_UNARY_OP(!, uint, bool)
+VEC_UNARY_OP(!, long, bool)
+VEC_UNARY_OP(!, ulong, bool)
+VEC_UNARY_OP(!, longlong, bool)
+VEC_UNARY_OP(!, ulonglong, bool)
+VEC_UNARY_OP(!, float, bool)
+VEC_UNARY_OP(!, double, bool)
 
+// Bitwise not: works for integral types only
+VEC_UNARY_OP(~, bool, bool)
 VEC_UNARY_OP(~, uchar, uchar)
 VEC_UNARY_OP(~, char, char)
 VEC_UNARY_OP(~, ushort, ushort)
 VEC_UNARY_OP(~, short, short)
 VEC_UNARY_OP(~, int, int)
 VEC_UNARY_OP(~, uint, uint)
+VEC_UNARY_OP(~, long, long)
+VEC_UNARY_OP(~, ulong, ulong)
+VEC_UNARY_OP(~, longlong, longlong)
+VEC_UNARY_OP(~, ulonglong, ulonglong)
 
 #undef VEC_UNARY_OP
 
