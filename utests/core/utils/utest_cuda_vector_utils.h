@@ -422,7 +422,7 @@ BINARY_OP_TEST(bitwise_xor, ^)
 #define COMPOUND_OP_TEST(OP_NAME, OP) \
     template <typename I1, typename I2> \
     constexpr inline bool compound ## OP_NAME() { \
-        if constexpr (can_add<I1, I2>::value) { \
+        if constexpr (can_ ## OP_NAME<I1, I2>::value) { \
             VBase<I1> base_val1{ static_cast<VBase<I1>>(5) }; \
             constexpr VBase<I2> base_val2{ static_cast<VBase<I2>>(3) }; \
             I1 val1 = make_set<I1>(base_val1); \
@@ -438,12 +438,12 @@ BINARY_OP_TEST(bitwise_xor, ^)
         } \
     }
 
-COMPOUND_OP_TEST(AddAssign, +=)
-COMPOUND_OP_TEST(SubAssign, -=)
-COMPOUND_OP_TEST(MulAssign, *=)
-COMPOUND_OP_TEST(DivAssign, /=)
-COMPOUND_OP_TEST(AndAssign, &=)
-COMPOUND_OP_TEST(OrAssign, |=)
+COMPOUND_OP_TEST(add_assign, +=)
+COMPOUND_OP_TEST(sub_assign, -=)
+COMPOUND_OP_TEST(mul_assign, *=)
+COMPOUND_OP_TEST(div_assign, /=)
+COMPOUND_OP_TEST(and_assign, &=)
+COMPOUND_OP_TEST(or_assign, |=)
 
 #undef COMPOUND_OP_TEST
 
@@ -453,9 +453,9 @@ COMPOUND_OP_TEST(OrAssign, |=)
         constexpr std::array<std::string_view, 6> compoundOperatorTestNames
         { "compoundAddAssign", "compoundSubAssign", "compoundMulAssign",
           "compoundDivAssign", "compoundAndAssign", "compoundOrAssign" };
-        constexpr std::array<bool, 6> results{ compoundAddAssign<I1, I2>(), compoundSubAssign<I1, I2>(),
-                                               compoundMulAssign<I1, I2>(), compoundDivAssign<I1, I2>(),
-                                               compoundAndAssign<I1, I2>(), compoundOrAssign<I1, I2>() };
+        constexpr std::array<bool, 6> results{ compoundadd_assign<I1, I2>(), compoundsub_assign<I1, I2>(),
+                                               compoundmul_assign<I1, I2>(), compounddiv_assign<I1, I2>(),
+                                               compoundand_assign<I1, I2>(), compoundor_assign<I1, I2>() };
         bool correct{ true };
         for (int i = 0; i < 6; ++i) {
             if (!results[i]) {
@@ -478,18 +478,22 @@ COMPOUND_OP_TEST(OrAssign, |=)
     };
 
     template <typename TypeList1, typename TypeList2>
-    struct BinaryTest;
+    struct BinaryCompoundTests;
 
     template <typename Type1, typename... Types1, typename... Types2>
-    struct BinaryTest<TypeList<Type1, Types1...>, TypeList<Types2...>> {
+    struct BinaryCompoundTests<TypeList<Type1, Types1...>, TypeList<Types2...>> {
         static bool execute() {
             if constexpr (sizeof...(Types1) == 0) {
                 (detectBinaryUnexpectedCompilationErrors<Type1, Types2>(), ...);
-                return (testBinaryOperators<Type1, Types2>() && ...);
+                (detectCompoundUnexpectedCompilationErrors<Type1, Types2>(), ...);
+                return (testBinaryOperators<Type1, Types2>() && ...) &&
+                       (testCompoundOperators<Type1, Types2>() && ...);
             } else {
                 (detectBinaryUnexpectedCompilationErrors<Type1, Types2>(), ...);
-                const bool result = (testBinaryOperators<Type1, Types2>() && ...);
-                return result && BinaryTest<TypeList<Types1...>, TypeList<Types2...>>::execute();
+                (detectCompoundUnexpectedCompilationErrors<Type1, Types2>(), ...);
+                const bool result = (testBinaryOperators<Type1, Types2>() && ...) &&
+                                    (testCompoundOperators<Type1, Types2>() && ...);
+                return result && BinaryCompoundTests<TypeList<Types1...>, TypeList<Types2...>>::execute();
             }
         }
     };
@@ -500,15 +504,8 @@ COMPOUND_OP_TEST(OrAssign, |=)
 int launch() {
     using namespace fk::test;
 
-    bool passed = UnaryTest<fk::test::VecAndStdTypes>::execute();
-    passed &= BinaryTest<fk::test::VecAndStdTypes, fk::test::VecAndStdTypes>::execute();
-    //testUnaryOperators<VAll>();
-    //testBinaryOperators<VAll, VAll>();
-    //testCompoundOperators<VAll, VAll>();
-    
-    //detectUnaryUnexpectedCompilationErrors<VAll>();
-    //detectBinaryUnexpectedCompilationErrors<VAll, VAll>();
-    //detectCompoundUnexpectedCompilationErrors<VAll, VAll>();
+    bool passed = UnaryTest<VecAndStdTypes>::execute();
+    passed &= BinaryCompoundTests<VecAndStdTypes, VecAndStdTypes>::execute();
 
     if (!unexpected_failed_compilations.empty()) {
         std::cout << "ERROR: Unexpected compilation failures that did occur:\n";

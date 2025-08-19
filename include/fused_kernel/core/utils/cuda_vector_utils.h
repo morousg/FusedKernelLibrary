@@ -272,6 +272,68 @@ namespace fk {
         return UnaryVectorSet<T>::exec(val);
     }
 
+    // Utils to check detais about types and pairs of types
+    template <typename I1, typename I2, typename = void>
+    struct BothIntegrals : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct BothIntegrals<I1, I2, std::enable_if_t<std::is_integral_v<fk::VBase<I1>>&& std::is_integral_v<fk::VBase<I2>>, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct AreVVEqCN : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct AreVVEqCN<I1, I2, std::enable_if_t<fk::validCUDAVec<I1>&& fk::validCUDAVec<I2> && (fk::cn<I1> == fk::cn<I2>), void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct AreSV : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct AreSV<I1, I2, std::enable_if_t<std::is_fundamental_v<I1>&& fk::validCUDAVec<I2>, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct AreVS : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct AreVS<I1, I2, std::enable_if_t<fk::validCUDAVec<I1>&& std::is_fundamental_v<I2>, void>> : public std::true_type {};
+
+    // Utils to check if the type or combination of types can be used with a particular operator
+    template <typename T, typename = void>
+    struct CanUnary : public std::false_type {};
+
+    template <typename T>
+    struct CanUnary<T, std::enable_if_t<fk::validCUDAVec<T>, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanBinary : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanBinary<I1, I2,
+        std::enable_if_t<AreVVEqCN<I1, I2>::value || AreSV<I1, I2>::value ||
+        AreVS<I1, I2>::value, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanBinaryBitwise : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanBinaryBitwise<I1, I2,
+        std::enable_if_t<(AreVVEqCN<I1, I2>::value || AreSV<I1, I2>::value ||
+            AreVS<I1, I2>::value) && BothIntegrals<I1, I2>::value, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanCompound : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanCompound<I1, I2,
+        std::enable_if_t<AreVVEqCN<I1, I2>::value || AreVS<I1, I2>::value, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanCompoundLogical : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanCompoundLogical<I1, I2,
+        std::enable_if_t<(AreVVEqCN<I1, I2>::value || AreVS<I1, I2>::value) && BothIntegrals<I1, I2>::value, void>> : public std::true_type {};
+
 } // namespace fk
 
 #ifdef DEBUG_MATRIX
@@ -332,7 +394,9 @@ inline constexpr typename std::enable_if_t<fk::validCUDAVec<T>, std::ostream&> o
 // The user is responsible for knowing the type conversion hazards, inherent to the C++ language.
 #define VEC_UNARY_UNIVERSAL(op) \
 template <typename T> \
-FK_HOST_DEVICE_CNST auto operator op(const T& a) -> std::enable_if_t<fk::validCUDAVec<T>, fk::VectorType_t<decltype(op std::declval<fk::VBase<T>>()), fk::cn<T>>> { \
+FK_HOST_DEVICE_CNST auto operator op(const T& a) -> \
+    std::enable_if_t<fk::CanUnary<T>::value, \
+                     fk::VectorType_t<decltype(op std::declval<fk::VBase<T>>()), fk::cn<T>>> { \
     using O = fk::VectorType_t<decltype(op std::declval<fk::VBase<T>>()), fk::cn<T>>; \
     if constexpr (fk::cn<T> == 1) { \
         return fk::make_<O>(op a.x); \
@@ -351,13 +415,11 @@ VEC_UNARY_UNIVERSAL(~)
 
 #undef VEC_UNARY_UNIVERSAL
 
-#define VEC_COMPOUND_UNIVERSAL(op) \
+#define VEC_COMPOUND_ARITHMETICAL(op) \
 template <typename I1, typename I2> \
 FK_HOST_DEVICE_CNST auto operator op(I1& a, const I2& b) \
--> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && !(std::is_fundamental_v<I1>&& std::is_fundamental_v<I2>), I1> { \
-    static_assert(fk::validCUDAVec<I1>, "First operand must be a valid CUDA vector type. You can not store a vector type on an scalar type."); \
+    -> std::enable_if_t<fk::CanCompound<I1, I2>::value, I1> { \
     if constexpr (fk::IsCudaVector<I2>::value) { \
-        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels"); \
         a.x op b.x; \
         if constexpr (fk::cn<I1> >= 2) { a.y op b.y; } \
         if constexpr (fk::cn<I1> >= 3) { a.z op b.z; } \
@@ -371,27 +433,41 @@ FK_HOST_DEVICE_CNST auto operator op(I1& a, const I2& b) \
     return a; \
 }
 
-VEC_COMPOUND_UNIVERSAL(-=)
-VEC_COMPOUND_UNIVERSAL(+=)
-VEC_COMPOUND_UNIVERSAL(*=)
-VEC_COMPOUND_UNIVERSAL(/=)
-VEC_COMPOUND_UNIVERSAL(&=)
-VEC_COMPOUND_UNIVERSAL(|=)
+VEC_COMPOUND_ARITHMETICAL(-=)
+VEC_COMPOUND_ARITHMETICAL(+=)
+VEC_COMPOUND_ARITHMETICAL(*=)
+VEC_COMPOUND_ARITHMETICAL(/=)
 
-#undef VEC_COMPOUND_UNIVERSAL
+#undef VEC_COMPOUND_ARITHMETICAL
 
-template <typename I1, typename I2, typename = void>
-struct SameChannels : public std::false_type {};
+#define VEC_COMPOUND_LOGICAL(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(I1& a, const I2& b) \
+    -> std::enable_if_t<fk::CanCompoundLogical<I1, I2>::value, I1> { \
+    if constexpr (fk::IsCudaVector<I2>::value) { \
+        a.x op b.x; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b.y; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b.z; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b.w; } \
+    } else { \
+        a.x op b; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b; } \
+    } \
+    return a; \
+}
 
-template <typename I1, typename I2>
-struct SameChannels<I1, I2, std::enable_if_t<(fk::cn<I1> == fk::cn<I2>), void>> : public std::true_type {};
+VEC_COMPOUND_LOGICAL(&=)
+VEC_COMPOUND_LOGICAL(|=)
+
+#undef VEC_COMPOUND_LOGICAL
 
 // We don't need to check for I2 being a vector type, because the enable_if condition ensures it is a cuda vector if the two previous conditions are false
-#define VEC_BINARY_UNIVERSAL(op) \
+#define VEC_BINARY(op) \
 template <typename I1, typename I2> \
 FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
-    -> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && !(std::is_fundamental_v<I1> && std::is_fundamental_v<I2>) && \
-                        (fk::validCUDAVec<I1> && fk::validCUDAVec<I2> ? fk::cn<I1> == fk::cn<I2> : true), \
+    -> std::enable_if_t<fk::CanBinary<I1, I2>::value, \
                         typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
                                                 (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
     using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
@@ -430,33 +506,25 @@ FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
     } \
 }
 
-VEC_BINARY_UNIVERSAL(+)
-VEC_BINARY_UNIVERSAL(-)
-VEC_BINARY_UNIVERSAL(*)
-VEC_BINARY_UNIVERSAL(/)
-VEC_BINARY_UNIVERSAL(==)
-VEC_BINARY_UNIVERSAL(!=)
-VEC_BINARY_UNIVERSAL(>)
-VEC_BINARY_UNIVERSAL(<)
-VEC_BINARY_UNIVERSAL(>=)
-VEC_BINARY_UNIVERSAL(<=)
-VEC_BINARY_UNIVERSAL(&&)
-VEC_BINARY_UNIVERSAL(||)
+VEC_BINARY(+)
+VEC_BINARY(-)
+VEC_BINARY(*)
+VEC_BINARY(/)
+VEC_BINARY(==)
+VEC_BINARY(!=)
+VEC_BINARY(>)
+VEC_BINARY(<)
+VEC_BINARY(>=)
+VEC_BINARY(<=)
+VEC_BINARY(&&)
+VEC_BINARY(||)
 
-#undef VEC_BINARY_UNIVERSAL
-
-template <typename I1, typename I2, typename=void>
-struct BothIntegrals : public std::false_type {};
-
-template <typename I1, typename I2>
-struct BothIntegrals<I1, I2, std::enable_if_t<std::is_integral_v<fk::VBase<I1>> && std::is_integral_v<fk::VBase<I2>>, void>> : public std::true_type {};
+#undef VEC_BINARY
 
 #define VEC_BINARY_BITWISE(op) \
 template <typename I1, typename I2> \
 FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
-    -> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && \
-                        !(std::is_fundamental_v<I1> && std::is_fundamental_v<I2>) && \
-                        BothIntegrals<I1, I2>::value && (fk::validCUDAVec<I1> && fk::validCUDAVec<I2> ? fk::cn<I1> == fk::cn<I2> : true), \
+    -> std::enable_if_t<fk::CanBinaryBitwise<I1, I2>::value, \
                         typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
                                                 (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
     using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
@@ -500,12 +568,4 @@ VEC_BINARY_BITWISE(|)
 VEC_BINARY_BITWISE(^)
 
 #undef VEC_BINARY_BITWISE
-
-namespace fk {
-    template <typename T, typename = void>
-    struct IsVectorType : std::false_type {};
-    template <typename T>
-    struct IsVectorType<T, std::void_t<decltype(T::x)>> : std::true_type {};
-} // namespace fk
-
 #endif
