@@ -107,7 +107,7 @@ int launch() {
     {
         PUSH_RANGE_RAII p("testThreadFusion");
         passed &= testThreadFusion<uchar>();
-        passed &= testThreadFusion<char>();
+        passed &= testThreadFusion<signed char>();
         passed &= testThreadFusion<ushort>();
         passed &= testThreadFusion<short>();
         passed &= testThreadFusion<uint>();

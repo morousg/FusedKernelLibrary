@@ -52,7 +52,7 @@ namespace fk {
 
     // Specializations for signed char to match the actual vector struct definitions
     template <>
-    struct VectorType<signed char, 1> { using type = char1; using type_v = char1; };
+    struct VectorType<signed char, 1> { using type = signed char; using type_v = char1; };
     template <>
     struct VectorType<signed char, 2> { using type = char2; using type_v = type; };
     template <>
@@ -65,14 +65,14 @@ namespace fk {
     using VectorType_t = typename VectorType<BaseType, Channels>::type;
 
     template <uint CHANNELS>
-    using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<char, CHANNELS>, VectorType_t<signed char, CHANNELS>,
+    using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<signed char, CHANNELS>,
                                     VectorType_t<ushort, CHANNELS>, VectorType_t<short, CHANNELS>,
                                     VectorType_t<uint, CHANNELS>, VectorType_t<int, CHANNELS>,
                                     VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
                                     VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
                                     VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
     using FloatingTypes = TypeList<float, double>;
-    using IntegralTypes = TypeList<uchar, char, signed char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
+    using IntegralTypes = TypeList<uchar, signed char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
     using StandardTypes = TypeListCat_t<TypeListCat_t<TypeList<bool>, IntegralTypes>, FloatingTypes>;
     using VOne = TypeList<bool1, uchar1, char1, ushort1, short1, uint1, int1, ulong1, long1, ulonglong1, longlong1, float1, double1>;
     using VTwo = VectorTypeList<2>;
