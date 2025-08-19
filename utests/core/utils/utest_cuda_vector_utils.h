@@ -329,7 +329,7 @@ namespace fk::test {
         if constexpr (can_unary_bitwise_not<T>::value) {
             constexpr VBase<T> base_val{ static_cast<VBase<T>>(5) };
             constexpr T val = make_set<T>(base_val);
-            constexpr auto result = ~val; // Test unary minus
+            constexpr auto result = ~val; // Test unary bitwise not
             constexpr auto expectedBase = ~base_val;
             using ExpectedBaseType = std::decay_t<decltype(expectedBase)>;
             using ExpectedType = typename VectorType<ExpectedBaseType, cn<T>>::type_v;
