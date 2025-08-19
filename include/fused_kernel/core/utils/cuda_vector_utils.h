@@ -227,8 +227,8 @@ namespace fk {
         if constexpr (std::is_aggregate_v<T>) {
             return make::type<T>(pack...);
         } else {
-            static_assert(sizeof...(pack) == 1, "make_ can only be used to create fk vector types");
-            return first(pack...);
+            static_assert(sizeof...(pack) == 1, "passing more than one argument for a non cuda vector type");
+            return (pack, ...);
         }
     }
 
@@ -271,6 +271,68 @@ namespace fk {
     FK_HOST_DEVICE_CNST T make_set(const T& val) {
         return UnaryVectorSet<T>::exec(val);
     }
+
+    // Utils to check detais about types and pairs of types
+    template <typename I1, typename I2, typename = void>
+    struct BothIntegrals : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct BothIntegrals<I1, I2, std::enable_if_t<std::is_integral_v<fk::VBase<I1>>&& std::is_integral_v<fk::VBase<I2>>, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct AreVVEqCN : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct AreVVEqCN<I1, I2, std::enable_if_t<fk::validCUDAVec<I1>&& fk::validCUDAVec<I2> && (fk::cn<I1> == fk::cn<I2>), void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct AreSV : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct AreSV<I1, I2, std::enable_if_t<std::is_fundamental_v<I1>&& fk::validCUDAVec<I2>, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct AreVS : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct AreVS<I1, I2, std::enable_if_t<fk::validCUDAVec<I1>&& std::is_fundamental_v<I2>, void>> : public std::true_type {};
+
+    // Utils to check if the type or combination of types can be used with a particular operator
+    template <typename T, typename = void>
+    struct CanUnary : public std::false_type {};
+
+    template <typename T>
+    struct CanUnary<T, std::enable_if_t<fk::validCUDAVec<T>, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanBinary : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanBinary<I1, I2,
+        std::enable_if_t<AreVVEqCN<I1, I2>::value || AreSV<I1, I2>::value ||
+        AreVS<I1, I2>::value, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanBinaryBitwise : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanBinaryBitwise<I1, I2,
+        std::enable_if_t<(AreVVEqCN<I1, I2>::value || AreSV<I1, I2>::value ||
+            AreVS<I1, I2>::value) && BothIntegrals<I1, I2>::value, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanCompound : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanCompound<I1, I2,
+        std::enable_if_t<AreVVEqCN<I1, I2>::value || AreVS<I1, I2>::value, void>> : public std::true_type {};
+
+    template <typename I1, typename I2, typename = void>
+    struct CanCompoundLogical : public std::false_type {};
+
+    template <typename I1, typename I2>
+    struct CanCompoundLogical<I1, I2,
+        std::enable_if_t<(AreVVEqCN<I1, I2>::value || AreVS<I1, I2>::value) && BothIntegrals<I1, I2>::value, void>> : public std::true_type {};
 
 } // namespace fk
 
@@ -328,568 +390,182 @@ inline constexpr typename std::enable_if_t<fk::validCUDAVec<T>, std::ostream&> o
 #endif
 
 // ####################### VECTOR OPERATORS ##########################
-
-#define VEC_UNARY_OP(op, input_type, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a) \
-{ \
-    return fk::make::type<output_type ## 1>(op (a.x)); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a) \
-{ \
-    return fk::make::type<output_type ## 2>(op (a.x), op (a.y)); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a) \
-{ \
-    return fk::make::type<output_type ## 3>(op (a.x), op (a.y), op (a.z)); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a) \
-{ \
-    return fk::make::type<output_type ## 4>(op (a.x), op (a.y), op (a.z), op (a.w)); \
+// Implemented in a way that the return types follow the c++ standard, for each vector component
+// The user is responsible for knowing the type conversion hazards, inherent to the C++ language.
+#define VEC_UNARY_UNIVERSAL(op) \
+template <typename T> \
+FK_HOST_DEVICE_CNST auto operator op(const T& a) -> \
+    std::enable_if_t<fk::CanUnary<T>::value, \
+                     fk::VectorType_t<decltype(op std::declval<fk::VBase<T>>()), fk::cn<T>>> { \
+    using O = fk::VectorType_t<decltype(op std::declval<fk::VBase<T>>()), fk::cn<T>>; \
+    if constexpr (fk::cn<T> == 1) { \
+        return fk::make_<O>(op a.x); \
+    } else if constexpr (fk::cn<T> == 2) { \
+        return fk::make_<O>(op a.x, op a.y); \
+    } else if constexpr (fk::cn<T> == 3) { \
+        return fk::make_<O>(op a.x, op a.y, op a.z); \
+    } else { \
+        return fk::make_<O>(op a.x, op a.y, op a.z, op a.w); \
+    } \
 }
 
-VEC_UNARY_OP(-, char, char)
-VEC_UNARY_OP(-, short, short)
-VEC_UNARY_OP(-, int, int)
-VEC_UNARY_OP(-, float, float)
-VEC_UNARY_OP(-, double, double)
+VEC_UNARY_UNIVERSAL(-)
+VEC_UNARY_UNIVERSAL(!)
+VEC_UNARY_UNIVERSAL(~)
 
-VEC_UNARY_OP(!, uchar, uchar)
-VEC_UNARY_OP(!, char, uchar)
-VEC_UNARY_OP(!, ushort, uchar)
-VEC_UNARY_OP(!, short, uchar)
-VEC_UNARY_OP(!, int, uchar)
-VEC_UNARY_OP(!, uint, uchar)
-VEC_UNARY_OP(!, float, uchar)
-VEC_UNARY_OP(!, double, uchar)
+#undef VEC_UNARY_UNIVERSAL
 
-VEC_UNARY_OP(~, uchar, uchar)
-VEC_UNARY_OP(~, char, char)
-VEC_UNARY_OP(~, ushort, ushort)
-VEC_UNARY_OP(~, short, short)
-VEC_UNARY_OP(~, int, int)
-VEC_UNARY_OP(~, uint, uint)
-
-#undef VEC_UNARY_OP
-
-#define VEC_COMPOUND_OP(op, modificable_type, input_type) \
-FK_HOST_DEVICE_CNST modificable_type ## 1& operator op(modificable_type ## 1 & a, const input_type ## 1 & b) { \
-    a.x op b.x; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 2& operator op(modificable_type ## 2 & a, const input_type ## 2 & b) { \
-    a.x op b.x; \
-    a.y op b.y; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 3& operator op(modificable_type ## 3 & a, const input_type ## 3 & b) { \
-    a.x op b.x; \
-    a.y op b.y; \
-    a.z op b.z; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 4& operator op(modificable_type ## 4 & a, const input_type ## 4 & b) { \
-    a.x op b.x; \
-    a.y op b.y; \
-    a.z op b.z; \
-    a.w op b.w; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 1& operator op(modificable_type ## 1 & a, const input_type& s) { \
-    a.x op s; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 2& operator op(modificable_type ## 2 & a, const input_type& s) { \
-    a.x op s; \
-    a.y op s; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 3& operator op(modificable_type ## 3 & a, const input_type& s) { \
-    a.x op s; \
-    a.y op s; \
-    a.z op s; \
-    return a; \
-} \
-FK_HOST_DEVICE_CNST modificable_type ## 4& operator op(modificable_type ## 4 & a, const input_type& s) { \
-    a.x op s; \
-    a.y op s; \
-    a.z op s; \
-    a.w op s; \
+#define VEC_COMPOUND_ARITHMETICAL(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(I1& a, const I2& b) \
+    -> std::enable_if_t<fk::CanCompound<I1, I2>::value, I1> { \
+    if constexpr (fk::IsCudaVector<I2>::value) { \
+        a.x op b.x; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b.y; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b.z; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b.w; } \
+    } else { \
+        a.x op b; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b; } \
+    } \
     return a; \
 }
 
-VEC_COMPOUND_OP(-=, char, char)
-VEC_COMPOUND_OP(-=, short, short)
-VEC_COMPOUND_OP(-=, int, int)
-VEC_COMPOUND_OP(-=, float, float)
-VEC_COMPOUND_OP(-=, double, double)
-VEC_COMPOUND_OP(-=, uchar, uchar)
-VEC_COMPOUND_OP(-=, char, uchar)
-VEC_COMPOUND_OP(-=, ushort, uchar)
-VEC_COMPOUND_OP(-=, short, uchar)
-VEC_COMPOUND_OP(-=, int, uchar)
-VEC_COMPOUND_OP(-=, uint, uchar)
-VEC_COMPOUND_OP(-=, float, uchar)
-VEC_COMPOUND_OP(-=, double, uchar)
-VEC_COMPOUND_OP(-=, uint, uint)
+VEC_COMPOUND_ARITHMETICAL(-=)
+VEC_COMPOUND_ARITHMETICAL(+=)
+VEC_COMPOUND_ARITHMETICAL(*=)
+VEC_COMPOUND_ARITHMETICAL(/=)
 
-VEC_COMPOUND_OP(+=, char, char)
-VEC_COMPOUND_OP(+=, short, short)
-VEC_COMPOUND_OP(+=, int, int)
-VEC_COMPOUND_OP(+=, float, float)
-VEC_COMPOUND_OP(+=, double, double)
-VEC_COMPOUND_OP(+=, uchar, uchar)
-VEC_COMPOUND_OP(+=, char, uchar)
-VEC_COMPOUND_OP(+=, ushort, uchar)
-VEC_COMPOUND_OP(+=, short, uchar)
-VEC_COMPOUND_OP(+=, int, uchar)
-VEC_COMPOUND_OP(+=, uint, uchar)
-VEC_COMPOUND_OP(+=, float, uchar)
-VEC_COMPOUND_OP(+=, double, uchar)
-VEC_COMPOUND_OP(+=, uint, uint)
+#undef VEC_COMPOUND_ARITHMETICAL
 
-VEC_COMPOUND_OP(*=, char, char)
-VEC_COMPOUND_OP(*=, short, short)
-VEC_COMPOUND_OP(*=, int, int)
-VEC_COMPOUND_OP(*=, float, float)
-VEC_COMPOUND_OP(*=, double, double)
-VEC_COMPOUND_OP(*=, uchar, uchar)
-VEC_COMPOUND_OP(*=, char, uchar)
-VEC_COMPOUND_OP(*=, ushort, uchar)
-VEC_COMPOUND_OP(*=, short, uchar)
-VEC_COMPOUND_OP(*=, int, uchar)
-VEC_COMPOUND_OP(*=, uint, uchar)
-VEC_COMPOUND_OP(*=, float, uchar)
-VEC_COMPOUND_OP(*=, double, uchar)
-VEC_COMPOUND_OP(*=, uint, uint)
-
-VEC_COMPOUND_OP(/=, char, char)
-VEC_COMPOUND_OP(/=, short, short)
-VEC_COMPOUND_OP(/=, int, int)
-VEC_COMPOUND_OP(/=, float, float)
-VEC_COMPOUND_OP(/=, double, double)
-VEC_COMPOUND_OP(/=, uchar, uchar)
-VEC_COMPOUND_OP(/=, char, uchar)
-VEC_COMPOUND_OP(/=, ushort, uchar)
-VEC_COMPOUND_OP(/=, short, uchar)
-VEC_COMPOUND_OP(/=, int, uchar)
-VEC_COMPOUND_OP(/=, uint, uchar)
-VEC_COMPOUND_OP(/=, float, uchar)
-VEC_COMPOUND_OP(/=, double, uchar)
-VEC_COMPOUND_OP(/=, uint, uint)
-
-#undef VEC_COMPOUND_OP
-
-// binary operators (vec & vec)
-#define VEC_BINARY_OP_DIFF_TYPES(op, input_type1, input_type2, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type1 ## 1 & a, const input_type2 ## 1 & b) \
-{ \
-    return fk::make::type<output_type ## 1>(a.x op b.x); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type1 ## 2 & a, const input_type2 ## 2 & b) \
-{ \
-    return fk::make::type<output_type ## 2>(a.x op b.x, a.y op b.y); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type1 ## 3 & a, const input_type2 ## 3 & b) \
-{ \
-    return fk::make::type<output_type ## 3>(a.x op b.x, a.y op b.y, a.z op b.z); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type1 ## 4 & a, const input_type2 ## 4 & b) \
-{ \
-    return fk::make::type<output_type ## 4>(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+#define VEC_COMPOUND_LOGICAL(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(I1& a, const I2& b) \
+    -> std::enable_if_t<fk::CanCompoundLogical<I1, I2>::value, I1> { \
+    if constexpr (fk::IsCudaVector<I2>::value) { \
+        a.x op b.x; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b.y; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b.z; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b.w; } \
+    } else { \
+        a.x op b; \
+        if constexpr (fk::cn<I1> >= 2) { a.y op b; } \
+        if constexpr (fk::cn<I1> >= 3) { a.z op b; } \
+        if constexpr (fk::cn<I1> == 4) { a.w op b; } \
+    } \
+    return a; \
 }
 
-VEC_BINARY_OP_DIFF_TYPES(+, uchar, float, float)
+VEC_COMPOUND_LOGICAL(&=)
+VEC_COMPOUND_LOGICAL(|=)
 
-#undef VEC_BINARY_OP_DIFF_TYPES
+#undef VEC_COMPOUND_LOGICAL
 
-#define VEC_BINARY_OP(op, input_type, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, const input_type ## 1 & b) \
-{ \
-    return fk::make::type<output_type ## 1>(a.x op b.x); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a, const input_type ## 2 & b) \
-{ \
-    return fk::make::type<output_type ## 2>(a.x op b.x, a.y op b.y); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a, const input_type ## 3 & b) \
-{ \
-    return fk::make::type<output_type ## 3>(a.x op b.x, a.y op b.y, a.z op b.z); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a, const input_type ## 4 & b) \
-{ \
-    return fk::make::type<output_type ## 4>(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+// We don't need to check for I2 being a vector type, because the enable_if condition ensures it is a cuda vector if the two previous conditions are false
+#define VEC_BINARY(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
+    -> std::enable_if_t<fk::CanBinary<I1, I2>::value, \
+                        typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                                (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
+    using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                      (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v; \
+    if constexpr (fk::validCUDAVec<I1> && fk::validCUDAVec<I2>) { \
+        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels"); \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b.x); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z); \
+        } else { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+        } \
+    } else if constexpr (fk::validCUDAVec<I1>) { \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b, a.y op b); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b); \
+        } else { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b, a.w op b); \
+        } \
+    } else { \
+        if constexpr (fk::cn<I2> == 1) { \
+            return fk::make_<O>(a op b.x); \
+        } else if constexpr (fk::cn<I2> == 2) { \
+            return fk::make_<O>(a op b.x, a op b.y); \
+        } else if constexpr (fk::cn<I2> == 3) { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z); \
+        } else { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z, a op b.w); \
+        } \
+    } \
 }
 
-VEC_BINARY_OP(+, uchar, int)
-VEC_BINARY_OP(+, char, int)
-VEC_BINARY_OP(+, ushort, int)
-VEC_BINARY_OP(+, short, int)
-VEC_BINARY_OP(+, int, int)
-VEC_BINARY_OP(+, uint, uint)
-VEC_BINARY_OP(+, float, float)
-VEC_BINARY_OP(+, double, double)
+VEC_BINARY(+)
+VEC_BINARY(-)
+VEC_BINARY(*)
+VEC_BINARY(/)
+VEC_BINARY(==)
+VEC_BINARY(!=)
+VEC_BINARY(>)
+VEC_BINARY(<)
+VEC_BINARY(>=)
+VEC_BINARY(<=)
+VEC_BINARY(&&)
+VEC_BINARY(||)
 
-VEC_BINARY_OP(-, uchar, int)
-VEC_BINARY_OP(-, char, int)
-VEC_BINARY_OP(-, ushort, int)
-VEC_BINARY_OP(-, short, int)
-VEC_BINARY_OP(-, int, int)
-VEC_BINARY_OP(-, uint, uint)
-VEC_BINARY_OP(-, float, float)
-VEC_BINARY_OP(-, double, double)
+#undef VEC_BINARY
 
-VEC_BINARY_OP(*, uchar, int)
-VEC_BINARY_OP(*, char, int)
-VEC_BINARY_OP(*, ushort, int)
-VEC_BINARY_OP(*, short, int)
-VEC_BINARY_OP(*, int, int)
-VEC_BINARY_OP(*, uint, uint)
-VEC_BINARY_OP(*, float, float)
-VEC_BINARY_OP(*, double, double)
-
-VEC_BINARY_OP(/ , uchar, int)
-VEC_BINARY_OP(/ , char, int)
-VEC_BINARY_OP(/ , ushort, int)
-VEC_BINARY_OP(/ , short, int)
-VEC_BINARY_OP(/ , int, int)
-VEC_BINARY_OP(/ , uint, uint)
-VEC_BINARY_OP(/ , float, float)
-VEC_BINARY_OP(/ , double, double)
-
-VEC_BINARY_OP(== , uchar, bool)
-VEC_BINARY_OP(== , char, bool)
-VEC_BINARY_OP(== , ushort, bool)
-VEC_BINARY_OP(== , short, bool)
-VEC_BINARY_OP(== , int, bool)
-VEC_BINARY_OP(== , uint, bool)
-VEC_BINARY_OP(== , long, bool)
-VEC_BINARY_OP(== , ulong, bool)
-VEC_BINARY_OP(== , longlong, bool)
-VEC_BINARY_OP(== , ulonglong, bool)
-VEC_BINARY_OP(== , float, bool)
-VEC_BINARY_OP(== , double, bool)
-VEC_BINARY_OP(== , bool, bool)
-
-VEC_BINARY_OP(!= , uchar, bool)
-VEC_BINARY_OP(!= , char, bool)
-VEC_BINARY_OP(!= , ushort, bool)
-VEC_BINARY_OP(!= , short, bool)
-VEC_BINARY_OP(!= , int, bool)
-VEC_BINARY_OP(!= , uint, bool)
-VEC_BINARY_OP(!= , float, bool)
-VEC_BINARY_OP(!= , double, bool)
-VEC_BINARY_OP(!= , bool, bool)
-
-
-VEC_BINARY_OP(> , uchar, bool)
-VEC_BINARY_OP(> , char, bool)
-VEC_BINARY_OP(> , ushort, bool)
-VEC_BINARY_OP(> , short, bool)
-VEC_BINARY_OP(> , int, bool)
-VEC_BINARY_OP(> , uint, bool)
-VEC_BINARY_OP(> , float, bool)
-VEC_BINARY_OP(> , double, bool)
-
-VEC_BINARY_OP(< , uchar, bool)
-VEC_BINARY_OP(< , char, bool)
-VEC_BINARY_OP(< , ushort, bool)
-VEC_BINARY_OP(< , short, bool)
-VEC_BINARY_OP(< , int, bool)
-VEC_BINARY_OP(< , uint, bool)
-VEC_BINARY_OP(< , float, bool)
-VEC_BINARY_OP(< , double, bool)
-
-VEC_BINARY_OP(>= , uchar, bool)
-VEC_BINARY_OP(>= , char, bool)
-VEC_BINARY_OP(>= , ushort, bool)
-VEC_BINARY_OP(>= , short, bool)
-VEC_BINARY_OP(>= , int, bool)
-VEC_BINARY_OP(>= , uint, bool)
-VEC_BINARY_OP(>= , float, bool)
-VEC_BINARY_OP(>= , double, bool)
-
-VEC_BINARY_OP(<= , uchar, bool)
-VEC_BINARY_OP(<= , char, bool)
-VEC_BINARY_OP(<= , ushort, bool)
-VEC_BINARY_OP(<= , short, bool)
-VEC_BINARY_OP(<= , int, bool)
-VEC_BINARY_OP(<= , uint, bool)
-VEC_BINARY_OP(<= , float, bool)
-VEC_BINARY_OP(<= , double, bool)
-
-VEC_BINARY_OP(&&, uchar, bool)
-VEC_BINARY_OP(&&, char, bool)
-VEC_BINARY_OP(&&, ushort, bool)
-VEC_BINARY_OP(&&, short, bool)
-VEC_BINARY_OP(&&, int, bool)
-VEC_BINARY_OP(&&, uint, bool)
-VEC_BINARY_OP(&&, float, bool)
-VEC_BINARY_OP(&&, double, bool)
-VEC_BINARY_OP(&&, bool, bool)
-
-
-VEC_BINARY_OP(||, uchar, bool)
-VEC_BINARY_OP(||, char, bool)
-VEC_BINARY_OP(||, ushort, bool)
-VEC_BINARY_OP(||, short, bool)
-VEC_BINARY_OP(||, int, bool)
-VEC_BINARY_OP(||, uint, bool)
-VEC_BINARY_OP(||, float, bool)
-VEC_BINARY_OP(||, double, bool)
-VEC_BINARY_OP(|| , bool, bool)
-
-
-VEC_BINARY_OP(&, uchar, uchar)
-VEC_BINARY_OP(&, char, char)
-VEC_BINARY_OP(&, ushort, ushort)
-VEC_BINARY_OP(&, short, short)
-VEC_BINARY_OP(&, int, int)
-VEC_BINARY_OP(&, uint, uint)
-
-VEC_BINARY_OP(| , uchar, uchar)
-VEC_BINARY_OP(| , char, char)
-VEC_BINARY_OP(| , ushort, ushort)
-VEC_BINARY_OP(| , short, short)
-VEC_BINARY_OP(| , int, int)
-VEC_BINARY_OP(| , uint, uint)
-
-VEC_BINARY_OP(^, uchar, uchar)
-VEC_BINARY_OP(^, char, char)
-VEC_BINARY_OP(^, ushort, ushort)
-VEC_BINARY_OP(^, short, short)
-VEC_BINARY_OP(^, int, int)
-VEC_BINARY_OP(^, uint, uint)
-
-#undef VEC_BINARY_OP
-
-    // binary operators (vec & scalar)
-
-#define SCALAR_BINARY_OP(op, input_type, scalar_type, output_type) \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const input_type ## 1 & a, const scalar_type& s) \
-{ \
-    return fk::make::type<output_type ## 1>(a.x op s); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 1 operator op(const scalar_type& s, const input_type ## 1 & b) \
-{ \
-    return fk::make::type<output_type ## 1>(s op b.x); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const input_type ## 2 & a, const scalar_type& s) \
-{ \
-    return fk::make::type<output_type ## 2>(a.x op s, a.y op s); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 2 operator op(const scalar_type& s, const input_type ## 2 & b) \
-{ \
-    return fk::make::type<output_type ## 2>(s op b.x, s op b.y); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const input_type ## 3 & a, const scalar_type& s) \
-{ \
-    return fk::make::type<output_type ## 3>(a.x op s, a.y op s, a.z op s); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 3 operator op(const scalar_type& s, const input_type ## 3 & b) \
-{ \
-    return fk::make::type<output_type ## 3>(s op b.x, s op b.y, s op b.z); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const input_type ## 4 & a, const scalar_type& s) \
-{ \
-    return fk::make::type<output_type ## 4>(a.x op s, a.y op s, a.z op s, a.w op s); \
-} \
-FK_HOST_DEVICE_CNST output_type ## 4 operator op(const scalar_type& s, const input_type ## 4 & b) \
-{ \
-    return fk::make::type<output_type ## 4>(s op b.x, s op b.y, s op b.z, s op b.w); \
+#define VEC_BINARY_BITWISE(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
+    -> std::enable_if_t<fk::CanBinaryBitwise<I1, I2>::value, \
+                        typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                                (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
+    using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                      (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v; \
+    if constexpr (fk::validCUDAVec<I1> && fk::validCUDAVec<I2>) { \
+        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels"); \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b.x); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z); \
+        } else { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+        } \
+    } else if constexpr (fk::validCUDAVec<I1>) { \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b, a.y op b); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b); \
+        } else { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b, a.w op b); \
+        } \
+    } else { \
+        if constexpr (fk::cn<I2> == 1) { \
+            return fk::make_<O>(a op b.x); \
+        } else if constexpr (fk::cn<I2> == 2) { \
+            return fk::make_<O>(a op b.x, a op b.y); \
+        } else if constexpr (fk::cn<I2> == 3) { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z); \
+        } else { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z, a op b.w); \
+        } \
+    } \
 }
 
-SCALAR_BINARY_OP(+, uchar, int, int)
-SCALAR_BINARY_OP(+, uchar, float, float)
-SCALAR_BINARY_OP(+, uchar, double, double)
-SCALAR_BINARY_OP(+, char, int, int)
-SCALAR_BINARY_OP(+, char, float, float)
-SCALAR_BINARY_OP(+, char, double, double)
-SCALAR_BINARY_OP(+, ushort, int, int)
-SCALAR_BINARY_OP(+, ushort, float, float)
-SCALAR_BINARY_OP(+, ushort, double, double)
-SCALAR_BINARY_OP(+, short, int, int)
-SCALAR_BINARY_OP(+, short, float, float)
-SCALAR_BINARY_OP(+, short, double, double)
-SCALAR_BINARY_OP(+, int, int, int)
-SCALAR_BINARY_OP(+, int, float, float)
-SCALAR_BINARY_OP(+, int, double, double)
-SCALAR_BINARY_OP(+, uint, uint, uint)
-SCALAR_BINARY_OP(+, uint, float, float)
-SCALAR_BINARY_OP(+, uint, double, double)
-SCALAR_BINARY_OP(+, float, float, float)
-SCALAR_BINARY_OP(+, float, double, double)
-SCALAR_BINARY_OP(+, double, double, double)
+VEC_BINARY_BITWISE(&)
+VEC_BINARY_BITWISE(|)
+VEC_BINARY_BITWISE(^)
 
-SCALAR_BINARY_OP(-, uchar, int, int)
-SCALAR_BINARY_OP(-, uchar, float, float)
-SCALAR_BINARY_OP(-, uchar, double, double)
-SCALAR_BINARY_OP(-, char, int, int)
-SCALAR_BINARY_OP(-, char, float, float)
-SCALAR_BINARY_OP(-, char, double, double)
-SCALAR_BINARY_OP(-, ushort, int, int)
-SCALAR_BINARY_OP(-, ushort, float, float)
-SCALAR_BINARY_OP(-, ushort, double, double)
-SCALAR_BINARY_OP(-, short, int, int)
-SCALAR_BINARY_OP(-, short, float, float)
-SCALAR_BINARY_OP(-, short, double, double)
-SCALAR_BINARY_OP(-, int, int, int)
-SCALAR_BINARY_OP(-, int, float, float)
-SCALAR_BINARY_OP(-, int, double, double)
-SCALAR_BINARY_OP(-, uint, uint, uint)
-SCALAR_BINARY_OP(-, uint, float, float)
-SCALAR_BINARY_OP(-, uint, double, double)
-SCALAR_BINARY_OP(-, float, float, float)
-SCALAR_BINARY_OP(-, float, double, double)
-SCALAR_BINARY_OP(-, double, double, double)
-
-SCALAR_BINARY_OP(*, uchar, int, int)
-SCALAR_BINARY_OP(*, uchar, float, float)
-SCALAR_BINARY_OP(*, uchar, double, double)
-SCALAR_BINARY_OP(*, char, int, int)
-SCALAR_BINARY_OP(*, char, float, float)
-SCALAR_BINARY_OP(*, char, double, double)
-SCALAR_BINARY_OP(*, ushort, int, int)
-SCALAR_BINARY_OP(*, ushort, float, float)
-SCALAR_BINARY_OP(*, ushort, double, double)
-SCALAR_BINARY_OP(*, short, int, int)
-SCALAR_BINARY_OP(*, short, float, float)
-SCALAR_BINARY_OP(*, short, double, double)
-SCALAR_BINARY_OP(*, int, int, int)
-SCALAR_BINARY_OP(*, int, float, float)
-SCALAR_BINARY_OP(*, int, double, double)
-SCALAR_BINARY_OP(*, uint, uint, uint)
-SCALAR_BINARY_OP(*, uint, float, float)
-SCALAR_BINARY_OP(*, uint, double, double)
-SCALAR_BINARY_OP(*, float, float, float)
-SCALAR_BINARY_OP(*, float, double, double)
-SCALAR_BINARY_OP(*, double, double, double)
-
-SCALAR_BINARY_OP(/ , uchar, int, int)
-SCALAR_BINARY_OP(/ , uchar, float, float)
-SCALAR_BINARY_OP(/ , uchar, double, double)
-SCALAR_BINARY_OP(/ , char, int, int)
-SCALAR_BINARY_OP(/ , char, float, float)
-SCALAR_BINARY_OP(/ , char, double, double)
-SCALAR_BINARY_OP(/ , ushort, int, int)
-SCALAR_BINARY_OP(/ , ushort, float, float)
-SCALAR_BINARY_OP(/ , ushort, double, double)
-SCALAR_BINARY_OP(/ , short, int, int)
-SCALAR_BINARY_OP(/ , short, float, float)
-SCALAR_BINARY_OP(/ , short, double, double)
-SCALAR_BINARY_OP(/ , int, int, int)
-SCALAR_BINARY_OP(/ , int, float, float)
-SCALAR_BINARY_OP(/ , int, double, double)
-SCALAR_BINARY_OP(/ , uint, uint, uint)
-SCALAR_BINARY_OP(/ , uint, float, float)
-SCALAR_BINARY_OP(/ , uint, double, double)
-SCALAR_BINARY_OP(/ , float, float, float)
-SCALAR_BINARY_OP(/ , float, double, double)
-SCALAR_BINARY_OP(/ , double, double, double)
-
-SCALAR_BINARY_OP(== , uchar, uchar, uchar)
-SCALAR_BINARY_OP(== , char, char, uchar)
-SCALAR_BINARY_OP(== , ushort, ushort, uchar)
-SCALAR_BINARY_OP(== , short, short, uchar)
-SCALAR_BINARY_OP(== , int, int, uchar)
-SCALAR_BINARY_OP(== , uint, uint, uchar)
-SCALAR_BINARY_OP(== , float, float, uchar)
-SCALAR_BINARY_OP(== , double, double, uchar)
-SCALAR_BINARY_OP(== , bool, bool, bool)
-
-SCALAR_BINARY_OP(!= , uchar, uchar, uchar)
-SCALAR_BINARY_OP(!= , char, char, uchar)
-SCALAR_BINARY_OP(!= , ushort, ushort, uchar)
-SCALAR_BINARY_OP(!= , short, short, uchar)
-SCALAR_BINARY_OP(!= , int, int, uchar)
-SCALAR_BINARY_OP(!= , uint, uint, uchar)
-SCALAR_BINARY_OP(!= , float, float, uchar)
-SCALAR_BINARY_OP(!= , double, double, uchar)
-SCALAR_BINARY_OP(!= , bool, bool, bool)
-
-SCALAR_BINARY_OP(> , uchar, uchar, uchar)
-SCALAR_BINARY_OP(> , char, char, uchar)
-SCALAR_BINARY_OP(> , ushort, ushort, uchar)
-SCALAR_BINARY_OP(> , short, short, uchar)
-SCALAR_BINARY_OP(> , int, int, uchar)
-SCALAR_BINARY_OP(> , uint, uint, uchar)
-SCALAR_BINARY_OP(> , float, float, uchar)
-SCALAR_BINARY_OP(> , double, double, uchar)
-
-SCALAR_BINARY_OP(< , uchar, uchar, uchar)
-SCALAR_BINARY_OP(< , char, char, uchar)
-SCALAR_BINARY_OP(< , ushort, ushort, uchar)
-SCALAR_BINARY_OP(< , short, short, uchar)
-SCALAR_BINARY_OP(< , int, int, uchar)
-SCALAR_BINARY_OP(< , uint, uint, uchar)
-SCALAR_BINARY_OP(< , float, float, uchar)
-SCALAR_BINARY_OP(< , double, double, uchar)
-
-SCALAR_BINARY_OP(>= , uchar, uchar, uchar)
-SCALAR_BINARY_OP(>= , char, char, uchar)
-SCALAR_BINARY_OP(>= , ushort, ushort, uchar)
-SCALAR_BINARY_OP(>= , short, short, uchar)
-SCALAR_BINARY_OP(>= , int, int, uchar)
-SCALAR_BINARY_OP(>= , uint, uint, uchar)
-SCALAR_BINARY_OP(>= , float, float, uchar)
-SCALAR_BINARY_OP(>= , double, double, uchar)
-
-SCALAR_BINARY_OP(<= , uchar, uchar, uchar)
-SCALAR_BINARY_OP(<= , char, char, uchar)
-SCALAR_BINARY_OP(<= , ushort, ushort, uchar)
-SCALAR_BINARY_OP(<= , short, short, uchar)
-SCALAR_BINARY_OP(<= , int, int, uchar)
-SCALAR_BINARY_OP(<= , uint, uint, uchar)
-SCALAR_BINARY_OP(<= , float, float, uchar)
-SCALAR_BINARY_OP(<= , double, double, uchar)
-
-SCALAR_BINARY_OP(&&, uchar, uchar, uchar)
-SCALAR_BINARY_OP(&&, char, char, uchar)
-SCALAR_BINARY_OP(&&, ushort, ushort, uchar)
-SCALAR_BINARY_OP(&&, short, short, uchar)
-SCALAR_BINARY_OP(&&, int, int, uchar)
-SCALAR_BINARY_OP(&&, uint, uint, uchar)
-SCALAR_BINARY_OP(&&, float, float, uchar)
-SCALAR_BINARY_OP(&&, double, double, uchar)
-SCALAR_BINARY_OP(&&, bool, bool, bool)
-
-SCALAR_BINARY_OP(|| , uchar, uchar, uchar)
-SCALAR_BINARY_OP(|| , char, char, uchar)
-SCALAR_BINARY_OP(|| , ushort, ushort, uchar)
-SCALAR_BINARY_OP(|| , short, short, uchar)
-SCALAR_BINARY_OP(|| , int, int, uchar)
-SCALAR_BINARY_OP(|| , uint, uint, uchar)
-SCALAR_BINARY_OP(|| , float, float, uchar)
-SCALAR_BINARY_OP(|| , double, double, uchar)
-SCALAR_BINARY_OP(|| , bool, bool, bool)
-
-SCALAR_BINARY_OP(&, uchar, uchar, uchar)
-SCALAR_BINARY_OP(&, char, char, char)
-SCALAR_BINARY_OP(&, ushort, ushort, ushort)
-SCALAR_BINARY_OP(&, short, short, short)
-SCALAR_BINARY_OP(&, int, int, int)
-SCALAR_BINARY_OP(&, uint, uint, uint)
-
-SCALAR_BINARY_OP(| , uchar, uchar, uchar)
-SCALAR_BINARY_OP(| , char, char, char)
-SCALAR_BINARY_OP(| , ushort, ushort, ushort)
-SCALAR_BINARY_OP(| , short, short, short)
-SCALAR_BINARY_OP(| , int, int, int)
-SCALAR_BINARY_OP(| , uint, uint, uint)
-
-SCALAR_BINARY_OP(^, uchar, uchar, uchar)
-SCALAR_BINARY_OP(^, char, char, char)
-SCALAR_BINARY_OP(^, ushort, ushort, ushort)
-SCALAR_BINARY_OP(^, short, short, short)
-SCALAR_BINARY_OP(^, int, int, int)
-SCALAR_BINARY_OP(^, uint, uint, uint)
-#undef SCALAR_BINARY_OP
-// ######################## VECTOR OPERATORS ##########################
-
-namespace fk {
-    template <typename T, typename = void>
-    struct IsVectorType : std::false_type {};
-    template <typename T>
-    struct IsVectorType<T, std::void_t<decltype(T::x)>> : std::true_type {};
-} // namespace fk
-
+#undef VEC_BINARY_BITWISE
 #endif
