@@ -49,20 +49,30 @@ namespace fk {
     VECTOR_TYPE(float)
     VECTOR_TYPE(double)
     VECTOR_TYPE(bool)
+
+    // Specializations for signed char to match the actual vector struct definitions
+    template <>
+    struct VectorType<signed char, 1> { using type = char1; using type_v = char1; };
+    template <>
+    struct VectorType<signed char, 2> { using type = char2; using type_v = type; };
+    template <>
+    struct VectorType<signed char, 3> { using type = char3; using type_v = type; };
+    template <>
+    struct VectorType<signed char, 4> { using type = char4; using type_v = type; };
 #undef VECTOR_TYPE
 
     template <typename BaseType, int Channels>
     using VectorType_t = typename VectorType<BaseType, Channels>::type;
 
     template <uint CHANNELS>
-    using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<char, CHANNELS>,
+    using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<char, CHANNELS>, VectorType_t<signed char, CHANNELS>,
                                     VectorType_t<ushort, CHANNELS>, VectorType_t<short, CHANNELS>,
                                     VectorType_t<uint, CHANNELS>, VectorType_t<int, CHANNELS>,
                                     VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
                                     VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
                                     VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
     using FloatingTypes = TypeList<float, double>;
-    using IntegralTypes = TypeList<uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
+    using IntegralTypes = TypeList<uchar, char, signed char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
     using StandardTypes = TypeListCat_t<TypeListCat_t<TypeList<bool>, IntegralTypes>, FloatingTypes>;
     using VOne = TypeList<bool1, uchar1, char1, ushort1, short1, uint1, int1, ulong1, long1, ulonglong1, longlong1, float1, double1>;
     using VTwo = VectorTypeList<2>;
@@ -109,7 +119,6 @@ namespace fk {
 
     VECTOR_TRAITS(bool)
     VECTOR_TRAITS(uchar)
-    VECTOR_TRAITS(char)
     VECTOR_TRAITS(short)
     VECTOR_TRAITS(ushort)
     VECTOR_TRAITS(int)
@@ -120,6 +129,22 @@ namespace fk {
     VECTOR_TRAITS(ulonglong)
     VECTOR_TRAITS(float)
     VECTOR_TRAITS(double)
+
+    // Manual specializations for char types to use signed char as the base type
+    template <>
+    struct VectorTraits<char> { using base = signed char; enum {bytes=sizeof(base)}; };
+    template <>
+    struct VectorTraits<char1> { using base = signed char; enum {bytes=sizeof(base)}; };
+    template <>
+    struct VectorTraits<char2> { using base = signed char; enum {bytes=sizeof(base)*2}; };
+    template <>
+    struct VectorTraits<char3> { using base = signed char; enum {bytes=sizeof(base)*3}; };
+    template <>
+    struct VectorTraits<char4> { using base = signed char; enum {bytes=sizeof(base)*4}; };
+
+    // Specializations for signed char to match the actual vector struct definitions
+    template <>
+    struct VectorTraits<signed char> { using base = signed char; enum {bytes=sizeof(base)}; };
 #undef VECTOR_TRAITS
 
     template <typename T>
