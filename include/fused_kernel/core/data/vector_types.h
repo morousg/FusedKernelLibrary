@@ -47,14 +47,14 @@ namespace fk {
     struct Bool {
         // Utils to convert to single bool
         // Static to increase chances of inlining, specially important in GPUs
-        FK_HOST_DEVICE_FUSE bool and(const Bool1& bool1) { return bool1.x; }
-        FK_HOST_DEVICE_FUSE bool and(const Bool2& bool2) { return bool2.x && bool2.y; }
-        FK_HOST_DEVICE_FUSE bool and(const Bool3& bool3) { return bool3.x && bool3.y && bool3.z; }
-        FK_HOST_DEVICE_FUSE bool and(const Bool4& bool4) { return bool4.x && bool4.y && bool4.z && bool4.w; }
-        FK_HOST_DEVICE_FUSE bool or(const Bool1 & bool1) { return bool1.x; }
-        FK_HOST_DEVICE_FUSE bool or(const Bool2 & bool2) { return bool2.x || bool2.y; }
-        FK_HOST_DEVICE_FUSE bool or(const Bool3 & bool3) { return bool3.x || bool3.y || bool3.z; }
-        FK_HOST_DEVICE_FUSE bool or(const Bool4 & bool4) { return bool4.x || bool4.y || bool4.z || bool4.w; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool1& bool1) { return bool1.x; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool2& bool2) { return bool2.x && bool2.y; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool3& bool3) { return bool3.x && bool3.y && bool3.z; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool4& bool4) { return bool4.x && bool4.y && bool4.z && bool4.w; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool1 & bool1) { return bool1.x; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool2 & bool2) { return bool2.x || bool2.y; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool3 & bool3) { return bool3.x || bool3.y || bool3.z; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool4 & bool4) { return bool4.x || bool4.y || bool4.z || bool4.w; }
     };
 
 } // namespace fk
