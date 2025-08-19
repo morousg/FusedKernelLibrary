@@ -461,6 +461,7 @@ COMPOUND_OP_TEST(or_assign, |=)
             if (!results[i]) {
                 std::cout << "Failed " << compoundOperatorTestNames[i] << " test for types: "
                     << typeToString<I1>() << " and " << typeToString<I2>() << std::endl;
+                correct = false;
             }
         }
         return correct;
