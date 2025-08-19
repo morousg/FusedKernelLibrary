@@ -13,6 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#define __ONLY_CPU__
+
 #ifndef FK_UTEST_CUDA_VECTOR_UTILS_H
 #define FK_UTEST_CUDA_VECTOR_UTILS_H
 
@@ -282,7 +284,7 @@ namespace fk::test {
             constexpr ExpectedType expectedResult = make_set<ExpectedType>(expectedBase);
             return expectedResult == result;
         } else {
-            return false;
+            return true;
         }
     }
 
@@ -298,7 +300,7 @@ namespace fk::test {
             constexpr ExpectedType expectedResult = make_set<ExpectedType>(expectedBase);
             return expectedResult == result;
         } else {
-            return false;
+            return true;
         }
     }
 
@@ -314,25 +316,31 @@ namespace fk::test {
             constexpr ExpectedType expectedResult = make_set<ExpectedType>(expectedBase);
             return expectedResult == result;
         } else {
-            return false;
+            return true;
         }
     }
-
-    static constexpr std::array<std::string_view, 3> unaryOperatorTestNames
-    { "unaryMinus", "unaryNot", "unaryBitwiseNot" };
     template <typename T>
-    constexpr inline std::array<bool, 3> testUnaryOperators() {
-        constexpr std::array<bool, 3> results
-        { testUnaryMinus<T>(),
-          testUnaryNot<T>(),
-          testUnaryBitwiseNot<T>() };
-        return results;
+    bool testUnaryOperators() {
+        bool correct{ true };
+        if (!testUnaryMinus<T>()) {
+            std::cout << "Failed unaryMinus test for type: " << typeToString<T>() << std::endl;
+            correct = false;
+        }
+        if (!testUnaryNot<T>()) {
+            std::cout << "Failed unaryNot test for type: " << typeToString<T>() << std::endl;
+            correct = false;
+        }
+        if (!testUnaryBitwiseNot<T>()) {
+            std::cout << "Failed unaryBitwiseNot test for type: " << typeToString<T>() << std::endl;
+            correct = false;
+        }
+        return correct;
     }
 
 #define BINARY_OP_TEST(OP_NAME, OP) \
     template <typename I1, typename I2> \
     constexpr inline bool binary ## OP_NAME() { \
-        if constexpr (can_add<I1, I2>::value) { \
+        if constexpr (can_ ## OP_NAME<I1, I2>::value) { \
             constexpr VBase<I1> base_val1{ static_cast<VBase<I1>>(5) }; \
             constexpr VBase<I2> base_val2{ static_cast<VBase<I2>>(3) }; \
             constexpr I1 val1 = make_set<I1>(base_val1); \
@@ -344,40 +352,51 @@ namespace fk::test {
             constexpr ExpectedType expectedResult = make_set<ExpectedType>(expectedBase); \
             return expectedResult == result; \
         } else { \
-            return false; \
+            return true; \
         } \
     }
 
-BINARY_OP_TEST(Add, +)
-BINARY_OP_TEST(Minus, -)
-BINARY_OP_TEST(Mul, *)
-BINARY_OP_TEST(Div, / )
-BINARY_OP_TEST(Equal, == )
-BINARY_OP_TEST(NotEqual, != )
-BINARY_OP_TEST(Less, < )
-BINARY_OP_TEST(LessEqual, <= )
-BINARY_OP_TEST(Greater, > )
-BINARY_OP_TEST(GreaterEqual, >= )
-BINARY_OP_TEST(LogicalAnd, &&)
-BINARY_OP_TEST(LogicalOr, || )
-BINARY_OP_TEST(BitwiseAnd, &)
-BINARY_OP_TEST(BitwiseOr, | )
-BINARY_OP_TEST(BitwiseXor, ^)
+BINARY_OP_TEST(add, +)
+BINARY_OP_TEST(subtract, -)
+BINARY_OP_TEST(multiply, *)
+BINARY_OP_TEST(divide, / )
+BINARY_OP_TEST(equal, == )
+BINARY_OP_TEST(not_equal, != )
+BINARY_OP_TEST(less, < )
+BINARY_OP_TEST(less_equal, <= )
+BINARY_OP_TEST(greater, > )
+BINARY_OP_TEST(greater_equal, >= )
+BINARY_OP_TEST(logical_and, &&)
+BINARY_OP_TEST(logical_or, || )
+BINARY_OP_TEST(bitwise_and, &)
+BINARY_OP_TEST(bitwise_or, | )
+BINARY_OP_TEST(bitwise_xor, ^)
 
 #undef BINARY_OP
 
-    static constexpr std::array<std::string_view, 15> binaryOperatorTestNames
-    { "binaryAdd", "binaryMinus", "binaryMul", "binaryDiv",
-      "binaryEqual", "binaryNotEqual", "binaryLess", "binaryLessEqual",
-      "binaryGreater", "binaryGreaterEqual", "binaryLogicalAnd", "binaryLogicalOr",
-      "binaryBitwiseAnd", "binaryBitwiseOr", "binaryBitwiseXor" };
     template <typename I1, typename I2>
-    constexpr inline std::array<bool, 15> testBinaryOperators() {
-        return { binaryAdd<I1, I2>(), binaryMinus<I1, I2>(), binaryMul<I1, I2>(), binaryDiv<I1, I2>(),
-                 binaryEqual<I1, I2>(), binaryNotEqual<I1, I2>(), binaryLess<I1, I2>(),
-                 binaryLessEqual<I1, I2>(), binaryGreater<I1, I2>(), binaryGreaterEqual<I1, I2>(),
-                 binaryLogicalAnd<I1, I2>(), binaryLogicalOr<I1, I2>(), binaryBitwiseAnd<I1, I2>(),
-                 binaryBitwiseOr<I1, I2>(), binaryBitwiseXor<I1, I2>() };
+    bool testBinaryOperators() {
+        constexpr std::array<std::string_view, 15> binaryOperatorTestNames
+        { "binaryAdd", "binaryMinus", "binaryMul", "binaryDiv",
+          "binaryEqual", "binaryNotEqual", "binaryLess", "binaryLessEqual",
+          "binaryGreater", "binaryGreaterEqual", "binaryLogicalAnd", "binaryLogicalOr",
+          "binaryBitwiseAnd", "binaryBitwiseOr", "binaryBitwiseXor" };
+        constexpr std::array<bool, 15> results = {
+            binaryadd<I1, I2>(), binarysubtract<I1, I2>(), binarymultiply<I1, I2>(), binarydivide<I1, I2>(),
+            binaryequal<I1, I2>(), binarynot_equal<I1, I2>(), binaryless<I1, I2>(),
+            binaryless_equal<I1, I2>(), binarygreater<I1, I2>(), binarygreater_equal<I1, I2>(),
+            binarylogical_and<I1, I2>(), binarylogical_or<I1, I2>(), binarybitwise_and<I1, I2>(),
+            binarybitwise_or<I1, I2>(), binarybitwise_xor<I1, I2>()
+        };
+        bool correct{ true };
+        for (int i = 0; i < 15; ++i) {
+            if (!results[i]) {
+                std::cout << "Failed " << binaryOperatorTestNames[i] << " test for types: "
+                    << typeToString<I1>() << " and " << typeToString<I2>() << std::endl;
+                correct = false;
+            }
+        }
+        return correct;
     }
 
 #define COMPOUND_OP_TEST(OP_NAME, OP) \
@@ -395,7 +414,7 @@ BINARY_OP_TEST(BitwiseXor, ^)
             ExpectedType expectedResult = make_set<ExpectedType>(base_val1); \
             return expectedResult == val1; \
         } else { \
-            return false; \
+            return true; \
         } \
     }
 
@@ -408,21 +427,61 @@ COMPOUND_OP_TEST(OrAssign, |=)
 
 #undef COMPOUND_OP_TEST
 
-    static constexpr std::array<std::string_view, 6> compoundOperatorTestNames
-    { "compoundAddAssign", "compoundSubAssign", "compoundMulAssign", "compoundDivAssign", "compoundAndAssign", "compoundOrAssign" };
     // Test compound operators
     template <typename I1, typename I2>
-    constexpr inline std::array<bool, 6> testCompoundOperators() {
-        return { compoundAddAssign<I1, I2>(), compoundSubAssign<I1, I2>(), compoundMulAssign<I1, I2>(),
-                 compoundDivAssign<I1, I2>(), compoundAndAssign<I1, I2>(), compoundOrAssign<I1, I2>() };
+    bool testCompoundOperators() {
+        constexpr std::array<std::string_view, 6> compoundOperatorTestNames
+        { "compoundAddAssign", "compoundSubAssign", "compoundMulAssign",
+          "compoundDivAssign", "compoundAndAssign", "compoundOrAssign" };
+        constexpr std::array<bool, 6> results{ compoundAddAssign<I1, I2>(), compoundSubAssign<I1, I2>(),
+                                               compoundMulAssign<I1, I2>(), compoundDivAssign<I1, I2>(),
+                                               compoundAndAssign<I1, I2>(), compoundOrAssign<I1, I2>() };
+        bool correct{ true };
+        for (int i = 0; i < 6; ++i) {
+            if (!results[i]) {
+                std::cout << "Failed " << compoundOperatorTestNames[i] << " test for types: "
+                    << typeToString<I1>() << " and " << typeToString<I2>() << std::endl;
+            }
+        }
+        return correct;
     }
+
+    template <typename TypeList_>
+    struct UnaryTest;
+
+    template <typename... Types>
+    struct UnaryTest<TypeList<Types...>> {
+        static bool execute() {
+            (detectUnaryUnexpectedCompilationErrors<Types>(), ...);
+            return (testUnaryOperators<Types>() && ...);
+        }
+    };
+
+    template <typename TypeList1, typename TypeList2>
+    struct BinaryTest;
+
+    template <typename Type1, typename... Types1, typename... Types2>
+    struct BinaryTest<TypeList<Type1, Types1...>, TypeList<Types2...>> {
+        static bool execute() {
+            if constexpr (sizeof...(Types1) == 0) {
+                (detectBinaryUnexpectedCompilationErrors<Type1, Types2>(), ...);
+                return (testBinaryOperators<Type1, Types2>() && ...);
+            } else {
+                (detectBinaryUnexpectedCompilationErrors<Type1, Types2>(), ...);
+                const bool result = (testBinaryOperators<Type1, Types2>() && ...);
+                return result && BinaryTest<TypeList<Types1...>, TypeList<Types2...>>::execute();
+            }
+        }
+    };
 
 } // namespace fk::test
 
+
 int launch() {
     using namespace fk::test;
-    
-    // Track expected failures
+
+    bool passed = UnaryTest<fk::test::VecAndStdTypes>::execute();
+    passed &= BinaryTest<fk::test::VecAndStdTypes, fk::test::VecAndStdTypes>::execute();
     //testUnaryOperators<VAll>();
     //testBinaryOperators<VAll, VAll>();
     //testCompoundOperators<VAll, VAll>();
@@ -439,7 +498,7 @@ int launch() {
         return -1;
     }
 
-    return 0;
+    return passed ? 0 : -1;
 }
 
 #endif // FK_UTEST_CUDA_VECTOR_UTILS_H

@@ -227,8 +227,8 @@ namespace fk {
         if constexpr (std::is_aggregate_v<T>) {
             return make::type<T>(pack...);
         } else {
-            static_assert(sizeof...(pack) == 1, "make_ can only be used to create fk vector types");
-            return first(pack...);
+            static_assert(sizeof...(pack) == 1, "passing more than one argument for a non cuda vector type");
+            return (pack, ...);
         }
     }
 
@@ -380,11 +380,18 @@ VEC_COMPOUND_UNIVERSAL(|=)
 
 #undef VEC_COMPOUND_UNIVERSAL
 
+template <typename I1, typename I2, typename = void>
+struct SameChannels : public std::false_type {};
+
+template <typename I1, typename I2>
+struct SameChannels<I1, I2, std::enable_if_t<(fk::cn<I1> == fk::cn<I2>), void>> : public std::true_type {};
+
 // We don't need to check for I2 being a vector type, because the enable_if condition ensures it is a cuda vector if the two previous conditions are false
 #define VEC_BINARY_UNIVERSAL(op) \
 template <typename I1, typename I2> \
 FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
-    -> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && !(std::is_fundamental_v<I1> && std::is_fundamental_v<I2>), \
+    -> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && !(std::is_fundamental_v<I1> && std::is_fundamental_v<I2>) && \
+                        (fk::validCUDAVec<I1> && fk::validCUDAVec<I2> ? fk::cn<I1> == fk::cn<I2> : true), \
                         typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
                                                 (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
     using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
@@ -435,12 +442,64 @@ VEC_BINARY_UNIVERSAL(>=)
 VEC_BINARY_UNIVERSAL(<=)
 VEC_BINARY_UNIVERSAL(&&)
 VEC_BINARY_UNIVERSAL(||)
-VEC_BINARY_UNIVERSAL(&)
-VEC_BINARY_UNIVERSAL(|)
-VEC_BINARY_UNIVERSAL(^)
 
 #undef VEC_BINARY_UNIVERSAL
-// ######################## VECTOR OPERATORS ##########################
+
+template <typename I1, typename I2, typename=void>
+struct BothIntegrals : public std::false_type {};
+
+template <typename I1, typename I2>
+struct BothIntegrals<I1, I2, std::enable_if_t<std::is_integral_v<fk::VBase<I1>> && std::is_integral_v<fk::VBase<I2>>, void>> : public std::true_type {};
+
+#define VEC_BINARY_BITWISE(op) \
+template <typename I1, typename I2> \
+FK_HOST_DEVICE_CNST auto operator op(const I1& a, const I2& b) \
+    -> std::enable_if_t<std::is_fundamental_v<fk::VBase<I1>> && std::is_fundamental_v<fk::VBase<I2>> && \
+                        !(std::is_fundamental_v<I1> && std::is_fundamental_v<I2>) && \
+                        BothIntegrals<I1, I2>::value && (fk::validCUDAVec<I1> && fk::validCUDAVec<I2> ? fk::cn<I1> == fk::cn<I2> : true), \
+                        typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                                (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v> { \
+    using O = typename fk::VectorType<decltype(std::declval<fk::VBase<I1>>() op std::declval<fk::VBase<I2>>()), \
+                                      (fk::cn<I1> > fk::cn<I2> ? fk::cn<I1> : fk::cn<I2>)>::type_v; \
+    if constexpr (fk::validCUDAVec<I1> && fk::validCUDAVec<I2>) { \
+        static_assert(fk::cn<I1> == fk::cn<I2>, "Vectors must have the same number of channels"); \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b.x); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z); \
+        } else { \
+            return fk::make_<O>(a.x op b.x, a.y op b.y, a.z op b.z, a.w op b.w); \
+        } \
+    } else if constexpr (fk::validCUDAVec<I1>) { \
+        if constexpr (fk::cn<I1> == 1) { \
+            return fk::make_<O>(a.x op b); \
+        } else if constexpr (fk::cn<I1> == 2) { \
+            return fk::make_<O>(a.x op b, a.y op b); \
+        } else if constexpr (fk::cn<I1> == 3) { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b); \
+        } else { \
+            return fk::make_<O>(a.x op b, a.y op b, a.z op b, a.w op b); \
+        } \
+    } else { \
+        if constexpr (fk::cn<I2> == 1) { \
+            return fk::make_<O>(a op b.x); \
+        } else if constexpr (fk::cn<I2> == 2) { \
+            return fk::make_<O>(a op b.x, a op b.y); \
+        } else if constexpr (fk::cn<I2> == 3) { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z); \
+        } else { \
+            return fk::make_<O>(a op b.x, a op b.y, a op b.z, a op b.w); \
+        } \
+    } \
+}
+
+VEC_BINARY_BITWISE(&)
+VEC_BINARY_BITWISE(|)
+VEC_BINARY_BITWISE(^)
+
+#undef VEC_BINARY_BITWISE
 
 namespace fk {
     template <typename T, typename = void>
