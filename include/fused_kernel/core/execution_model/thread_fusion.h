@@ -142,23 +142,6 @@ namespace fk {
         return ReadOperation::THREAD_FUSION && WriteOperation::THREAD_FUSION && THREAD_FUSION_ENABLED;
     }
 
-    /*template <bool THREAD_FUSION_ENABLED, typename... IOpTypes>
-    FK_HOST_DEVICE_CNST uint computeElementsPerThread(const IOpTypes&... instantiableOperations) {
-        using ReadOperation = typename FirstType_t<IOpTypes...>::Operation;
-        using WriteOperation = typename LastType_t<IOpTypes...>::Operation;
-        using RDT = typename ReadOperation::ReadDataType;
-        using WDT = typename WriteOperation::WriteDataType;
-        if constexpr (THREAD_FUSION_ENABLED) {
-            using TFI = ThreadFusionInfo<RDT, WDT, THREAD_FUSION_ENABLED>;
-            const bool pitch_divisible =
-                (ReadOperation::pitch(Point(0, 0, 0), ppFirst(instantiableOperations...).params) % (sizeof(RDT) * TFI::elems_per_thread) == 0) &&
-                (WriteOperation::pitch(Point(0, 0, 0), ppLast(instantiableOperations...).params) % (sizeof(WDT) * TFI::elems_per_thread) == 0);
-            return pitch_divisible ? TFI::elems_per_thread : 1u;
-        } else {
-            return 1u;
-        }
-    }*/
-
     template <bool THREAD_FUSION_ENABLED, typename... IOpTypes>
     FK_HOST_INLINE bool isThreadDivisible(const uint& elems_per_thread, const IOpTypes&... instantiableOperations) {
         if constexpr (THREAD_FUSION_ENABLED) {
