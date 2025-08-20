@@ -18,6 +18,7 @@
 #include <fused_kernel/algorithms/image_processing/border_reader.h>
 #include <fused_kernel/algorithms/image_processing/color_conversion.h>
 #include <fused_kernel/algorithms/image_processing/crop.h>
+#include <fused_kernel/algorithms/image_processing/deinterlace.h>
 #include <fused_kernel/algorithms/image_processing/interpolation.h>
 #include <fused_kernel/algorithms/image_processing/resize.h>
 #include <fused_kernel/algorithms/image_processing/saturate.h>
