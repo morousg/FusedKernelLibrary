@@ -85,19 +85,20 @@ namespace fk {
             const ParamsType deinterlaceParams{ static_cast<bool>(lin) };
             return { {deinterlaceParams, backIOp} };
         }
+        
     private:
         FK_HOST_DEVICE_FUSE OutputType execBlend(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
             // For blend deinterlacing, we average the current line with adjacent lines
             using ReadOperation = typename BackIOp::Operation;
             
             // Read current pixel
-            const OutputType current = ReadOperation::exec(Point(thread.x, thread.y, thread.z), backIOp);
+            const auto current = ReadOperation::exec(Point(thread.x, thread.y, thread.z), backIOp);
             
             if (thread.y > 0) {
-                const OutputType above = ReadOperation::exec(Point(thread.x, thread.y - 1, thread.z), backIOp);
+                const auto above = ReadOperation::exec(Point(thread.x, thread.y - 1, thread.z), backIOp);
                 return (current + above + 1) * 0.5f;
             } else {
-                return current;
+                return current * 1.f;
             }
         }
 
@@ -105,11 +106,11 @@ namespace fk {
             using ReadOperation = typename BackIOp::Operation;
             if (interpolate) {
                 // We average the above pixel with the below pixel
-                const OutputType above = ReadOperation::exec(Point(thread.x, thread.y - 1, thread.z), backIOp);
-                const OutputType below = ReadOperation::exec(Point(thread.x, thread.y + 1, thread.z), backIOp);
+                const auto above = ReadOperation::exec(Point(thread.x, thread.y - 1, thread.z), backIOp);
+                const auto below = ReadOperation::exec(Point(thread.x, thread.y + 1, thread.z), backIOp);
                 return (above + below + 1) * 0.5f;
             } else {
-                return ReadOperation::exec(thread, backIOp);
+                return ReadOperation::exec(thread, backIOp) * 1.f;
             }
         }
 
@@ -153,7 +154,11 @@ namespace fk {
         FK_HOST_FUSE auto build(const ParamsType& params) {
             return ReadBack<Deinterlace<DType, void>>{{params, {}}};
         }
-
+        template <DeinterlaceType D = DType>
+        FK_HOST_FUSE std::enable_if_t<D == DeinterlaceType::BLEND, InstantiableType> build() {
+            const ParamsType deinterlaceParams{};
+            return { {deinterlaceParams, {}} };
+        }
         template <typename BackIOp>
         FK_HOST_FUSE auto build(const BackIOp& backIOp, const InstantiableType& iOp) {
             return ReadBack<Deinterlace<DType, BackIOp>>{ {iOp.params, backIOp} };

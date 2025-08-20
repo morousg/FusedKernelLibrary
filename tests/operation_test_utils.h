@@ -441,10 +441,10 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsUnaryType<Operation>::v
 };
 
 template <typename Operation>
-struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::value, void>> {
+struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::value || fk::IsReadBackType<Operation>::value, void>> {
     template <fk::ND D, size_t N, typename BuildParams>
     static inline void addTest(std::map<std::string, std::function<bool()>>& testCases,
-                               fk::Stream& stream, 
+                               fk::Stream& stream,
                                const std::array<BuildParams, N>& inputElems,
                                const std::array<fk::Ptr<D, typename Operation::OutputType>, N>& expectedElems) {
         const std::string testName = fk::typeToString<Operation>();
@@ -454,7 +454,7 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::va
             for (size_t i = 0; i < N; ++i) {
                 const auto& outputPtr = outArray[i];
                 const auto& expectedPtr = expectedElems[i];
-                
+
                 const bool correct = comparePtrs<D>(outputPtr, expectedPtr);
                 if (!correct) {
                     result = false;
@@ -467,7 +467,16 @@ struct TestCaseBuilder<Operation, std::enable_if_t<fk::IsReadType<Operation>::va
             }
 
             return result;
-        };
+            };
+    }
+    template <fk::ND D, typename BuildParams>
+    static inline void addTest(std::map<std::string, std::function<bool()>>&testCases,
+                                fk::Stream & stream,
+                                const BuildParams & inputElem,
+                                const fk::Ptr<D, typename Operation::OutputType>& expectedElem) {
+        const std::array<BuildParams, 1> inputElems{ inputElem };
+        const std::array<fk::Ptr<D, typename Operation::OutputType>, 1> expectedElems{ expectedElem };
+        addTest<D, 1>(testCases, stream, inputElems, expectedElems);
     }
 };
 

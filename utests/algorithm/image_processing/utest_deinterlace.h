@@ -18,5 +18,83 @@
 #include <fused_kernel/algorithms/image_processing/deinterlace.h>
 
 int launch() {
+    fk::Stream stream;
+
+    // Input and expected values
+    constexpr fk::Size res(8, 8);
+    constexpr uchar3 ptr[] =
+    {{ 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8},
+     { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1},
+     { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8},
+     { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1},
+     { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8},
+     { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1},
+     { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8}, { 2,  4,  8},
+     { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1}, { 1,  1,  1} };
+
+    constexpr float3 ptrExpectedBlend[] =
+    {{2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f},
+     {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f}, {2.f, 3.f, 5.f} };
+
+    constexpr float3 ptrExpectedLinearEvenLines[] =
+    {{2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f} };
+
+    constexpr float3 ptrExpectedLinearOddLines[] =
+    {{2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f}, {2.f, 4.f, 8.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f},
+     {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f}, {1.f, 1.f, 1.f} };
+
+    fk::Ptr2D<uchar3> inputPtr(8, 8);
+    fk::Ptr<fk::ND::_2D, float3> expectedPtrBlend(8, 8, 0, fk::MemType::Host);
+    fk::Ptr<fk::ND::_2D, float3> expectedPtrLinearEven(8, 8, 0, fk::MemType::Host);
+    fk::Ptr<fk::ND::_2D, float3> expectedPtrLinearOdd(8, 8, 0, fk::MemType::Host);
+
+    // Fill inputPtr with the test data
+    for (int y = 0; y < res.height; ++y) {
+        for (int x = 0; x < res.width; ++x) {
+            inputPtr.at(x, y) = ptr[y * res.width + x];
+            expectedPtrBlend.at(x, y) = ptrExpectedBlend[y * res.width + x];
+            expectedPtrLinearEven.at(x, y) = ptrExpectedLinearEvenLines[y * res.width + x];
+            expectedPtrLinearOdd.at(x, y) = ptrExpectedLinearOddLines[y * res.width + x];
+        }
+    }
+
+    // Upload inputPtr to device
+    inputPtr.upload(stream);
+    
+    const auto readIOp = fk::PerThreadRead<fk::ND::_2D, uchar3>::build(inputPtr.ptr());
+
+    const fk::DeinterlaceParameters<fk::DeinterlaceType::INTER_LINEAR> paramsLinearEven{ true };
+    const fk::DeinterlaceParameters<fk::DeinterlaceType::INTER_LINEAR> paramsLinearOdd{ false };
+
+    const auto blendTest = readIOp.then(fk::Deinterlace<fk::DeinterlaceType::BLEND>::build());
+    const auto linearEvenTest = readIOp.then(fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR>::build(paramsLinearEven));
+    const auto linearOddTest = readIOp.then(fk::Deinterlace<fk::DeinterlaceType::INTER_LINEAR>::build(paramsLinearOdd));
+
+    using DBlend = typename decltype(blendTest)::Operation;
+    using DLinear = typename decltype(linearEvenTest)::Operation;
+
+    TestCaseBuilder<DBlend>::addTest(testCases, stream, blendTest, expectedPtrBlend);
+    TestCaseBuilder<DLinear>::addTest(testCases, stream, linearEvenTest, expectedPtrLinearEven);
+    TestCaseBuilder<DLinear>::addTest(testCases, stream, linearOddTest, expectedPtrLinearOdd);
+
     return 0;
 }
