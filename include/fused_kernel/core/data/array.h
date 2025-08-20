@@ -48,6 +48,7 @@ namespace fk {
 
     template <typename T>
     union Array<T, 1> {
+        static_assert(std::is_fundamental_v<T>, "Array<T, 1> can only be used with fundamental types");
         enum { size = 1 };
         T at[size];
         struct {
@@ -69,6 +70,7 @@ namespace fk {
 
     template <typename T>
     union Array<T, 2> {
+        static_assert(std::is_fundamental_v<T>, "Array<T, 2> can only be used with fundamental types");
         enum { size = 2 };
         T at[size];
         struct {
@@ -99,6 +101,7 @@ namespace fk {
 
     template <typename T>
     union Array<T, 3> {
+        static_assert(std::is_fundamental_v<T>, "Array<T, 3> can only be used with fundamental types");
         enum { size = 3 };
         T at[size];
         struct {
@@ -130,6 +133,7 @@ namespace fk {
 
     template <typename T>
     union Array<T, 4> {
+        static_assert(std::is_fundamental_v<T>, "Array<T, 4> can only be used with fundamental types");
         enum { size = 4 };
         T at[size];
         struct {

@@ -38,7 +38,6 @@ int launch() {
     {
         fk::String str1("");
         fk::String str2("Hello");
-        fk::String str3(" ");
         fk::String str4("World!");
 
         auto str5 = str1 + " Hi " + str2 + " brave " + " new " + str4;

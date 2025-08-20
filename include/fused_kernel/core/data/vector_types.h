@@ -19,21 +19,44 @@
 #include <fused_kernel/core/utils/utils.h>
 
 namespace fk {
+
     struct Bool1 {
         bool x;
+        // Making it easier to evalute in expressions that expect a bool
+        FK_HOST_CNST operator bool() const { return x; }
     };
 
     struct Bool2 {
         bool x, y;
+        // Making it easier to evalute in expressions that expect a bool
+        FK_HOST_CNST operator bool() const { return x && y; }
     };
 
     struct Bool3 {
         bool x, y, z;
+        // Making it easier to evalute in expressions that expect a bool
+        FK_HOST_CNST operator bool() const { return x && y && z; }
     };
 
     struct Bool4 {
         bool x, y, z, w;
+        // Making it easier to evalute in expressions that expect a bool
+        FK_HOST_CNST operator bool() const { return x && y && z && w; }
     };
+
+    struct Bool {
+        // Utils to convert to single bool
+        // Static to increase chances of inlining, specially important in GPUs
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool1& bool1) { return bool1.x; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool2& bool2) { return bool2.x && bool2.y; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool3& bool3) { return bool3.x && bool3.y && bool3.z; }
+        FK_HOST_DEVICE_FUSE bool vAnd(const Bool4& bool4) { return bool4.x && bool4.y && bool4.z && bool4.w; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool1 & bool1) { return bool1.x; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool2 & bool2) { return bool2.x || bool2.y; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool3 & bool3) { return bool3.x || bool3.y || bool3.z; }
+        FK_HOST_DEVICE_FUSE bool vOr(const Bool4 & bool4) { return bool4.x || bool4.y || bool4.z || bool4.w; }
+    };
+
 } // namespace fk
 
 using bool1 = fk::Bool1;
@@ -58,11 +81,11 @@ namespace fk {
         uchar x, y;
     };
 
-    struct alignas(4) Char3 {
+    struct Char3 {
        signed char x, y, z;
     };
 
-    struct alignas(4) Uchar3 {
+    struct Uchar3 {
        uchar x, y, z;
     };
 

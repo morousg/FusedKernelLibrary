@@ -1,9 +1,20 @@
 # Fused Kernel Library (FKL)
-
-The Fused Kernel Library is a C++17  implementation of a methodology (publication pending) that allows to define a set of  code elements that need to be executed inside a kernel, in the same order that they are expressed. The library currently has CPU and CUDA backends, but other GPU language implemenations (such as HIP)  are possible
+  
+The Fused Kernel Library is a C++17  implementation of a methodology that allows to define a set of  code elements that need to be executed inside a kernel, in the same order that they are expressed. The library currently has CPU and CUDA backends, but other GPU language implemenations (such as HIP)  are possible.
 
 It automatically implements Vertical and Horizontal fusion, and also implements two new Fusion techniques, Backwards Vertical Fusion (akin to OpenCV Filters, but with an standard generic API), and Divergent Horizontal Fusion.
 
+## Reference paper
+This repository provides the official implementation of the Fused Kernel Library. A preprint is available from arxiv:
+
+*The Fused Kernel Library: A C++ API to Develop Highly-Efficient GPU Libraries*
+
+Oscar Amoros ([ORCID](https://orcid.org/0009-0008-1442-5348)), Albert Andaluz ([ORCID](https://orcid.org/0009-0004-2185-781X)), Johnny Nuñez ([ORCID](https://orcid.org/0009-0000-3865-6468)) and Antonio J. Peña ([ORCID](https://orcid.org/0000-0002-3575-4617))
+
+Paper: https://arxiv.org/abs/2508.07071v1
+
+
+## Sample code
 Let's see an example where we crop 5 images from a source image, and then apply some changes to those images, before storing them in a Tensor.
 
 You can view and run a similar code in this [FKL Playground](https://colab.research.google.com/drive/1WZd8FcWEKWAuxnJEOTfr0mrWVBtz8bzl?usp=sharing) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1WZd8FcWEKWAuxnJEOTfr0mrWVBtz8bzl?usp=sharing)
@@ -76,7 +87,7 @@ First of all, take into account that there is no CUDA kernel launch until we cal
 ```C++
 const auto mySender = PerThreadRead<_2D, uchar3>::build(inputImage)
 ```
-In this line we are specifying that we want to read a 4K (2D) image, where a single CUDA thread will be responsible of processing a single pixel.
+In this line we are specifying that we want to read a 4K (2D) image, where we will have one CUDA thread per each pixel.
 
 The variable mySender will contain an object representing an Instantiable Operation that combines all the operations specified with the then() method.
 
