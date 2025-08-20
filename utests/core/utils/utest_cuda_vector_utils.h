@@ -213,10 +213,7 @@ namespace fk::test {
 
     template <typename I1,  typename I2>
     void detectBinaryUnexpectedCompilationErrors() {
-        if constexpr ((validCUDAVec<I1> && validCUDAVec<I2> && cn<I1> == cn<I2>) ||
-                      (validCUDAVec<I1> && std::is_fundamental_v<I2>) ||
-                      (std::is_fundamental_v<I1> && validCUDAVec<I2>) ||
-                      (std::is_fundamental_v<I1> && std::is_fundamental_v<I2>)) {
+        if constexpr (cn<I1> == cn<I2>) {
             if constexpr (can_add<I1, I2>::value != can_add<VBase<I1>, VBase<I2>>::value) {
                 unexpected_failed_compilations.push_back("binaryAdd_" + typeToString<I1>() + "_" + typeToString<I2>());
             }
@@ -267,10 +264,8 @@ namespace fk::test {
 
     template <typename I1, typename I2>
     void detectCompoundUnexpectedCompilationErrors() {
-        // The case scalar += vector is not supported (same for the other compound operators)
-        if constexpr ((validCUDAVec<I1> && validCUDAVec<I2> && cn<I1> == cn<I2>) ||
-                     (validCUDAVec<I1> && std::is_fundamental_v<I2>) ||
-                     (std::is_fundamental_v<I1> && std::is_fundamental_v<I2>)) {
+        if constexpr (fk::AreVVEqCN<I1, I2>::value || fk::AreVS<I1, I2>::value) {
+            // The case scalar += vector is not supported (same for the other compound operators)
             if constexpr (can_add_assign<I1, I2>::value != can_add_assign<VBase<I1>, VBase<I2>>::value) {
                 unexpected_failed_compilations.push_back("addAssign_" + typeToString<I1>() + "_" + typeToString<I2>());
             }
@@ -379,20 +374,20 @@ namespace fk::test {
 BINARY_OP_TEST(add, +)
 BINARY_OP_TEST(subtract, -)
 BINARY_OP_TEST(multiply, *)
-BINARY_OP_TEST(divide, / )
-BINARY_OP_TEST(equal, == )
-BINARY_OP_TEST(not_equal, != )
-BINARY_OP_TEST(less, < )
-BINARY_OP_TEST(less_equal, <= )
-BINARY_OP_TEST(greater, > )
-BINARY_OP_TEST(greater_equal, >= )
+BINARY_OP_TEST(divide, /)
+BINARY_OP_TEST(equal, ==)
+BINARY_OP_TEST(not_equal, !=)
+BINARY_OP_TEST(less, <)
+BINARY_OP_TEST(less_equal, <=)
+BINARY_OP_TEST(greater, >)
+BINARY_OP_TEST(greater_equal, >=)
 BINARY_OP_TEST(logical_and, &&)
-BINARY_OP_TEST(logical_or, || )
+BINARY_OP_TEST(logical_or, ||)
 BINARY_OP_TEST(bitwise_and, &)
-BINARY_OP_TEST(bitwise_or, | )
+BINARY_OP_TEST(bitwise_or, |)
 BINARY_OP_TEST(bitwise_xor, ^)
 
-#undef BINARY_OP
+#undef BINARY_OP_TEST
 
     template <typename I1, typename I2>
     bool testBinaryOperators() {
@@ -453,9 +448,9 @@ COMPOUND_OP_TEST(or_assign, |=)
         constexpr std::array<std::string_view, 6> compoundOperatorTestNames
         { "compoundAddAssign", "compoundSubAssign", "compoundMulAssign",
           "compoundDivAssign", "compoundAndAssign", "compoundOrAssign" };
-        constexpr std::array<bool, 6> results{ compoundadd_assign<I1, I2>(), compoundsub_assign<I1, I2>(),
-                                               compoundmul_assign<I1, I2>(), compounddiv_assign<I1, I2>(),
-                                               compoundand_assign<I1, I2>(), compoundor_assign<I1, I2>() };
+        const std::array<bool, 6> results{ compoundadd_assign<I1, I2>(), compoundsub_assign<I1, I2>(),
+                                           compoundmul_assign<I1, I2>(), compounddiv_assign<I1, I2>(),
+                                           compoundand_assign<I1, I2>(), compoundor_assign<I1, I2>() };
         bool correct{ true };
         for (int i = 0; i < 6; ++i) {
             if (!results[i]) {
@@ -479,34 +474,47 @@ COMPOUND_OP_TEST(or_assign, |=)
     };
 
     template <typename TypeList1, typename TypeList2>
-    struct BinaryCompoundTests;
+    struct BinaryTests;
 
     template <typename Type1, typename... Types1, typename... Types2>
-    struct BinaryCompoundTests<TypeList<Type1, Types1...>, TypeList<Types2...>> {
+    struct BinaryTests<TypeList<Type1, Types1...>, TypeList<Types2...>> {
         static bool execute() {
             if constexpr (sizeof...(Types1) == 0) {
                 (detectBinaryUnexpectedCompilationErrors<Type1, Types2>(), ...);
-                (detectCompoundUnexpectedCompilationErrors<Type1, Types2>(), ...);
-                return (testBinaryOperators<Type1, Types2>() && ...) &&
-                       (testCompoundOperators<Type1, Types2>() && ...);
+                return (testBinaryOperators<Type1, Types2>() && ...);
             } else {
                 (detectBinaryUnexpectedCompilationErrors<Type1, Types2>(), ...);
+                const bool result = (testBinaryOperators<Type1, Types2>() && ...);
+                return result && BinaryTests<TypeList<Types1...>, TypeList<Types2...>>::execute();
+            }
+        }
+    };
+
+    template <typename TypeList1, typename TypeList2>
+    struct CompoundTests;
+
+    template <typename Type1, typename... Types1, typename... Types2>
+    struct CompoundTests<TypeList<Type1, Types1...>, TypeList<Types2...>> {
+        static bool execute() {
+            if constexpr (sizeof...(Types1) == 0) {
                 (detectCompoundUnexpectedCompilationErrors<Type1, Types2>(), ...);
-                const bool result = (testBinaryOperators<Type1, Types2>() && ...) &&
-                                    (testCompoundOperators<Type1, Types2>() && ...);
-                return result && BinaryCompoundTests<TypeList<Types1...>, TypeList<Types2...>>::execute();
+                return (testCompoundOperators<Type1, Types2>() && ...);
+            } else {
+                (detectCompoundUnexpectedCompilationErrors<Type1, Types2>(), ...);
+                const bool result = (testCompoundOperators<Type1, Types2>() && ...);
+                return result && CompoundTests<TypeList<Types1...>, TypeList<Types2...>>::execute();
             }
         }
     };
 
 } // namespace fk::test
 
-
 int launch() {
     using namespace fk::test;
 
     bool passed = UnaryTest<VecAndStdTypes>::execute();
-    passed &= BinaryCompoundTests<VecAndStdTypes, VecAndStdTypes>::execute();
+    passed &= BinaryTests<VecAndStdTypes, VecAndStdTypes>::execute();
+    passed &= CompoundTests<VecAndStdTypes, VecAndStdTypes>::execute();
 
     if (!unexpected_failed_compilations.empty()) {
         std::cout << "ERROR: Unexpected compilation failures that did occur:\n";

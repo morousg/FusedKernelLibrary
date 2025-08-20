@@ -37,7 +37,6 @@ namespace fk {
     struct VectorType<BaseType, 4> { using type = BaseType ## 4; using type_v = type; };
 
     VECTOR_TYPE(uchar)
-    VECTOR_TYPE(char)
     VECTOR_TYPE(short)
     VECTOR_TYPE(ushort)
     VECTOR_TYPE(int)
@@ -51,19 +50,40 @@ namespace fk {
     VECTOR_TYPE(bool)
 #undef VECTOR_TYPE
 
+    template <>
+    struct VectorType<char, 1> { using type = std::conditional_t<std::is_unsigned_v<char>, uchar, schar>; using type_v = std::conditional_t<std::is_unsigned_v<char>, uchar1, char1>; };
+    template <>
+    struct VectorType<char, 2> { using type = std::conditional_t<std::is_unsigned_v<char>, uchar2, char2>; using type_v = type; };
+    template <>
+    struct VectorType<char, 3> { using type = std::conditional_t<std::is_unsigned_v<char>, uchar3, char3>; using type_v = type; };
+    template <>
+    struct VectorType<char, 4> { using type = std::conditional_t<std::is_unsigned_v<char>, uchar4, char4>; using type_v = type; };
+
+    template <>
+    struct VectorType<schar, 1> { using type = schar; using type_v = char1; };
+    template <>
+    struct VectorType<schar, 2> { using type = char2; using type_v = type; };
+    template <>
+    struct VectorType<schar, 3> { using type = char3; using type_v = type; };
+    template <>
+    struct VectorType<schar, 4> { using type = char4; using type_v = type; };
+
     template <typename BaseType, int Channels>
     using VectorType_t = typename VectorType<BaseType, Channels>::type;
 
     template <uint CHANNELS>
-    using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<char, CHANNELS>,
+    using VectorTypeList = TypeList<VectorType_t<bool, CHANNELS>, VectorType_t<uchar, CHANNELS>, VectorType_t<schar, CHANNELS>,
                                     VectorType_t<ushort, CHANNELS>, VectorType_t<short, CHANNELS>,
                                     VectorType_t<uint, CHANNELS>, VectorType_t<int, CHANNELS>,
                                     VectorType_t<ulong, CHANNELS>, VectorType_t<long, CHANNELS>,
                                     VectorType_t<ulonglong, CHANNELS>, VectorType_t<longlong, CHANNELS>,
                                     VectorType_t<float, CHANNELS>, VectorType_t<double, CHANNELS>>;
+
     using FloatingTypes = TypeList<float, double>;
-    using IntegralTypes = TypeList<uchar, char, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
+    using IntegralTypes = TypeList<uchar, char, schar, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
+    using IntegralBaseTypes = TypeList<uchar, schar, ushort, short, uint, int, ulong, long, ulonglong, longlong>;
     using StandardTypes = TypeListCat_t<TypeListCat_t<TypeList<bool>, IntegralTypes>, FloatingTypes>;
+    using BaseTypes = TypeListCat_t<TypeListCat_t<TypeList<bool>, IntegralBaseTypes>, FloatingTypes>;
     using VOne = TypeList<bool1, uchar1, char1, ushort1, short1, uint1, int1, ulong1, long1, ulonglong1, longlong1, float1, double1>;
     using VTwo = VectorTypeList<2>;
     using VThree = VectorTypeList<3>;
@@ -109,7 +129,6 @@ namespace fk {
 
     VECTOR_TRAITS(bool)
     VECTOR_TRAITS(uchar)
-    VECTOR_TRAITS(char)
     VECTOR_TRAITS(short)
     VECTOR_TRAITS(ushort)
     VECTOR_TRAITS(int)
@@ -121,6 +140,19 @@ namespace fk {
     VECTOR_TRAITS(float)
     VECTOR_TRAITS(double)
 #undef VECTOR_TRAITS
+
+    template <>
+    struct VectorTraits<schar> { using base = schar; enum { bytes = sizeof(base) }; };
+    template <>
+    struct VectorTraits<char> { using base = std::conditional_t<std::is_unsigned_v<char>, uchar, schar>; enum { bytes = sizeof(base) }; };
+    template <>
+    struct VectorTraits<char1> { using base = schar; enum { bytes = sizeof(base) }; };
+    template <>
+    struct VectorTraits<char2> { using base = schar; enum { bytes = sizeof(base) * 2 }; };
+    template <>
+    struct VectorTraits<char3> { using base = schar; enum { bytes = sizeof(base) * 3 }; };
+    template <>
+    struct VectorTraits<char4> { using base = schar; enum { bytes = sizeof(base) * 4 }; };
 
     template <typename T>
     using VBase = typename VectorTraits<T>::base;
