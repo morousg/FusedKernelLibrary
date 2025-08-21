@@ -32,43 +32,30 @@ namespace std {
 
 namespace fk {
 
-    template <typename InstantiableOp, typename Enabler = void>
-    struct Num_elems;
-
-    template <typename InstantiableOp>
-    struct Num_elems<InstantiableOp, std::enable_if_t<InstantiableOp::template is<ReadType>, void>> {
-        FK_HOST_DEVICE_FUSE uint x(const Point& thread, const InstantiableOp& iOp) {
-            return InstantiableOp::Operation::num_elems_x(thread, iOp);
+    struct NumElems {
+        template <typename IOp>
+        FK_HOST_DEVICE_FUSE uint x(const Point& thread, const IOp& iOp) {
+            static_assert(isAnyReadType<IOp>, "Only Read and ReadBack Types work with NumElems::x");
+            return IOp::Operation::num_elems_x(thread, iOp);
         }
-        FK_HOST_DEVICE_FUSE uint y(const Point& thread, const InstantiableOp& iOp) {
-            return InstantiableOp::Operation::num_elems_y(thread, iOp);
+        template <typename IOp>
+        FK_HOST_DEVICE_FUSE uint y(const Point& thread, const IOp& iOp) {
+            static_assert(isAnyReadType<IOp>, "Only Read and ReadBack Types work with NumElems::y");
+            return IOp::Operation::num_elems_y(thread, iOp);
         }
-        FK_HOST_DEVICE_FUSE Size size(const Point& thread, const InstantiableOp& iOp) {
+        template <typename IOp>
+        FK_HOST_DEVICE_FUSE Size size(const Point& thread, const IOp& iOp) {
+            static_assert(isAnyReadType<IOp>, "Only Read and ReadBack Types work with NumElems::size");
             return Size(x(thread, iOp), y(thread, iOp));
         }
-        FK_HOST_DEVICE_FUSE uint z(const Point& thread, const InstantiableOp& iOp) {
-            return InstantiableOp::Operation::num_elems_z(thread, iOp);
+        template <typename IOp>
+        FK_HOST_DEVICE_FUSE uint z(const Point& thread, const IOp& iOp) {
+            static_assert(isAnyReadType<IOp>, "Only Read and ReadBack Types work with NumElems::z");
+            return IOp::Operation::num_elems_z(thread, iOp);
         }
     };
 
-    template <typename InstantiableOp>
-    struct Num_elems<InstantiableOp, std::enable_if_t<InstantiableOp::template is<ReadBackType>, void>> {
-        FK_HOST_DEVICE_FUSE uint x(const Point& thread, const InstantiableOp& iOp) {
-            return InstantiableOp::Operation::num_elems_x(thread, iOp);
-        }
-
-        FK_HOST_DEVICE_FUSE uint y(const Point& thread, const InstantiableOp& iOp) {
-            return InstantiableOp::Operation::num_elems_y(thread, iOp);
-        }
-        FK_HOST_DEVICE_FUSE Size size(const Point& thread, const InstantiableOp& iOp) {
-            return Size(x(thread, iOp), y(thread, iOp));
-        }
-        FK_HOST_DEVICE_FUSE uint z(const Point& thread, const InstantiableOp& iOp) {
-            return InstantiableOp::Operation::num_elems_z(thread, iOp);
-        }
-    };
-
-    template <enum ND D, typename T>
+    template <ND D, typename T>
     struct PerThreadRead {
     private:
         using Parent = ReadOperation<T, RawPtr<D, T>, T, TF::ENABLED, PerThreadRead<D, T>>;
@@ -85,7 +72,38 @@ namespace fk {
         FK_HOST_DEVICE_FUSE uint num_elems_x(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.width;
         }
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER < 1920
+        template <ND DVal>
+        struct NDHelper;
 
+        template <>
+        struct NDHelper<ND::_1D> {
+            using type = int1;
+        };
+
+        template <>
+        struct NDHelper<ND::_2D> {
+            using type = int2;
+        };
+
+        using DType = typename NDHelper<D>::type;
+
+        FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
+            if constexpr (std::is_same_v<DType, int1>) {
+                return 1;
+            } else {
+                return opData.params.dims.height;
+            }
+        }
+
+        FK_HOST_DEVICE_FUSE uint num_elems_z(const Point& thread, const OperationDataType& opData) {
+            if  (std::is_same_v<DType, int1> || std::is_same_v<DType, int2>) {
+                return 1;
+            } else {
+                return opData.params.dims.planes;
+            }
+        }
+#else
         FK_HOST_DEVICE_FUSE uint num_elems_y(const Point& thread, const OperationDataType& opData) {
             if constexpr (D == ND::_1D) {
                 return 1;
@@ -101,7 +119,7 @@ namespace fk {
                 return opData.params.dims.planes;
             }
         }
-
+#endif
         FK_HOST_DEVICE_FUSE uint pitch(const Point& thread, const OperationDataType& opData) {
             return opData.params.dims.pitch;
         }
@@ -591,4 +609,4 @@ namespace fk {
 
 } //namespace fk
 
-#endif
+#endif // FK_MEMORY_OPERATIONS

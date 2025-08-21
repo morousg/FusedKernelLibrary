@@ -62,11 +62,24 @@ namespace fk {
     struct Resize {
     private:
         using SelfType = Resize<IType, AR, BackIOp_>;
-    public:
-        FK_STATIC_STRUCT(Resize, SelfType)
         using InterpolateOutputType = typename Interpolate<IType, BackIOp_>::OutputType;
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER < 1920
+        template <AspectRatio ARV, typename InterpolateType>
+        struct LastArgTypeHelper {
+            using type = InterpolateType;
+        };
+        template <typename InterpolateType>
+        struct LastArgTypeHelper<AspectRatio::IGNORE_AR, InterpolateType> {
+            using type = void;
+        };
+        using RRParamsLastArg = typename LastArgTypeHelper<AR, InterpolateOutputType>::type;
+#else
+        using RRParamsLastArg = std::conditional_t<AR == AspectRatio::IGNORE_AR, void, InterpolateOutputType>;
+#endif
+    public:
+        FK_STATIC_STRUCT(Resize, SelfType);
         using Parent = ReadBackOperation<typename BackIOp_::Operation::OutputType,
-                                         ResizeReadParams<IType, AR, std::conditional_t<AR == AspectRatio::IGNORE_AR, void, InterpolateOutputType>>,
+                                         ResizeReadParams<IType, AR, RRParamsLastArg>,
                                          BackIOp_,
                                          typename Interpolate<IType, BackIOp_>::OutputType,
                                          Resize<IType, AR, BackIOp_>>;
@@ -102,11 +115,104 @@ namespace fk {
             return { num_elems_x(Point(), opData), num_elems_y(Point(), opData), num_elems_z(Point(), opData) };
         }
 
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER < 1920
+        // This code is a work-arround to the VS2017 bugs with class/struct member function
+        // specializations, dependent on class/struct template parameters.
+        template <typename... Args>
+        FK_HOST_FUSE auto build(const Args&... args) {
+            return build_VS2017(std::integral_constant<AspectRatio, AR>{}, std::forward<const Args&>(args)...);
+        }
+
+        FK_HOST_FUSE InstantiableType build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::IGNORE_AR>&,
+                                                   const BackIOp& backIOp, const Size& dstSize) {
+            const Size srcSize = NumElems::size(Point(), backIOp);
+            const double cfx = static_cast<double>(dstSize.width) / static_cast<double>(srcSize.width);
+            const double cfy = static_cast<double>(dstSize.height) / static_cast<double>(srcSize.height);
+            const ParamsType resizeParams{
+                dstSize,
+                { static_cast<float>(1.0 / cfx), static_cast<float>(1.0 / cfy) },
+                { srcSize }
+            };
+
+            return { {resizeParams, backIOp} };
+        }
+
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR>&,
+                                       const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
+            return build_VS2017_helper(backIOp, dstSize, backgroundValue);
+        }
+
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR_LEFT>&,
+                                       const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
+            return build_VS2017_helper(backIOp, dstSize, backgroundValue);
+        }
+
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR_RN_EVEN>&,
+                                       const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
+            return build_VS2017_helper(backIOp, dstSize, backgroundValue);
+        }
+
+        FK_HOST_FUSE InstantiableType build_VS2017_helper(const BackIOp& backIOp, const Size& dstSize,
+                                                          const OutputType& backgroundValue) {
+            const Size srcSize = NumElems::size(Point(), backIOp);
+            const Size targetSize = compute_target_size(srcSize, dstSize);
+
+            const double cfx = static_cast<double>(targetSize.width) / srcSize.width;
+            const double cfy = static_cast<double>(targetSize.height) / srcSize.height;
+
+            if constexpr (AR == AspectRatio::PRESERVE_AR_LEFT) {
+                const int x1 = 0; // Always 0 to make sure the image is adjusted to the left
+                const int y1 = static_cast<int>((dstSize.height - targetSize.height) / 2);
+
+                const ParamsType resizeParams{
+                dstSize,
+                { static_cast<float>(1.0 / cfx), static_cast<float>(1.0 / cfy) },
+                { srcSize },
+                x1,
+                y1,
+                x1 + targetSize.width - 1,
+                y1 + targetSize.height - 1,
+                backgroundValue
+                };
+
+                return { {resizeParams, backIOp} };
+
+            } else {
+                const int x1 = static_cast<int>((dstSize.width - targetSize.width) / 2);
+                const int y1 = static_cast<int>((dstSize.height - targetSize.height) / 2);
+
+                const ParamsType resizeParams{
+                dstSize,
+                { static_cast<float>(1.0 / cfx), static_cast<float>(1.0 / cfy) },
+                { srcSize },
+                x1,
+                y1,
+                x1 + targetSize.width - 1,
+                y1 + targetSize.height - 1,
+                backgroundValue
+                };
+
+                return { {resizeParams, backIOp} };
+            }
+        }
+
+        FK_HOST_FUSE InstantiableType build(const RawPtr<ND::_2D, ReadDataType>& input, const Size& dSize,
+                                            const double& fx, const double& fy) {
+            static_assert(std::is_same_v<BackIOp, Read<PerThreadRead<ND::_2D, ReadDataType>>,
+                "This implementation of build only works for Read<PerThreadRead<ND::_2D, ReadDataType>> IOps");
+            if (dSize.width != 0 && dSize.height != 0) {
+                return build(BF{ {input} }, dSize);
+            } else {
+                const Size computedDSize{ SaturateCast<double, int>::exec(input.dims.width * fx),
+                                          SaturateCast<double, int>::exec(input.dims.height * fy) };
+                return build(BF{ {input} }, computedDSize);
+            }
+        }
+#else
         template <enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE
-        std::enable_if_t<AR_ == AspectRatio::IGNORE_AR, InstantiableType>
+        FK_HOST_FUSE std::enable_if_t<AR_ == AspectRatio::IGNORE_AR, InstantiableType>
         build(const BackIOp& backIOp, const Size& dstSize) {
-            const Size srcSize = Num_elems<BackIOp>::size(Point(), backIOp);
+            const Size srcSize = NumElems::size(Point(), backIOp);
             const double cfx = static_cast<double>(dstSize.width) / static_cast<double>(srcSize.width);
             const double cfy = static_cast<double>(dstSize.height) / static_cast<double>(srcSize.height);
             const ParamsType resizeParams{
@@ -119,10 +225,9 @@ namespace fk {
         }
 
         template <enum AspectRatio AR_ = AR>
-        FK_HOST_FUSE
-        std::enable_if_t<AR_ != AspectRatio::IGNORE_AR, InstantiableType>
+        FK_HOST_FUSE std::enable_if_t<AR_ != AspectRatio::IGNORE_AR, InstantiableType>
         build(const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
-            const Size srcSize = Num_elems<BackIOp>::size(Point(), backIOp);
+            const Size srcSize = NumElems::size(Point(), backIOp);
 
             const Size targetSize = compute_target_size(srcSize, dstSize);
 
@@ -166,8 +271,7 @@ namespace fk {
         }
 
         template <typename BF = BackIOp_>
-        FK_HOST_FUSE
-        std::enable_if_t<std::is_same_v<BF, Read<PerThreadRead<ND::_2D, ReadDataType>>>, InstantiableType>
+        FK_HOST_FUSE std::enable_if_t<std::is_same_v<BF, Read<PerThreadRead<ND::_2D, ReadDataType>>>, InstantiableType>
         build(const RawPtr<ND::_2D, ReadDataType>& input, const Size& dSize, const double& fx, const double& fy) {
             if (dSize.width != 0 && dSize.height != 0) {
                 return build(BF{ {input} }, dSize);
@@ -178,47 +282,47 @@ namespace fk {
                 return build(BF{ {input} }, computedDSize);
             }
         }
+#endif
+    private:
+        FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
+            const float fx = params.src_conv_factors.x;
+            const float fy = params.src_conv_factors.y;
 
-        private:
-            FK_HOST_DEVICE_FUSE OutputType exec_resize(const Point& thread, const ParamsType& params, const BackIOp& backIOp) {
-                const float fx = params.src_conv_factors.x;
-                const float fy = params.src_conv_factors.y;
+            const float src_x = thread.x * fx;
+            const float src_y = thread.y * fy;
+            const float2 rezisePoint = { src_x, src_y };
+            // We don't set Interpolate as the BackFuntion of Resize, because we won't use any other function than Interpolate
+            // Therefore, we consider Interpolate to be part of the Resize implementation, and not a template variable.
+            // But, it would be relatively easy to change Interpolate with anything else if needed.
+            return Interpolate<IType, BackIOp>::exec(rezisePoint, { params.params, backIOp });
+        }
 
-                const float src_x = thread.x * fx;
-                const float src_y = thread.y * fy;
-                const float2 rezisePoint = { src_x, src_y };
-                // We don't set Interpolate as the BackFuntion of Resize, because we won't use any other function than Interpolate
-                // Therefore, we consider Interpolate to be part of the Resize implementation, and not a template variable.
-                // But, it would be relatively easy to change Interpolate with anything else if needed.
-                return Interpolate<IType, BackIOp>::exec(rezisePoint, { params.params, backIOp });
-            }
-
-            FK_HOST_FUSE Size compute_target_size(const Size& srcSize, const Size& dstSize) {
-                const float scaleFactor = dstSize.height / (float)srcSize.height;
-                const int targetHeight = dstSize.height;
-                const int targetWidth = static_cast<int>(cxp::round(scaleFactor * srcSize.width));
-                if constexpr (AR == AspectRatio::PRESERVE_AR_RN_EVEN) {
-                    // We round to the next even integer smaller or equal to targetWidth
-                    const int targetWidthTemp = targetWidth - (targetWidth % 2);
-                    if (targetWidthTemp > dstSize.width) {
-                        const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
-                        const int targetWidthTemp2 = dstSize.width;
-                        const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
-                        return Size(targetWidthTemp2, targetHeightTemp - (targetHeightTemp % 2));
-                    } else {
-                        return Size(targetWidthTemp, targetHeight);
-                    }
+        FK_HOST_FUSE Size compute_target_size(const Size& srcSize, const Size& dstSize) {
+            const float scaleFactor = dstSize.height / (float)srcSize.height;
+            const int targetHeight = dstSize.height;
+            const int targetWidth = static_cast<int>(cxp::round(scaleFactor * srcSize.width));
+            if constexpr (AR == AspectRatio::PRESERVE_AR_RN_EVEN) {
+                // We round to the next even integer smaller or equal to targetWidth
+                const int targetWidthTemp = targetWidth - (targetWidth % 2);
+                if (targetWidthTemp > dstSize.width) {
+                    const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
+                    const int targetWidthTemp2 = dstSize.width;
+                    const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
+                    return Size(targetWidthTemp2, targetHeightTemp - (targetHeightTemp % 2));
                 } else {
-                    if (targetWidth > dstSize.width) {
-                        const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
-                        const int targetWidthTemp = dstSize.width;
-                        const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
-                        return Size(targetWidthTemp, targetHeightTemp);
-                    } else {
-                        return Size(targetWidth, targetHeight);
-                    }
+                    return Size(targetWidthTemp, targetHeight);
+                }
+            } else {
+                if (targetWidth > dstSize.width) {
+                    const float scaleFactorTemp = dstSize.width / (float)srcSize.width;
+                    const int targetWidthTemp = dstSize.width;
+                    const int targetHeightTemp = static_cast<int> (cxp::round(scaleFactorTemp * srcSize.height));
+                    return Size(targetWidthTemp, targetHeightTemp);
+                } else {
+                    return Size(targetWidth, targetHeight);
                 }
             }
+        }
     };
 
     template <enum AspectRatio AR, typename T = void>
@@ -315,6 +419,36 @@ namespace fk {
         using Parent = ReadBackOperation<NullType, NullType, NullType, NullType,
                                          Resize<IType, AR, void>>;
         DECLARE_READBACK_PARENT_BATCH_INCOMPLETE
+#if defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER < 1920
+        template <typename... Args>
+        FK_HOST_FUSE auto build(const Args&... args) {
+            return build_VS2017(std::integral_constant<AspectRatio, AR>{}, std::forward<const Args&>(args)...);
+        }
+        template <typename BIOp>
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::IGNORE_AR>&,
+                                       const BIOp& backIOp, const Size& dstSize) {
+            static_assert(isAnyReadType<BIOp>, "The IOp passed as parameter must be Read or ReadBack Type.");
+            return Resize<IType, AR, BIOp>::build(backIOp, dstSize);
+        }
+        template <typename BIOp>
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR>&,
+                                       const BIOp& backIOp, const Size& dstSize,
+                                       const typename Resize<IType, AR, BIOp>::OutputType& backgroundValue) {
+            return Resize<IType, AR, BIOp>::build(backIOp, dstSize, backgroundValue);
+        }
+        template <typename BIOp>
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR_LEFT>&,
+                                       const BIOp& backIOp, const Size& dstSize,
+                                       const typename Resize<IType, AR, BIOp>::OutputType& backgroundValue) {
+            return Resize<IType, AR, BIOp>::build(backIOp, dstSize, backgroundValue);
+        }
+        template <typename BIOp>
+        FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR_RN_EVEN>&,
+                                       const BIOp& backIOp, const Size& dstSize,
+                                       const typename Resize<IType, AR, BIOp>::OutputType& backgroundValue) {
+            return Resize<IType, AR, BIOp>::build(backIOp, dstSize, backgroundValue);
+        }
+#else
         template <typename BF, enum AspectRatio AR_ = AR>
         FK_HOST_FUSE std::enable_if_t<AR_ == AspectRatio::IGNORE_AR && isAnyReadType<BF>, ReadBack<Resize<IType, AR_, BF>>>
         build(const BF& backIOp, const Size& dstSize) {
@@ -340,7 +474,7 @@ namespace fk {
               const T& backgroundValue) {
             return Resize<IType, AR_, TypeList<void, T>>::build(dstSize, backgroundValue);
         }
-
+#endif
         template <typename T>
         FK_HOST_FUSE auto build(const RawPtr<ND::_2D, T>& input, const Size& dSize, const double& fx, const double& fy) {
             return Resize<IType, AR, ReadInstantiableOperation<PerThreadRead<ND::_2D, T>>>::build(input, dSize, fx, fy);
