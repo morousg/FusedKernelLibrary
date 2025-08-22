@@ -31,7 +31,16 @@ else()
 endif()
 
 
-
+if (${CMAKE_GENERATOR} MATCHES "Ninja")
+       string (FIND  ${CMAKE_CXX_COMPILER} arm64 POS_ARM64)
+       if (POS_ARM64 GREATER -1)
+            set (CMAKE_VS_PLATFORM_NAME "ARM64" CACHE STRING "Visual Studio platform name" FORCE)
+       else()
+            set (CMAKE_VS_PLATFORM_NAME "x64" CACHE STRING "Visual Studio platform name" FORCE)
+       endif()
+    endif()
+    
+    
 option (BUILD_UTEST "build standard unit tests" ON)
 option (ENABLE_BENCHMARK "build benchmarking unit tests" OFF)
 

@@ -36,7 +36,8 @@ function(configure_test_target_flags TARGET_NAME TEST_SOURCE DIR)
         endif()
         if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++11-narrowing>)
-            target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wconversion>)
+        
+        #    target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wconversion>)
             
         endif()
 

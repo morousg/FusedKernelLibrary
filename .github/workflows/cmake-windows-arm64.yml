@@ -2,23 +2,24 @@ name: 'CMake on Windows (x64 host, ARM64 build)'
 'on':
   pull_request:
     branches:
-      - main
-      - 54-add-a-runtime-compilation-version-of-the-library-for-nvidia-gpus
+      - main     
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true  
+          
 jobs:
   build:
     runs-on:
       - self-hosted
       - windows
       - x64
+    timeout-minutes: 10 # Increase this timeout value as needed
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         build_type:
           - Release
-        toolset:
-          - 'v143,cuda=12.9'
-        cpp_compiler:
-          - cl
     steps:
       - uses: actions/checkout@v4
       - name: Set reusable strings
@@ -38,13 +39,11 @@ jobs:
           & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch
           arm64 -HostArch amd64 -SkipAutomaticLocation                
 
-          cmake -G "Visual Studio 17 2022"  -DENABLE_CUDA=OFF -B
-          ${{steps.strings.outputs.build-output-dir}}
-          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -T ${{matrix.toolset}} -S
+          cmake  -G "Ninja" -B ${{steps.strings.outputs.build-output-dir}}
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}}  -S
           ${{github.workspace}};        
       - name: Build
         run: >
-          $poolsize=$env:NUMBER_OF_PROCESSORS/1;
           $vsWhere = "${Env:ProgramFiles(x86)}\Microsoft Visual
           Studio\Installer\vswhere.exe"   
 
@@ -53,9 +52,9 @@ jobs:
 
           & "${vsInstallationPath}\Common7\Tools\Launch-VsDevShell.ps1" -Arch
           arm64 -HostArch amd64 -SkipAutomaticLocation         
-          
+
           cmake --build ${{ steps.strings.outputs.build-output-dir }} --config
-          ${{ matrix.build_type }} --parallel  $poolsize
+          ${{ matrix.build_type }} 
             
           #note, we cannot test as we don't hava a windows arm64 host yet
         working-directory: '${{ steps.strings.outputs.build-output-dir }}'
