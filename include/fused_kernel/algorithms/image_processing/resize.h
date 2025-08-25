@@ -139,20 +139,21 @@ namespace fk {
 
         FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR>&,
                                        const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
-            return build_VS2017_helper(backIOp, dstSize, backgroundValue);
+            return build_VS2017_helper(AspectRatio::PRESERVE_AR, backIOp, dstSize, backgroundValue);
         }
 
         FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR_LEFT>&,
                                        const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
-            return build_VS2017_helper(backIOp, dstSize, backgroundValue);
+            return build_VS2017_helper(AspectRatio::PRESERVE_AR_LEFT, backIOp, dstSize, backgroundValue);
         }
 
         FK_HOST_FUSE auto build_VS2017(const std::integral_constant<AspectRatio, AspectRatio::PRESERVE_AR_RN_EVEN>&,
                                        const BackIOp& backIOp, const Size& dstSize, const OutputType& backgroundValue) {
-            return build_VS2017_helper(backIOp, dstSize, backgroundValue);
+            return build_VS2017_helper(AspectRatio::PRESERVE_AR_RN_EVEN, backIOp, dstSize, backgroundValue);
         }
 
-        FK_HOST_FUSE InstantiableType build_VS2017_helper(const BackIOp& backIOp, const Size& dstSize,
+        FK_HOST_FUSE InstantiableType build_VS2017_helper(const AspectRatio& aspectRatio,
+                                                          const BackIOp& backIOp, const Size& dstSize,
                                                           const OutputType& backgroundValue) {
             const Size srcSize = NumElems::size(Point(), backIOp);
             const Size targetSize = compute_target_size(srcSize, dstSize);
@@ -160,7 +161,7 @@ namespace fk {
             const double cfx = static_cast<double>(targetSize.width) / srcSize.width;
             const double cfy = static_cast<double>(targetSize.height) / srcSize.height;
 
-            if constexpr (AR == AspectRatio::PRESERVE_AR_LEFT) {
+            if (aspectRatio == AspectRatio::PRESERVE_AR_LEFT) {
                 const int x1 = 0; // Always 0 to make sure the image is adjusted to the left
                 const int y1 = static_cast<int>((dstSize.height - targetSize.height) / 2);
 
